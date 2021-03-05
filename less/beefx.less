@@ -27,6 +27,23 @@
 
 @import "../res/esm/stdlib/less/lessentials";
 
-.beefxframe {.abs(); .wihi(45%, 90%);}
-.bfx-left {left: 5%; .bg(@B25);}
-.bfx-right {left: 5%; .bg(@B5);}    
+body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content: attr(error)}
+
+.clicker {.fixLT(0, 0); .wihi(100%, 100%); z-index: 9; .bg(fade(#B00, 50%));
+  backdrop-filter: blur(3px);
+  &::before {.absLB(0px, 50px); width: 100%; .roco(); .font(24px, 700); .ita(); color: #cc0; 
+    text-align: center; content: 'Click any key to start Web Audio API!';}
+}
+.beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666); }
+.bfx-top {.relLT(0, 0); .wihi(100%, 400px); .bg(@W5); margin: 1%; padding: 1%; 
+  text-align: center;}
+.bfx-bottom {.relLT(0, 0); .wihi(100%, auto);}
+.bfx-stage {.relLT(0, 0); .inBlk(); width: 46%; margin: 1%; padding: 1%;}
+.bfx-left {.bg(@B25);}
+.bfx-right {.bg(@B5);}  
+.odijo {margin: 6px auto;}  
+.fxselector {margin: 4px; padding: 4px;}
+#effect1 {}
+#effect2 {}
+.mejs__video { z-index: 99; margin: auto;}  
+  

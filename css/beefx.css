@@ -1,0 +1,132 @@
+@charset "UTF-8";
+/* stylelint-disable indentation, no-eol-whitespace,
+   selector-combinator-space-before,
+   selector-list-comma-newline-after, rule-empty-line-before, max-empty-lines,
+   declaration-block-semicolon-newline-after,  declaration-empty-line-before,
+   declaration-block-single-line-max-declarations,
+   declaration-colon-newline-after,
+   comment-empty-line-before, comment-whitespace-inside,
+   block-closing-brace-newline-after, block-closing-brace-newline-before,
+   block-opening-brace-newline-after,
+   block-closing-brace-space-before, block-opening-brace-space-after,
+   custom-property-empty-line-before, no-descending-specificity, no-duplicate-selectors,
+   number-leading-zero, number-no-trailing-zeros, length-zero-no-unit, 
+   color-hex-length, color-hex-case,
+   declaration-block-no-duplicate-properties,
+   declaration-block-no-duplicate-property-overrides,
+   declaration-block-no-shorthand-property-overrides,
+   selector-type-no-unknown,
+   string-no-newline, block-no-empty,
+   function-parentheses-newline-inside, function-comma-newline-after,
+   font-family-no-missing-generic-family-keyword
+*/
+/* lesshint-disable newlineAfterBlock, singleLinePerProperty, importPath, propertyOrdering,
+   qualifyingElement, attributeQuotes, trailingWhitespace, zeroUnit, decimalZero, maxCharPerLine */
+/* @nicedarkblue: #008ab8; */
+.hand {
+  cursor: pointer;
+}
+.nomouse {
+  pointer-events: none;
+  user-select: none;
+}
+.ident-layout {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+}
+.inverter {
+  filter: invert(1);
+}
+.inblk {
+  display: inline-block;
+}
+body::after {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  color: #fbb;
+  content: attr(error);
+}
+.clicker {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9;
+  background: rgba(187, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+.clicker::before {
+  position: absolute;
+  left: 0px;
+  bottom: 50px;
+  width: 100%;
+  font: 400 11px roboto condensed;
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  color: #cc0;
+  text-align: center;
+  content: 'Click any key to start Web Audio API!';
+}
+.beebody {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #666;
+}
+.bfx-top {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 1%;
+  padding: 1%;
+  text-align: center;
+}
+.bfx-bottom {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
+}
+.bfx-stage {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  width: 46%;
+  margin: 1%;
+  padding: 1%;
+}
+.bfx-left {
+  background: rgba(0, 0, 0, 0.25);
+}
+.bfx-right {
+  background: rgba(0, 0, 0, 0.5);
+}
+.odijo {
+  margin: 6px auto;
+}
+.fxselector {
+  margin: 4px;
+  padding: 4px;
+}
+.mejs__video {
+  z-index: 99;
+  margin: auto;
+}
