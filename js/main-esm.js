@@ -4,116 +4,80 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, WaapiWrap, BeeFX, createUI} from './improxy-esm.js'
+import {Corelib, DOMplusUltra, WaapiWrap, Playground, createUI} from './improxy-esm.js'
 
-const {$} = DOMplusUltra
-//playground -> playground-esm.js
+//const {adelay} = Corelib.Tardis
+const {$, div$, leaf$, set$} = DOMplusUltra            //: from jQuery
+const {runPlayground} = Playground
+const {MediaElementPlayer} = window //: from MediaElementJs
 
-const initPlayground = (waCtx, media$) => {
-  const dis = {
-    graphMode: 'sequential' //sequential
-  }
-  const {newFx} = BeeFX(waCtx)
-  
-  dis.decompose = _ => {
-    dis.source.disconnect()
-    dis.beeFx1.disconnect()
-    dis.beeFx2.disconnect()
-    //dis.dest.disconnect()
-  }
-  
-  dis.compose = _ => {
-    if (dis.graphMode === 'parallel') {
-      dis.source.connect(dis.beeFx1)
-      dis.source.connect(dis.beeFx2)
-      dis.beeFx1.connect(dis.dest)
-      dis.beeFx2.connect(dis.dest)
-    } else {
-      dis.source.connect(dis.beeFx1)
-      dis.beeFx1.connect(dis.beeFx2)
-      dis.beeFx2.connect(dis.dest)
-    }
-  }
-    
-  dis.changeStage = (stage, name) => {
-    dis.decompose()
-    if (stage === 1) {
-      dis.beeFx1 = newFx(name)
-    } else if (stage === 2) {
-      dis.beeFx2 = newFx(name)
-    }
-    dis.compose()
-  }
-  
-  dis.changeSource = media$ => {
-    dis.decompose()
-    dis.source = waCtx.createMediaElementSource(media$)
-    dis.compose()
-  }
-  
-  const init = _ => {
-    dis.source = waCtx.createMediaElementSource(media$)
-    dis.source.disconnect()
-    
-    dis.beeFx1 = newFx('fx_gain')
-    dis.beeFx2 = newFx('fx_gain')
-    dis.dest = waCtx.createGain()
-    dis.dest.gain.value = -10
-    
-    dis.source.connect(dis.beeFx1)
-    dis.beeFx1.connect(dis.beeFx2)
-    dis.beeFx2.connect(dis.dest)
-    dis.dest.connect(waCtx.destination)
-    
-     // Create variables to store mouse pointer Y coordinate
-     // and HEIGHT of screen
-     let CurY
-     const HEIGHT = window.innerHeight
+const onDomReady = new Promise(resolve => $(resolve))
 
-     // Get new mouse pointer coordinates when mouse is moved
-     // then set new gain value
+const onWaapiReady = new Promise(resolve => WaapiWrap.onRun(resolve))
 
-     document.onmousemove = updatePage
+const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 
-     function updatePage (e) {
-       CurY = (window.Event) ? e.pageY : e.clientY + (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop)
-
-       dis.dest.gain.value = CurY / HEIGHT
-     }
-  }
-  
-  dis.setGraphMode = val => {
-    dis.decompose()
-    dis.graphMode = val
-    dis.compose()
-  }
-  
-  init()
-  
-  return dis
+const config = {
+  platform: 'standalone', // extension
+  mediaType: 'audioboth', // video
+  useVideo: true,
+  useAudio: false
 }
 
-$(_ => {
-  const ui = createUI()
-  //const audio$ = ui.insertAudioPlayer('https://ork.tork.work/beefx/au/chachacha.mp3')
-  const mediaElement = ui.insertVideoPlayer('https://www.youtube.com/watch?v=_8SBdkru4IY')
-  // devendra telstar shinehead
+void (async _ => {
+  await onDomReady
+  await adelay(1000)// = await onBeeFxExtReady()
   
-  //const mediaElement = document.getElementById('player')
-
-  const mediaE = new window.MediaElementPlayer(mediaElement, {
-   stretching: 'auto',
-    features: ['playpause', 'current', 'progress', 'duration', 'tracks', 'volume', 'fullscreen'],
-    success: (mediaElement, domObject) => {
-      mediaElement.load()
-      console.log({mediaElement, domObject})
-      //debugger
-      //mediaElement.play()
-      setTimeout(_ => { //+promise
-        WaapiWrap.onRun(waCtx => {
-          const playground = initPlayground(waCtx, domObject)
-          playground.setGraphMode('parallel')
-          ui.insertFxSelectors()
-        })}, 1000)
-   }})
-})
+  const root = {
+    waCtx: await onWaapiReady,
+    mediaElement: null
+  }
+  root.ui = createUI(config, root)
+  
+  if (config.platform === 'standalone') {
+    root.mmenu$ = div$(root.ui.top$, {class: 'mediamenu'}, [
+      div$({class: 'mm-item', text: 'Cascandy - Take Me Baby Reeemix SNOE (audio)', 
+        click: _ => loadAudio('//ork.tork.work/beefx/au/cascandy.mp3')}),
+      div$({class: 'mm-item', text: 'Astrud Gilberto - Agua de Beber (audio)', 
+        click: _ => loadAudio('//ork.tork.work/beefx/au/astrud.mp3')}),
+      div$({class: 'mm-item', text: 'Devendra Barnhardt - Angelica (audio)', 
+        click: _ => loadAudio('//ork.tork.work/beefx/au/devendra.mp3')}),
+      div$({class: 'mm-item', text: 'Tornadoes - Telstar (audio)', 
+        click: _ => loadAudio('//ork.tork.work/beefx/au/telstar.mp3')}),
+      div$({class: 'mm-item', text: 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)', 
+        click: _ => loadAudio('//ork.tork.work/beefx/au/chachacha.mp3')}),
+      div$({class: 'mm-item', text: 'Future Sound Of London - Essential Mix (youtube)', 
+        click: _ => loadVideo('//youtube.com/watch?v=_8SBdkru4IY')}),
+      leaf$('input', {attr: {type: 'file', accept: 'audio/*'}, on: {
+        change: event => {
+          const file = event.target.files[0]
+          const fileUrl = window.URL.createObjectURL(file)
+          loadAudio(fileUrl)
+        }
+      }}) 
+    ])
+    
+    const loadVideo = url => {
+      root.mmenu$.remove()
+      set$(root.ui.top$, {class: 'video-source'})
+      waitForMediaElement(root.ui.insertVideoPlayer(url))
+    }
+    const loadAudio = url => {
+      root.mmenu$.remove()
+      waitForMediaElement(root.ui.insertAudioPlayer(url))
+    }
+    const waitForMediaElement = tmpMediaElement => new MediaElementPlayer(tmpMediaElement, {
+      stretching: 'none',
+      features: ['playpause', 'current', 'progress', 'duration', 'tracks', 'volume', 'fullscreen'],
+      success: (fullMediaElement, domObject) => {
+        fullMediaElement.load()
+        //: not working if volume ctrl is set above: fullMediaElement.setVolume(.2)
+        console.log({fullMediaElement, domObject})
+        root.mediaElement = domObject
+        runPlayground(root)
+      }
+    })
+  } else { //: youtube chrome extension
+    //:TBD
+  }
+})()

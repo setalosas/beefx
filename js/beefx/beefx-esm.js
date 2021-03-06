@@ -11,6 +11,9 @@ import {Corelib} from '../improxy-esm.js'
 const {Ø, undef, getRnd, nop, s_a} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 
+const toExp = val => Math.pow(Math.E, val)
+const fromExp = val => Math.log(val)
+
 const createBeeFX = waCtx => {
   const fxHash = {}
   const beeFx = {
@@ -27,7 +30,9 @@ const createBeeFX = waCtx => {
       output: waCtx.createGain(),
       isRelaxed: false,
       bypass: false,
-      ext: {}
+      exo: {}, //fxHash[type]
+      ext: {}, //instance's filters are here
+      live: {} //actual param values, accessed only from the base
     }
     
     fx.connect = dest => fx.output.connect(dest[pepper] ? dest.input : dest)
@@ -49,11 +54,39 @@ const createBeeFX = waCtx => {
       fx.ext[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
     
     fx.setValue = (key, value) => {
-      fx.exo.setValue(fx, key, value)
-      fx.exo.live[key] = value
+      const fun = fx.exo.setValue(fx, key, value)
+      if (fun) {
+        fun()
+        fx.live[key] = value
+      } else {
+        console.warn(`${fx.exo.name}: bad pars`, {key, value})
+      }
     }
     
-    fx.getValue = key => fx.exo.live[key]
+    fx.setLinearValue = (key, val) => {
+      const parO = fx.exo.def[key]
+      if (parO.isExp) {
+        fx.setValue(key, toExp(val))
+      } else {
+        fx.setValue(key, val)
+      }
+    }
+    fx.getLinearValues = key => {
+      const parO = fx.exo.def[key]
+      if (parO.isExp) {
+        const {linMin: min, linMax: max, linDefVal: defVal} = parO //: defVal?
+        const val = fromExp(fx.getValue(key))
+        return {min, max, defVal, val}
+      } else {
+        const {min, max, defVal} = parO
+        return {min, max, defVal, val: fx.getValue(key)}
+      }
+    }
+    
+    fx.getValue = key => fx.live[key]
+    
+    fx.getName = _ => fx.exo.name
+    fx.getShortName = _ => fx.exo.name.substr(3)
     
     return fx
   }
@@ -71,14 +104,17 @@ const createBeeFX = waCtx => {
   }
   //mergetest()
   
-  const initPars = (exo, pars) => {
+  const initPars = (fx, pars) => {
+    const {exo} = fx
     const {initial = {}, options = {}} = pars
-    exo.live = {}
+    fx.live = {}
     for (const key in exo.def) {
-      const {defValue = 0} = exo.def[key]
-      exo.live[key] = merge(defValue, initial[key])
-      exo.live[key] = typeof initial[key] !== 'undefined' ? initial[key] : defValue
+      const {defVal = 0} = exo.def[key]
+      initial[key] = merge(defVal, initial[key])
+      //fx.setValue(key, merge(defVal, initial[key]))
+      //fx.live[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
     }
+    pars.initial = initial
   }
 
   beeFx.newFx = (type, pars = {}) => {
@@ -89,7 +125,7 @@ const createBeeFX = waCtx => {
     }
     const fx = newFxBase()
     fx.exo = fxHash[type] //: exo = {..., def, construct, ...}
-    initPars(fx.exo, pars)
+    initPars(fx, pars)        //: changes or creates pars.initial
     fx.exo.construct(fx, pars) //: not using return value
     fx.input.connect(fx.start)
     
@@ -106,10 +142,17 @@ const createBeeFX = waCtx => {
     }
     fxHash[fxName] = fxObj
     fxObj.def = fxObj.def || {}
+    fxObj.name = fxName
     for (const key in fxObj.def) {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
       par.name = par.name || key
+      if (par.subType === 'exp') {
+        par.isExp = true
+        par.linMin = fromExp(par.min)
+        par.linMax = fromExp(par.max)
+        par.linDefVal = fromExp(par.defVal)
+      }
     }
   }
   
@@ -124,6 +167,7 @@ const createBeeFX = waCtx => {
     function shimConnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
+      //console.log(`shimConnect`, {dis: this, arg: arguments[0]})
       wauConnect.apply(this, arguments)
       return node
     }
@@ -131,6 +175,7 @@ const createBeeFX = waCtx => {
     function shimDisconnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
+      console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
       wauDisconnect.apply(this, arguments)
     }
   })()
