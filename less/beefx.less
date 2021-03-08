@@ -36,59 +36,83 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
     text-align: center; content: 'Click any key to start Web Audio API!';}
 }
 .beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666); }
+
 .bfx-top {.relLT(0, 0); .wihi(96%, auto); .bg(@W5); margin: 1%; padding: 1%; 
   .mediamenu {.relLT(0,0); text-align: center; .roco(); .font(14px, 400); 
     input, div {.relLT(0, 0); .blk(); padding: 4px; margin: 4px auto; .bg(@W75);}
     .mm-item {width: fit-content; .bg(@W5); .hand();}
+    .yt {.bg(fade(#f00, 30%));}
   }
   &.video-source {height: 360px;}
   text-align: center;
 }
-.bfx-bottom {.relLT(0, 0); .wihi(100%, auto); .roco();}
-.bfx-stage {.relLT(0, 0); .inBlk(); margin: 4px; padding: 4px; vertical-align: top; .bora(8px);}
-.bfx-left {.bg(@B25);}
-.bfx-right {.bg(@B5);} 
-@biq: 200px;
-.bfx-rama {.relLT(0, 0); margin: 8px 2px; padding: 4px; color: @W; .font(14px, 400);
-  .extgraph {padding-bottom: @biq + 6px;}
-  // ha itt inblk, akkor vizszintes
-  
+.bfx-mid {.relLT(0, 0); .roco(); display: table; }
+//.bfx-bottom {.relLT(0, 0); .wihi(100%, auto); .bg(@W25);
+  .bfx-spectrum {.absLB(6px, 2px); .bora(6px); padding: 2px;
+    .bg(linear-gradient(135deg, @W5, @B5));
+    canvas {.relLT(0,0); .wihi(240px, 120px); .bora(6px); .bg(@B);}
+  }
+//}
+.bfx-stage {.relLT(0, 0); .inBlk();display: table-cell;  margin: 2px; padding: 0 1px; vertical-align: top; .bora(10px); padding-bottom: 136px;}
+@biqx: 240px;
+@biqy: 120px;
+.bfx-rama {.relLT(0, 0); margin: 3px 1px; padding: 2px; color: @W; .font(14px, 400);
   .bora(8px);
   .fxr-title {}
-  .fxr-par {.bg(@W25);}
-  .fxr-parkey {.rel(); .inBlk(); width: 70px; text-align: right; font-size: 13px;}
-  .fxr.parkey::before {.absLT(0, -10px); font-size: 12px; color: #ffc; content: attr(val); }
-  .fxr-parval {.inBlk(); padding: 2px;
-    .ranger {.rel();}
-    .ranger::before {.absLT(0, -10px); font-size: 12px; color: #ffc; content: attr(val); }
-  }
+  .fxr-par {}
+  //.fxr-parkey {.rel(); .inBlk(); width: 70px; text-align: right; font-size: 13px;}
+  .fxr-parval {.inBlk(); padding: 0px;}
   .fxr-selector {}
   .fxr-optselector {.inBlk(); margin-left: 6px;}
   .fxr-pars {}
-  .biquad-canvas { .absRB(6px, 6px); .wihi(@biq); .bg(@B); .bora(4px);}
-  .biquad-canvas:hover {.wihi(2 * @biq); transform: translate(@biq / 2, @biq / 2);}
+  .biquad-canvas {.relLT(4px, 4px); .wihi(@biqx, @biqy); .bg(@B); .bora(6px);
+    margin-bottom: 2px;;}
 }
-.bfx-left .bfx-rama {.bg(linear-gradient(157deg, hsl(240, 75%, 85%), hsl(200, 75%, 60%)));}
-.bfx-right .bfx-rama {.bg(linear-gradient(157deg, hsl(300, 75%, 85%), hsl(260, 75%, 60%)));}
+.bfx-st1 {.bg(@B2); .bfx-spectrum canvas {filter: hue-rotate(180deg);}}
+.bfx-st2 {.bg(@B4); .bfx-spectrum canvas {filter: hue-rotate(240deg);}} 
+.bfx-st3 {.bg(@B3); .bfx-spectrum canvas {filter: hue-rotate(300deg);}} 
+.bfx-st4 {.bg(@B5); .bfx-spectrum canvas {filter: hue-rotate(0deg);}} 
+.bfx-st1 .bfx-rama {.bg(linear-gradient(157deg, hsl(180, 65%, 85%), hsl(140, 65%, 45%)));}
+.bfx-st2 .bfx-rama {.bg(linear-gradient(157deg, hsl(240, 75%, 85%), hsl(200, 75%, 60%)));}
+.bfx-st3 .bfx-rama {.bg(linear-gradient(157deg, hsl(300, 75%, 85%), hsl(260, 75%, 60%)));}
+.bfx-st4 .bfx-rama {.bg(linear-gradient(157deg, hsl(0, 75%, 85%), hsl(320, 75%, 60%)));}
 .mejs__audio, audio {margin: 6px auto;}  
-.fxselector {margin: 4px; padding: 4px;}
-#effect1 {}
-#effect2 {}
 .mejs__video { z-index: 99; margin: auto;}  
 
+@beeyell: hsl(54, 100%, 50%);
+@beename: @W;
+@beeval: @beeyell;
 
-input[type=range] {.wihi(100%, 22px); margin: 0; .bg(@T); outline: 1px solid black;
+.beectrl {.rel(); margin-left: 80px;}
+.beectrl::before, .beectrl::after {.font(13px, 400); .textShade(currentColor); .txtcut();}
+.beectrl::before {.absRT(100%, 2px); margin-right: 6px; color: @beename; .textShade(@W5);
+  content: attr(name) ':'; max-width: 80px; }
+.beectrl::after {.absLT(100%, 3px); margin-left: 6px; color: @beeval; content: attr(val);}
+
+.selektor {padding: 0 0 4px 0;
+  select {.bg(@W5);}
+}
+.selektor.sel-selfx { margin-left: 0; 
+  &::before { content: none;}
+  option {.bg(#444);}
+  select {.rel(); .textShade(@B);width: 100%; text-align: right;
+    .bg(linear-gradient(45deg, @W25, @W75));
+    color: @W; //filter: invert(1);
+    border: none;.boraTB(6px, 0);
+    backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);}
+}
+
+.ranger {margin-right: 38px;}  
+.ranger::after { max-width: 38px;}
+
+input[type=range] {.wihi(100%, 21px); margin: 0; .bg(@T); //outline: 1px solid @B1;
   appearance: none;
-  &::-webkit-slider-thumb {.wihi(10px, 20px); .bora(5px); .hand();
-    box-shadow: 1px 1px 2px 0px @B;
-    background: hsl(54, 100%, 50%);
-    border: 1px solid #334EFF;
+  &::-webkit-slider-thumb {.wihi(10px, 20px); .bora(5px); .hand(); margin-top: -9px;
+    background: @beeyell; box-shadow: 1px 1px 2px 0px @B; border: 1px solid @B;
     appearance: none;
-    margin-top: -8px;
   }
   &::-webkit-slider-runnable-track {.wihi(100%, 4px); .hand(); .bora(2px);
-    box-shadow: 1px 1px 1px #000000;
-    background: @B;
+    box-shadow: 1px 1px 1px @B5; background: @B5;
     border: 1px solid @B5;
   }
   &:focus { outline: none;}

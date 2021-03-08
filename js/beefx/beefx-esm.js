@@ -8,28 +8,83 @@ import {Corelib} from '../improxy-esm.js'
 
 //8#a48 Patashnik Tuna Experiment
 
-const {Ø, undef, getRnd, nop, s_a} = Corelib
+const {Ø, undef, isFun, getRnd, nop, s_a} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 
 const toExp = val => Math.pow(Math.E, val)
 const fromExp = val => Math.log(val)
 
+const biquadOptions = [
+  ['lowpass', 'lowpass [no gain]'],
+  ['highpass', 'highpass [no gain]'],
+  ['bandpass', 'bandpass [no gain]'],
+  ['lowshelf', 'lowshelf, [no Q]'],
+  ['highshelf', 'highshelf [no Q]'],
+  ['allpass', 'allpass [no gain]'],
+  ['notch', 'notch [no gain]'],
+  ['peaking', 'peaking']
+]
+
+const shortenProps = {
+  followerFilterType: 'followerFilter',
+  followerFrequency: 'followerFreq'
+}
+
+const fxNames = [ //+ ennek ursen kene kezdenie! es register addol
+/*
+  ['fx_blank', 'Blank'],
+  ['fx_gain', 'Gain'],
+  ['fx_ratio', 'Ratio'], //+ez nem valaszthato
+  ['fx_delay', 'Delay'],
+  ['fx_biquad', 'Biquad Filter'],
+  ['fx_pitchShifter', 'Pitch Shifter'],
+  ['fx_noiseConvolver', 'Noise Convolver'],
+  
+  ['fx_dev', 'Distortion'],
+  ['fx_dev', 'Reverb'],
+  ['fx_dev', 'Telephone'],
+  ['fx_dev', 'Gain LFO'],
+  ['fx_dev', 'Chorus'],
+  ['fx_dev', 'Flange'],
+  ['fx_dev', 'Ring mod'],
+  ['fx_dev', 'Stereo Chorus'],
+  ['fx_dev', 'Stereo Flange'],
+  ['fx_dev', 'Mod Delay'],
+  ['fx_dev', 'Ping-pong delay'],
+  ['fx_dev', 'LFO Filter'],
+  ['fx_dev', 'Envelope Follower (testing only)'],
+  ['fx_dev', 'Autowah'],
+  ['fx_dev', 'Noise Gate'],
+  ['fx_dev', 'Wah Bass'],
+  ['fx_dev', 'Distorted Wah Chorus'],
+  ['fx_dev', 'Vibrato'],
+  ['fx_dev', 'BitCrusher'],
+  ['fx_dev', 'Apollo Quindar Tones']
+  */
+]
+
 const createBeeFX = waCtx => {
   const fxHash = {}
   const beeFx = {
-    fxHash
+    fxHash,
+    namesDb: {
+      biquadOptions,
+      fxNames
+    }
   }
     
   const pepper = 'zholger'
+  let uid = 1
 
-  const newFxBase = host => {
+  const newFxBase = type => {
     const fx = {
-      [pepper]: true,
+      [pepper]: uid++ + '.' + type,
       input: waCtx.createGain(),
       start: waCtx.createGain(),
       output: waCtx.createGain(),
       isRelaxed: false,
       bypass: false,
+      listenersByKey: {},
       exo: {}, //fxHash[type]
       ext: {}, //instance's filters are here
       live: {} //actual param values, accessed only from the base
@@ -53,13 +108,41 @@ const createBeeFX = waCtx => {
     fx.setAt = (node, key, value, par) =>
       fx.ext[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
     
+    fx.onValueChange = (key, callback) => {
+      fx.listenersByKey[key] || (fx.listenersByKey[key] = [])
+      fx.listenersByKey[key].push(callback)
+    }
+    const callListenerArray = (cbarr, key, value) => {
+      if (cbarr) {
+        for (const callback of cbarr) {
+          wassert(isFun(callback))
+          callback(key, value)
+        }
+      }
+    }
+    fx.valueChanged = (key, value) => {
+      fx.live[key] = value
+      callListenerArray(fx.listenersByKey[key])
+      callListenerArray(fx.listenersByKey.all)
+    }
     fx.setValue = (key, value) => {
+      console.log('fx.setvalue', {key, value, type: typeof value})
       const fun = fx.exo.setValue(fx, key, value)
       if (fun) {
+        fx.valueChanged(key, value)
         fun()
-        fx.live[key] = value
       } else {
         console.warn(`${fx.exo.name}: bad pars`, {key, value})
+      }
+    }
+    fx.setValueAlt = (key, value) => {
+      console.log('fx.setaltvalue', {key, value})
+      const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
+      if (fun) {
+        fx.valueChanged(key, value)
+        fun()
+      } else {
+        console.warn(`setValueAlt: ${fx.exo.name}: bad pars`, {key, value})
       }
     }
     
@@ -88,6 +171,25 @@ const createBeeFX = waCtx => {
     fx.getName = _ => fx.exo.name
     fx.getShortName = _ => fx.exo.name.substr(3)
     
+    fx.initPars = pars => {
+      const {exo} = fx
+      const {initial = {}, options = {}} = pars
+      fx.live = {}
+      for (const key in exo.def) {
+        const {defVal = 0} = exo.def[key]
+        initial[key] = merge(defVal, initial[key])
+        //fx.setValue(key, merge(defVal, initial[key]))
+        //fx.live[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
+      }
+      pars.initial = initial
+    }
+    
+    fx.setWithPars = pars => {
+      for (const key in pars) {
+        fx.setValue(key, pars[key])
+      }
+    }
+    
     return fx
   }
   
@@ -104,29 +206,17 @@ const createBeeFX = waCtx => {
   }
   //mergetest()
   
-  const initPars = (fx, pars) => {
-    const {exo} = fx
-    const {initial = {}, options = {}} = pars
-    fx.live = {}
-    for (const key in exo.def) {
-      const {defVal = 0} = exo.def[key]
-      initial[key] = merge(defVal, initial[key])
-      //fx.setValue(key, merge(defVal, initial[key]))
-      //fx.live[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
-    }
-    pars.initial = initial
-  }
-
   beeFx.newFx = (type, pars = {}) => {
     if (!fxHash[type]) {
       console.warn(`newFx: no fx with name [${type}]`)
       debugger
       return null
     }
-    const fx = newFxBase()
+    const fx = newFxBase(type)
     fx.exo = fxHash[type] //: exo = {..., def, construct, ...}
-    initPars(fx, pars)        //: changes or creates pars.initial
+    fx.initPars(pars)        //: changes or creates pars.initial
     fx.exo.construct(fx, pars) //: not using return value
+    fx.setWithPars(pars.initial)
     fx.input.connect(fx.start)
     
     //+randomize! reset!
@@ -141,12 +231,14 @@ const createBeeFX = waCtx => {
       return
     }
     fxHash[fxName] = fxObj
+    fxNames.push([fxName, fxName[3].toUpperCase() + fxName.substr(4)])
     fxObj.def = fxObj.def || {}
     fxObj.name = fxName
     for (const key in fxObj.def) {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
       par.name = par.name || key
+      par.short = shortenProps[par.name] || par.name
       if (par.subType === 'exp') {
         par.isExp = true
         par.linMin = fromExp(par.min)

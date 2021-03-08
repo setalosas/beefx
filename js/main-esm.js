@@ -46,7 +46,7 @@ void (async _ => {
         click: _ => loadAudio('//ork.tork.work/beefx/au/telstar.mp3')}),
       div$({class: 'mm-item', text: 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)', 
         click: _ => loadAudio('//ork.tork.work/beefx/au/chachacha.mp3')}),
-      div$({class: 'mm-item', text: 'Future Sound Of London - Essential Mix (youtube)', 
+      div$({class: 'mm-item yt', text: 'Future Sound Of London - Essential Mix (youtube)', 
         click: _ => loadVideo('//youtube.com/watch?v=_8SBdkru4IY')}),
       leaf$('input', {attr: {type: 'file', accept: 'audio/*'}, on: {
         change: event => {

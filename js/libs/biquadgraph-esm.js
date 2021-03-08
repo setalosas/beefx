@@ -3,7 +3,7 @@
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, no-unused-vars, object-curly-newline */
 
-import {Corelib, DOMplusUltra} from './improxy-esm.js'
+import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
 const {Ø} = Corelib
 const {wassert, weject} = Corelib.Debug
