@@ -37,15 +37,17 @@ void (async _ => {
   if (config.platform === 'standalone') {
     root.mmenu$ = div$(root.ui.top$, {class: 'mediamenu'}, [
       div$({class: 'mm-item', text: 'Cascandy - Take Me Baby Reeemix SNOE (audio)', 
-        click: _ => loadAudio('//ork.tork.work/beefx/au/cascandy.mp3')}),
+        click: _ => loadAudio('/au/cascandy.mp3')}),
       div$({class: 'mm-item', text: 'Astrud Gilberto - Agua de Beber (audio)', 
-        click: _ => loadAudio('//ork.tork.work/beefx/au/astrud.mp3')}),
+        click: _ => loadAudio('/au/astrud.mp3')}),
       div$({class: 'mm-item', text: 'Devendra Barnhardt - Angelica (audio)', 
-        click: _ => loadAudio('//ork.tork.work/beefx/au/devendra.mp3')}),
+        click: _ => loadAudio('/au/devendra.mp3')}),
       div$({class: 'mm-item', text: 'Tornadoes - Telstar (audio)', 
-        click: _ => loadAudio('//ork.tork.work/beefx/au/telstar.mp3')}),
+        click: _ => loadAudio('/au/telstar.mp3')}),
       div$({class: 'mm-item', text: 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)', 
-        click: _ => loadAudio('//ork.tork.work/beefx/au/chachacha.mp3')}),
+        click: _ => loadAudio('/au/chachacha.mp3')}),
+      div$({class: 'mm-item', text: 'Iggy Pop - Do Not Go Gentle Into That Good Night (audio)', 
+        click: _ => loadAudio('/au/iggy.mp3')}),
       div$({class: 'mm-item yt', text: 'Future Sound Of London - Essential Mix (youtube)', 
         click: _ => loadVideo('//youtube.com/watch?v=_8SBdkru4IY')}),
       leaf$('input', {attr: {type: 'file', accept: 'audio/*'}, on: {

@@ -20,8 +20,6 @@
    function-parentheses-newline-inside, function-comma-newline-after,
    font-family-no-missing-generic-family-keyword
 */
-/* lesshint-disable newlineAfterBlock, singleLinePerProperty, importPath, propertyOrdering,
-   qualifyingElement, attributeQuotes, trailingWhitespace, zeroUnit, decimalZero, maxCharPerLine */
 /* @nicedarkblue: #008ab8; */
 .hand {
   cursor: pointer;
@@ -95,7 +93,7 @@ body::after {
   top: 0;
   width: 96%;
   height: auto;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.25);
   margin: 1%;
   padding: 1%;
   text-align: center;
@@ -136,35 +134,17 @@ body::after {
   top: 0;
   font: 400 11px roboto condensed;
   display: table;
-}
-.bfx-spectrum {
-  position: absolute;
-  left: 6px;
-  bottom: 2px;
-  border-radius: 6px;
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.5));
-}
-.bfx-spectrum canvas {
-  position: relative;
-  left: 0;
-  top: 0;
-  width: 240px;
-  height: 120px;
-  border-radius: 6px;
-  background: #000000;
+  margin: auto;
 }
 .bfx-stage {
   position: relative;
   left: 0;
   top: 0;
-  display: inline-block;
   display: table-cell;
   margin: 2px;
-  padding: 0 1px;
+  padding: 0 1px 176px;
   vertical-align: top;
   border-radius: 10px;
-  padding-bottom: 136px;
 }
 .bfx-rama {
   position: relative;
@@ -176,14 +156,11 @@ body::after {
   font-size: 14px;
   font-weight: 400;
   border-radius: 8px;
+  min-width: 248px;
 }
 .bfx-rama .fxr-parval {
   display: inline-block;
   padding: 0px;
-}
-.bfx-rama .fxr-optselector {
-  display: inline-block;
-  margin-left: 6px;
 }
 .bfx-rama .biquad-canvas {
   position: relative;
@@ -193,34 +170,86 @@ body::after {
   height: 120px;
   background: #000000;
   border-radius: 6px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+}
+.bfx-rama[fxname="Blank"] {
+  padding-bottom: 0;
+}
+.bfx-rama[fxname="Ratio"] .led-fx {
+  top: 4px;
+}
+.bfx-rama .led-fx {
+  position: absolute;
+  left: -1px;
+  top: 1px;
+  border-radius: 50%;
+  --ledhue: 120;
+  cursor: pointer;
+}
+.bfx-rama .led-fx::before {
+  box-shadow: 0 0 4px 1px #000000;
+}
+.bfx-rama.off {
+  filter: saturate(0.2);
+}
+.bfx-rama.off .led-fx {
+  --ledhue: 200;
+}
+.st-bottomframe {
+  position: absolute;
+  left: 0;
+  bottom: 3px;
+}
+.st-bottomframe .st-endratio {
+  position: relative;
+  left: 0;
+  top: 0;
+  padding-top: 5px;
+  box-shadow: inset 0 0 10px 1px black;
+}
+.st-bottomframe .st-spectrum {
+  position: relative;
+  left: 0;
+  top: 0;
+  border-radius: 6px;
+  padding: 2px 2px 0;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.5));
+}
+.st-bottomframe .st-spectrum canvas {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 250px;
+  height: 120px;
+  border-radius: 6px;
+  background: #000000;
 }
 .bfx-st1 {
   background: rgba(0, 0, 0, 0.2);
 }
-.bfx-st1 .bfx-spectrum canvas {
-  filter: hue-rotate(180deg);
+.bfx-st1 .st-spectrum canvas {
+  filter: hue-rotate(160deg);
 }
 .bfx-st2 {
   background: rgba(0, 0, 0, 0.4);
 }
-.bfx-st2 .bfx-spectrum canvas {
-  filter: hue-rotate(240deg);
+.bfx-st2 .st-spectrum canvas {
+  filter: hue-rotate(220deg);
 }
 .bfx-st3 {
   background: rgba(0, 0, 0, 0.3);
 }
-.bfx-st3 .bfx-spectrum canvas {
-  filter: hue-rotate(300deg);
+.bfx-st3 .st-spectrum canvas {
+  filter: hue-rotate(280deg);
 }
 .bfx-st4 {
   background: rgba(0, 0, 0, 0.5);
 }
-.bfx-st4 .bfx-spectrum canvas {
-  filter: hue-rotate(0deg);
+.bfx-st4 .st-spectrum canvas {
+  filter: hue-rotate(-20deg);
 }
 .bfx-st1 .bfx-rama {
-  background: linear-gradient(157deg, #c0f2f2, #28bd5a);
+  background: linear-gradient(157deg, #c2f0d9, #45b82e);
 }
 .bfx-st2 .bfx-rama {
   background: linear-gradient(157deg, #bcbcf5, #4cb2e6);
@@ -229,7 +258,7 @@ body::after {
   background: linear-gradient(157deg, #f5bcf5, #804ce6);
 }
 .bfx-st4 .bfx-rama {
-  background: linear-gradient(157deg, #f5bcbc, #e64cb2);
+  background: linear-gradient(157deg, #f4bebe, #e052b1);
 }
 .mejs__audio,
 audio {
@@ -277,7 +306,8 @@ audio {
   background: rgba(255, 255, 255, 0.5);
 }
 .selektor.sel-selfx {
-  margin-left: 0;
+  margin-left: 16px;
+  margin-right: 3px;
 }
 .selektor.sel-selfx::before {
   content: none;
@@ -293,7 +323,7 @@ audio {
   background: linear-gradient(45deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.75));
   color: #ffffff;
   border: none;
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px 6px 4px 5px;
   backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);
 }
 .ranger {
@@ -334,4 +364,31 @@ input[type=range]:focus {
 }
 input[type=range]:focus::-webkit-slider-runnable-track {
   background: #a95c0f;
+}
+.beetrigger {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 9;
+  padding: 2px 6px;
+  border-radius: 0 8px 0 0;
+  cursor: pointer;
+  color: yellow;
+  background-color: rgba(0, 0, 0, 0.5);
+  font: 400 11px roboto condensed;
+  font-size: 14px;
+  font-weight: 400;
+}
+.beebody.u2 {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(2px);
+  border-radius: 8px 8px 0 0;
+  bottom: 0;
+  top: unset;
+  width: auto;
+  height: auto;
+  z-index: 999;
+}
+.beebody.u2 .bfx-top {
+  display: none;
 }

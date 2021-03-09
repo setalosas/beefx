@@ -96,7 +96,7 @@ export const createBiquadGrapher = waCtx => {// in ou
     if (hasGrid) {
       canvasBeginDraw(gridColor, 2)//5#669 ----- draw octave grid -----
     
-      const txty = 34 // + 20 * (octave & 1)
+      const txty = 34
       
       for (let octave = 0; octave <= nOctaves; octave++) {// Draw frequency scale
         const xx = octave * width / nOctaves
@@ -108,7 +108,7 @@ export const createBiquadGrapher = waCtx => {// in ou
 
         const valueHerz = round(nyquist * pow(2.0, octave - nOctaves))
         const [value, unit] = valueHerz > 1000
-          ? [round(valueHerz / 100) / 10, 'k']//was kHz
+          ? [round(valueHerz / 100) / 10, 'k']//was kHz but it won't fit on small rect
           : [valueHerz, '']//was Hz
           
         canvasContext.textAlign = 'left'
@@ -116,15 +116,8 @@ export const createBiquadGrapher = waCtx => {// in ou
         canvasContext.save()
         canvasContext.translate(x, txty)
         canvasContext.rotate(-Math.PI / 4)
-        //canvasContext.fillText("Your Label Here", 0, 0);
         hasText && canvasContext.strokeText(value + unit, 0, 0)
         canvasContext.restore()
-        console.log({txt: value + unit, x: round(x), txty})
-        
-        //canvasContext.strokeStyle = 'red'
-        //hasText && canvasContext.strokeText(value + unit, x, txty)
-        //canvasContext.strokeStyle = textColor
-        //canvasContext.rotate(0 * Math.PI / 180)
       }
       
       // Draw 0dB line.

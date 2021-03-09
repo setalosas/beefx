@@ -5,10 +5,9 @@
 
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {Ø, undef, getRnd, isArr, nop, s_a} = Corelib
-const {wassert, weject, brexru} = Corelib.Debug
-const {post, schedule, adelay, pNow} = Corelib.Tardis
-const {_$, $, fix$, haltEvent, set$, div$} = DOMplusUltra
+const {Ø, undef} = Corelib
+const {wassert, weject} = Corelib.Debug
+const {set$} = DOMplusUltra
 const {max} = Math
 const {requestAnimationFrame} = window
 
@@ -54,7 +53,7 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix)
   const WIDTH = 128
   const HEIGHT = 128 // was 256x 256
   const SMOOTHING = 0
-  const FFT_SIZE = 64 // 64 //28 // 2048
+  const FFT_SIZE = 128 // 64 // 128 // 2048
   
   const vis = {
     analyser: analyserNode,

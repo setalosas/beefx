@@ -20,8 +20,6 @@
    function-parentheses-newline-inside, function-comma-newline-after,
    font-family-no-missing-generic-family-keyword
 */    
-/* lesshint-disable newlineAfterBlock, singleLinePerProperty, importPath, propertyOrdering,
-   qualifyingElement, attributeQuotes, trailingWhitespace, zeroUnit, decimalZero, maxCharPerLine */
 
 @charset: "UTF-8";
 
@@ -33,55 +31,59 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 .clicker {.fixLT(0, 0); .wihi(100%, 100%); z-index: 9; .bg(fade(#B00, 50%));
   backdrop-filter: blur(3px);
   &::before {.absLB(0px, 50px); width: 100%; .roco(); .font(24px, 700); .ita(); color: #cc0; 
-    text-align: center; content: 'Click any key to start Web Audio API!';}
+    .txtCent(); content: 'Click any key to start Web Audio API!';}
 }
 .beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666); }
 
-.bfx-top {.relLT(0, 0); .wihi(96%, auto); .bg(@W5); margin: 1%; padding: 1%; 
-  .mediamenu {.relLT(0,0); text-align: center; .roco(); .font(14px, 400); 
+.bfx-top {.relLT(0, 0); .wihi(96%, auto); .bg(@W25); margin: 1%; padding: 1%; 
+  .mediamenu {.relLT(0,0); .txtCent(); .roco(); .font(14px, 400); 
     input, div {.relLT(0, 0); .blk(); padding: 4px; margin: 4px auto; .bg(@W75);}
     .mm-item {width: fit-content; .bg(@W5); .hand();}
     .yt {.bg(fade(#f00, 30%));}
   }
   &.video-source {height: 360px;}
-  text-align: center;
+  .txtCent();
 }
-.bfx-mid {.relLT(0, 0); .roco(); display: table; }
-//.bfx-bottom {.relLT(0, 0); .wihi(100%, auto); .bg(@W25);
-  .bfx-spectrum {.absLB(6px, 2px); .bora(6px); padding: 2px;
-    .bg(linear-gradient(135deg, @W5, @B5));
-    canvas {.relLT(0,0); .wihi(240px, 120px); .bora(6px); .bg(@B);}
-  }
-//}
-.bfx-stage {.relLT(0, 0); .inBlk();display: table-cell;  margin: 2px; padding: 0 1px; vertical-align: top; .bora(10px); padding-bottom: 136px;}
-@biqx: 240px;
-@biqy: 120px;
+.bfx-mid {.relLT(0, 0); .roco(); display: table; margin: auto;}
+.bfx-stage {.relLT(0, 0); display: table-cell; margin: 2px; padding: 0 1px 176px;
+  vertical-align: top; .bora(10px);}
+  @biqx: 240px;
+  @biqy: 120px;
 .bfx-rama {.relLT(0, 0); margin: 3px 1px; padding: 2px; color: @W; .font(14px, 400);
-  .bora(8px);
-  .fxr-title {}
-  .fxr-par {}
-  //.fxr-parkey {.rel(); .inBlk(); width: 70px; text-align: right; font-size: 13px;}
+  .bora(8px); min-width: 248px;
   .fxr-parval {.inBlk(); padding: 0px;}
-  .fxr-selector {}
-  .fxr-optselector {.inBlk(); margin-left: 6px;}
-  .fxr-pars {}
   .biquad-canvas {.relLT(4px, 4px); .wihi(@biqx, @biqy); .bg(@B); .bora(6px);
-    margin-bottom: 2px;;}
+    margin-bottom: 4px;}
+  .fxr-pars {}
+  &[fxname="Blank"] {padding-bottom: 0;}
+  &[fxname="Ratio"] .led-fx {top: 4px;}
+  .led-fx {.absLT(-1px, 1px); .bora(50%); --ledhue: 120; .hand();
+    &::before {box-shadow: 0 0 4px 1px @B;}
+  }
+  &.off {filter: saturate(.2); .led-fx {--ledhue: 200;}}
 }
-.bfx-st1 {.bg(@B2); .bfx-spectrum canvas {filter: hue-rotate(180deg);}}
-.bfx-st2 {.bg(@B4); .bfx-spectrum canvas {filter: hue-rotate(240deg);}} 
-.bfx-st3 {.bg(@B3); .bfx-spectrum canvas {filter: hue-rotate(300deg);}} 
-.bfx-st4 {.bg(@B5); .bfx-spectrum canvas {filter: hue-rotate(0deg);}} 
-.bfx-st1 .bfx-rama {.bg(linear-gradient(157deg, hsl(180, 65%, 85%), hsl(140, 65%, 45%)));}
+.st-bottomframe {.absLB(0, 3px); 
+  .st-endratio {.relLT(0, 0); padding-top: 5px; box-shadow: inset 0 0 10px 1px black;}
+  .st-spectrum {.relLT(0, 0); .bora(6px); padding: 2px 2px 0;
+    .bg(linear-gradient(150deg, @W5, @B5));
+    canvas {.relLT(0,0); .wihi(250px, 120px); .bora(6px); .bg(@B);}
+  }
+}
+.bfx-st1 {.bg(@B2); .st-spectrum canvas {filter: hue-rotate(160deg);}}
+.bfx-st2 {.bg(@B4); .st-spectrum canvas {filter: hue-rotate(220deg);}} 
+.bfx-st3 {.bg(@B3); .st-spectrum canvas {filter: hue-rotate(280deg);}} 
+.bfx-st4 {.bg(@B5); .st-spectrum canvas {filter: hue-rotate(-20deg);}} 
+.bfx-st1 .bfx-rama {.bg(linear-gradient(157deg, hsl(150, 60%, 85%), hsl(110, 60%, 45%)));}
 .bfx-st2 .bfx-rama {.bg(linear-gradient(157deg, hsl(240, 75%, 85%), hsl(200, 75%, 60%)));}
 .bfx-st3 .bfx-rama {.bg(linear-gradient(157deg, hsl(300, 75%, 85%), hsl(260, 75%, 60%)));}
-.bfx-st4 .bfx-rama {.bg(linear-gradient(157deg, hsl(0, 75%, 85%), hsl(320, 75%, 60%)));}
+.bfx-st4 .bfx-rama {.bg(linear-gradient(157deg, hsl(0, 70%, 85%), hsl(320, 70%, 60%)));}
 .mejs__audio, audio {margin: 6px auto;}  
 .mejs__video { z-index: 99; margin: auto;}  
 
 @beeyell: hsl(54, 100%, 50%);
 @beename: @W;
 @beeval: @beeyell;
+@beebrown: hsl(30, 84%, 36%);
 
 .beectrl {.rel(); margin-left: 80px;}
 .beectrl::before, .beectrl::after {.font(13px, 400); .textShade(currentColor); .txtcut();}
@@ -92,13 +94,13 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 .selektor {padding: 0 0 4px 0;
   select {.bg(@W5);}
 }
-.selektor.sel-selfx { margin-left: 0; 
+.selektor.sel-selfx { margin-left: 16px; margin-right: 3px; 
   &::before { content: none;}
   option {.bg(#444);}
   select {.rel(); .textShade(@B);width: 100%; text-align: right;
     .bg(linear-gradient(45deg, @W25, @W75));
     color: @W; //filter: invert(1);
-    border: none;.boraTB(6px, 0);
+    border: none; border-radius: 6px 6px 4px 5px;
     backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);}
 }
 
@@ -116,5 +118,15 @@ input[type=range] {.wihi(100%, 21px); margin: 0; .bg(@T); //outline: 1px solid @
     border: 1px solid @B5;
   }
   &:focus { outline: none;}
-  &:focus::-webkit-slider-runnable-track { background: hsl(30, 84%, 36%); }
+  &:focus::-webkit-slider-runnable-track { background: @beebrown; }
+}
+
+//8#b35youtube extension overrides
+
+.beetrigger {.fixLB(0,0); z-index: 9; padding: 2px 6px; border-radius: 0 8px 0 0;
+  .hand(); .cb(yellow, @B5); .roco(); .font(14px, 400);}
+
+.beebody.u2 {.bg(@B25); backdrop-filter: blur(2px); .boraTB(8px, 0); 
+  bottom: 0; top: unset; .wihi(auto, auto); z-index: 999;
+  .bfx-top {.hide();}
 }

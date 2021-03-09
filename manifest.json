@@ -9,11 +9,11 @@
   },
   "background": {
     "persistent": true,
-    "page": "bfx-bg.html" 
+    "page": "extension/bfx-bg.html" 
   },
   "browser_action": {
     "default_icon": "icons/icon48.png",
-    "default_popup": "bfx-popup.html"
+    "default_popup": "extension/bfx-popup.html"
   },
   "content_scripts": [ {
     "css": [ 
@@ -55,7 +55,6 @@
     "cookies"
   ],
    "web_accessible_resources": [ 
-     "js/tux-maintest-es.js",
-     "js/bfxt-main-esm.js"
+     "js/youtube/bfxt-main-esm.js"
    ]
 }

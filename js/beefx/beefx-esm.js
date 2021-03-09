@@ -6,9 +6,7 @@
 
 import {Corelib} from '../improxy-esm.js'
 
-//8#a48 Patashnik Tuna Experiment
-
-const {Ø, undef, isFun, getRnd, nop, s_a} = Corelib
+const {Ø, undef, isFun, isArr, getRnd, nop, s_a} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 
 const toExp = val => Math.pow(Math.E, val)
@@ -27,7 +25,11 @@ const biquadOptions = [
 
 const shortenProps = {
   followerFilterType: 'followerFilter',
-  followerFrequency: 'followerFreq'
+  followerFrequency: 'followerFreq',
+  baseModulationFrequency: 'baseModFreq',
+  feedbackRight: 'fbackRight',
+  baseFrequency: 'baseFreq',
+  excursionOctave: 'excursionOct.'
 }
 
 const fxNames = [ //+ ennek ursen kene kezdenie! es register addol
@@ -99,6 +101,23 @@ const createBeeFX = waCtx => {
     }
     
     fx.activate = (on = true) => {
+      if (fx.isActive !== on) {
+        fx.isActive = on
+        
+        if (fx.exo.activate) {
+          fx.exo.activate(fx, on)
+        } else {
+          fx.input.disconnect()
+          if (on) {
+            fx.input.connect(fx.start)
+          } else {
+            fx.input.connect(fx.output)
+          }
+          // activate: input -> start (same as tuna - start = activateNode)
+          // deactivate: input -> output (same as tuna)
+        }
+        fx.exo.onActivated && fx.exo.onActivated(fx, on)
+      }
     }
     fx.deactivate = _ => fx.activate(false)
     
@@ -129,8 +148,8 @@ const createBeeFX = waCtx => {
       console.log('fx.setvalue', {key, value, type: typeof value})
       const fun = fx.exo.setValue(fx, key, value)
       if (fun) {
-        fx.valueChanged(key, value)
         fun()
+        fx.valueChanged(key, value)
       } else {
         console.warn(`${fx.exo.name}: bad pars`, {key, value})
       }
@@ -139,8 +158,8 @@ const createBeeFX = waCtx => {
       console.log('fx.setaltvalue', {key, value})
       const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
       if (fun) {
-        fx.valueChanged(key, value)
         fun()
+        fx.valueChanged(key, value)
       } else {
         console.warn(`setValueAlt: ${fx.exo.name}: bad pars`, {key, value})
       }
@@ -178,8 +197,7 @@ const createBeeFX = waCtx => {
       for (const key in exo.def) {
         const {defVal = 0} = exo.def[key]
         initial[key] = merge(defVal, initial[key])
-        //fx.setValue(key, merge(defVal, initial[key]))
-        //fx.live[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
+        //initial[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
       }
       pars.initial = initial
     }
@@ -191,6 +209,14 @@ const createBeeFX = waCtx => {
     }
     
     return fx
+  }
+  
+  beeFx.connectArr = (...arr) => {
+    const arrarr = arr.map(item => isArr(item) ? item : [item])
+    
+    for (let ix = 0; ix < arrarr.length - 1; ix++) {
+      arrarr[ix][0].connect(...arrarr[ix + 1])
+    }
   }
   
   const merge = (f, a = f) => a
@@ -217,7 +243,7 @@ const createBeeFX = waCtx => {
     fx.initPars(pars)        //: changes or creates pars.initial
     fx.exo.construct(fx, pars) //: not using return value
     fx.setWithPars(pars.initial)
-    fx.input.connect(fx.start)
+    fx.activate()
     
     //+randomize! reset!
     
@@ -230,10 +256,9 @@ const createBeeFX = waCtx => {
       debugger
       return
     }
-    fxHash[fxName] = fxObj
-    fxNames.push([fxName, fxName[3].toUpperCase() + fxName.substr(4)])
+
     fxObj.def = fxObj.def || {}
-    fxObj.name = fxName
+    fxObj.name = fxObj.name || fxName[3].toUpperCase() + fxName.substr(4)
     for (const key in fxObj.def) {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
@@ -246,6 +271,10 @@ const createBeeFX = waCtx => {
         par.linDefVal = fromExp(par.defVal)
       }
     }
+    fxHash[fxName] = fxObj
+    fxNames.push([fxName, fxObj.name])
+    fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1)
+    //fxNames.sort()
   }
   
   void (_ => { //: init only Once In A Lifetime
@@ -267,7 +296,7 @@ const createBeeFX = waCtx => {
     function shimDisconnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
-      console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
+      //console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
       wauDisconnect.apply(this, arguments)
     }
   })()

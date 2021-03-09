@@ -26,13 +26,16 @@ const createPlayground = root => {
     beeFxAA
   }
   
+  const getEndRatios = exc => beeFxAA.map(({stage}) => stage.stEndRatio)
+    .filter(fx => fx !== exc/* && fx.isActivated*/)
+  
   const decompose = _ => {
     input.disconnect()
     for (const {fxArr, stage} of beeFxAA) {
       for (const fx of fxArr) {
         fx.disconnect()
       }
-      stage.stEnd.disconnect()
+      stage.stEndRatio.disconnect()
     }
   }
   const connectArray = (array, dest) => {
@@ -66,10 +69,14 @@ const createPlayground = root => {
     for (const {fxArr, stage} of beeFxAA) {
       if (fxArr[0]) {
         if (dis.graphMode === 'parallel') { //: parallel can handle empty stages
-          input.connect(fxArr[0])
-          connectArray(fxArr, stage.stEnd)
-          stage.stEnd.connect(stage.stAnalyzer)
-          stage.stEnd.connect(output)
+          if (stage.stEndRatio.isActive) {
+            input.connect(fxArr[0])
+            connectArray(fxArr, stage.stEndRatio)
+            stage.stEndRatio.connect(stage.stAnalyzer)
+            stage.stEndRatio.connect(output)
+          } else {
+            //input.connect(output)
+          }
         } else {                             //:sequential is a bit more tricky
           //+ TODO
           ;(unconnected || input).connect(fxArr[0])
@@ -100,20 +107,32 @@ const createPlayground = root => {
   }
   
   dis.addStage = _ => {
+    decompose()
     const nuIx = beeFxAA.length
     const uiStage = ui.addStage(nuIx)
     const stAnalyzer = waCtx.createAnalyser()
     const vis = createSpectrumVisualizer(stAnalyzer, uiStage.spectcanv$, uiStage.levelMeter$, nuIx)
+    const stEndRatio = newFx('fx_ratio')
     
     stages[nuIx] = {
       uiStage,
-      stEnd: waCtx.createGain(),
+      stEndRatio,
       stAnalyzer,
       vis
     }
     beeFxAA.push({fxArr: [], stage: stages[nuIx]})
     
+    stEndRatio.chain(...getEndRatios(stEndRatio))
+    ui.rebuildStageEndPanel(nuIx, stEndRatio, dis)
+    compose()
     return nuIx
+  }
+  
+  dis.activateStage = (st, on) => {
+    const focusedRatio = beeFxAA[st].stage.stEndRatio
+    decompose()
+    focusedRatio.activate(on)
+    compose()
   }
   
   const init = _ => {
@@ -155,35 +174,54 @@ export const runPlayground = root => {
   const playground = createPlayground(root)
   // valasztani h random preset vagy clean
   const setupPresetA = [
-    s_a('ratio,blank') ,
-    s_a('ratio,blank,biquad'),
-    s_a('ratio,delay,blank,biquad'),
-    s_a('ratio,biquad,biquad')
+    s_a('gain,blank') ,
+    s_a('gain,blank,biquad'),
+    s_a('gain,delay,blank,biquad'),
+    s_a('gain,biquad,biquad')
+  ]
+  const setupPreset4x4 = [
+    s_a('gain,blank,blank,blank') ,
+    s_a('gain,blank,blank,blank'),
+    s_a('gain,blank,blank,blank'),
+    s_a('gain,blank,blank,blank')
   ]
   const setupPresetZero = [
-    s_a('ratio,blank') ,
-    s_a('ratio,blank'),
-    s_a('ratio,blank'),
-    s_a('ratio,blank')
+    s_a('blank') ,
+    s_a('blank'),
+    s_a('blank'),
+    s_a('blank')
+  ]
+  const setupPresetDebug = [
+    s_a('') ,
+    s_a(''),
+    s_a(''),
+    s_a('wahWahEF')
+  ]
+  const setupPresetBigBlank = [
+    s_a('gain,biquad,blank,blank,blank,blank') ,
+    s_a('gain,biquad,blank,blank,blank,blank'),
+    s_a('gain,biquad,blank,blank,blank,blank'),
+    s_a('gain,biquad,blank,blank,blank,blank')
+  ]
+  const setupPresetFull = [
+    s_a('gain,biquad,vibrato,blank,blank') ,
+    s_a('gain,biquad,pitchShifter,blank,blank'),
+    s_a('gain,biquad,biquad,blank,blank'),
+    s_a('gain,biquad,moog2,blank,blank')
   ]
   const setupYoutube = [
-    s_a('ratio,blank,blank,blank') ,
-    s_a('ratio,blank,blank,blank'),
-    s_a('ratio,blank,blank,blank'),
-    s_a('ratio,blank,blank,blank')
+    s_a('gain,biquad,blank,blank,blank') ,
+    s_a('gain,biquad,blank,blank,blank'),
+    s_a('gain,biquad,blank,blank,blank'),
+    s_a('gain,biquad,blank,blank,blank')
   ]
-  const setup = root.onYoutube ? setupYoutube : setupPresetZero
+  const setup = root.onYoutube ? setupYoutube : setupPresetBigBlank
   playground.setGraphMode('parallel')
+  
   for (const arr of setup) {
     const st = playground.addStage()
     for (const fx of arr) {
       playground.addFx(st, 'fx_' + fx)
     }
   }
-  const ratioA = playground.getFx(0, 0)
-  const ratioB = playground.getFx(1, 0)
-  const ratioC = playground.getFx(2, 0)
-  const ratioD = playground.getFx(3, 0)
-  ratioA.chain(ratioB, ratioC, ratioD)
-  //playground.changeFx(2, 1, 'fx_biquad')
 }

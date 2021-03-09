@@ -8,6 +8,7 @@ import {Corelib, DOMplusUltra, createBiquadGrapher} from './improxy-esm.js'
 
 const {isNum, isFun, clamp} = Corelib
 const {wassert} = Corelib.Debug
+const {post, startEndThrottle} = Corelib.Tardis
 const {div$, leaf$, set$, canvas$} = DOMplusUltra
   
 export const createUI = (config, root) => {
@@ -24,33 +25,30 @@ export const createUI = (config, root) => {
   const stageArr = []
   const ui = {stageArr}
   
-  const createStageObj = stage => {
-    const stageObj = {
-      frame$: div$({class: 'bfx-stage bfx-st' + (stage + 1)}),
-      spectrama$: div$({class: 'bfx-spectrum bfx-sp' + (stage + 1)}),
-      spectcanv$: canvas$({class: 'sp-canvas'}),
-      fxarr: []
-    }
-    stageArr.push(stageObj)
-    return stageObj
-  }
-  
-  if (config.platform === 'standalone') {  
+  const init = _ => {  
     ui.frame$ = div$(body, {class: 'beebody' + (root.onYoutube ? ' u2' : '')}, [
       ui.top$ = div$({class: 'bfx-top'}),
+      ui.mainmenu$ = div$({class: 'bfx-menu'}),
       ui.mid$ = div$({class: 'bfx-mid'}),
-      ui.bottom$ = div$({class: 'bfx-bottom'})
+      ui.bottom$ = div$({class: 'bfx-bottom'})//+no bottom
     ])
-  } else { //: ext
   }
   
   ui.addStage = stage => {
-    const stageObj = createStageObj(stage)
-    set$(ui.mid$, {}, stageObj.frame$)
-      setTimeout(_ => {
-        set$(stageObj.frame$, {}, stageObj.spectrama$)
-          set$(stageObj.spectrama$, {}, stageObj.spectcanv$)
-            }, 2000)
+    const stageObj = {
+      fxarr: []
+    }
+    set$(ui.mid$, {}, 
+      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stage + 1)}, [
+        stageObj.ramas$ = div$({class: 'bfx-ramas'}),
+        stageObj.bottomFrame$ = div$({class: 'st-bottomframe'}, [
+          stageObj.endRatio$ = div$({class: 'bfx-rama st-endratio'}),
+          stageObj.spectrama$ = div$({class: 'st-spectrum'},
+            stageObj.spectcanv$ = canvas$())
+        ])   
+      ]))
+
+    stageArr.push(stageObj)
     return stageObj
   }
   
@@ -68,7 +66,6 @@ export const createUI = (config, root) => {
     
     set$(ui.top$, {}, 
       ui.player$ = leaf$('video', {
-        //id: 'player',
         attr: {width: '640', height: '360', preload: 'auto', controls: '', playsinline: ''}
       }, leaf$('source', {attr: {src, type: 'video/youtube'}})))  
       
@@ -77,23 +74,49 @@ export const createUI = (config, root) => {
 
   ui.konfigNames = namesDb => ui.namesDb = namesDb  
   
+  ui.populateMainMenu = (pg, conf) => {
+    const mItems = []
+    mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Sample', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Random', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Bypass beeFX', click: pg.equalRatios}))
+    set$(ui.mainMenu$, {}, mItems) 
+  }
+  
   const checkInput = (stage, ix) => {
-    const stageObj = stageArr[stage] //+ nem kene ez a -1
-    return {stageObj, fxitem: stageObj.fxarr[ix] || (stageObj.fxarr[ix] = {
-      fxrama$: div$(stageObj.frame$, {class: 'bfx-rama'})
+    const stageObj = stageArr[stage]
+    return {stageObj, fxitem: ix === -1 ? {} : stageObj.fxarr[ix] || (stageObj.fxarr[ix] = {
+      fxrama$: div$(stageObj.ramas$, {class: 'bfx-rama'})
     })}
   }
+  
+  ui.rebuildStageEndPanel = (stage, ratioFx, pg) => {
+    ui.rebuildFxPanel(stage, -1, ratioFx, pg)
+  }
 
-  ui.rebuildFxPanel = (stage, ix, fx, host) => {
+  ui.rebuildFxPanel = (stage, ix, fx, pg) => {
+    const isEndRatio = ix === -1
     const {stageObj, fxitem} = checkInput(stage, ix)
-    const {fxrama$} = fxitem // = stageObj.fxarr[ix]
+    const fxrama$ = isEndRatio ? stageObj.endRatio$ : fxitem.fxrama$  // = stageObj.fxarr[ix]
     const fxname = fx.getName()
     fxitem.fx = fx
 
     const pars = {}
     const panel = {
       frame$: div$({class: 'fxr-pars'}),
-      scene: null
+      scene: null,
+      isActive: true
+    }
+    
+    const toggleActiveState = _ => {
+      panel.isActive = !panel.isActive
+      fxname === 'Ratio' 
+        ? pg.activateStage(stage, panel.isActive)
+        : fx.activate(panel.isActive)
+      set$(fxrama$, panel.isActive ? {declass: 'off'} : {class: 'off'})
     }
         
     const addRange = (name, callback, value, min, max, step = .001) => 
@@ -105,7 +128,7 @@ export const createUI = (config, root) => {
       div$({class: 'beectrl selektor sel-' + name, attr: {name}}, 
         leaf$('select', {id: 'opt_', on: {change: event => callback(event.target.value)}},
           list.map(([value, name]) => 
-            leaf$('option', {text: name, attr: {value, ...(value === act ? {selected: ''} : {})}}))))
+            leaf$('option', {text: name, attr: {value, ...(name === act ? {selected: ''} : {})}}))))
             
     const num2str = (num, maxwi = 4) => {
       /*if (type === int) {
@@ -144,6 +167,9 @@ export const createUI = (config, root) => {
     
     for (const key in exo.def) {
       const {defVal, type, name, short, subType} = exo.def[key]
+      if (type === 'skipui') {
+        continue
+      }
       const parO = pars[key] = {
         type, subType,
         isExp: false
@@ -151,7 +177,7 @@ export const createUI = (config, root) => {
       if (type === 'float') {//8#97e -------- float -> input range --------
         const dispName = short + (subType === 'decibel' ? ' (dB)' : '')
         const {val, min, max} = fx.getLinearValues(key)
-        parO.control$ = addRange(dispName, onValChanged(key), val, min, max)
+        parO.control$ = addRange(dispName, startEndThrottle(onValChanged(key), 30), val, min, max)
         parO.input$ = parO.control$.children[0] //+brrrrr
       } else {
         console.log({type, subType})
@@ -173,15 +199,21 @@ export const createUI = (config, root) => {
       }
       biquadGraph.render(panel.scene)
     }
-    
+    /* isEndRatio
+      ? set$(fxrama$, {html: ''}, panel.frame$)
+      : set$(fxrama$, {attr: {fxname}, html: ''}, [
+          addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),
+          panel.frame$
+        ]) */
     set$(fxrama$, {attr: {fxname}, html: ''}, [
-      addListSelector('selfx', fxname, ui.namesDb.fxNames, nufx => host.changeFx(stage, ix, nufx)),
-      //div$({class: 'fxr-title'}),
-      panel.frame$
-    ])
-
+        !isEndRatio && addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),
+        panel.frame$,
+        div$({class: 'led-fx fix-on', click: toggleActiveState})
+      ])
     return panel
   }
+  
+  init()
   
   return ui
 }
