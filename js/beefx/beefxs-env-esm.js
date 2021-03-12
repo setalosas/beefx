@@ -24,7 +24,8 @@ WaapiWrap.onRun(waCtx => {
         masterFx: {defVal: {}},
         target: {defVal: {}, type: 'skipui'},
         callback: {defVal: nop, type: 'skipui'}
-      }
+      },
+      uiDisabled: true
     }
     
     envelopeFollowerFx.setValue = ({ext}, key, value) => ({
@@ -54,14 +55,14 @@ WaapiWrap.onRun(waCtx => {
       ext.jsNode = fx.output = waCtx.createScriptProcessor(ext.buffersize, 1, 1)
       fx.input.connect(fx.output)
 
-      ext.getCallbackPass = callback => _ => {
+      /* ext.getCallbackPass = callback => _ => {
         wassert(ext.masterState.thisIsState)
         if (ext.masterState.on) {
           ext._phase += ext._phaseInc
           ext._phase %= PI2
           callback(ext._target, ext._offset + ext._oscillation * Math.sin(ext._phase))
         }
-      }
+      } */
       
       ext.compute = event => {
         const count = event.inputBuffer.getChannelData(0).length
@@ -112,7 +113,7 @@ WaapiWrap.onRun(waCtx => {
         automode: {defVal: true, type: 'boolean'},
         baseFrequency: {defVal: .5, min: 0, max: 1},
         excursionOctaves: {defVal: 2, min: 1, max: 6},
-        sweep: {defVal: .2, min: 0, max: 1},
+        sweep: {defVal: .2, min: 0, max: 10},
         resonance: {defVal: 10, min: 1, max: 100},
         sensitivity: {defVal: .5, min: -1, max: 1}
       },
@@ -174,10 +175,10 @@ WaapiWrap.onRun(waCtx => {
         try {
           freq = Math.min(22050, ext._baseFreq + ext._excursionFreq * ext._sweep)
           weject(Number.isNaN(freq))
-          //const peaking = ext._baseFreq + ext._excursionFreq * ext._sweep
           ext.filterBp.frequency.value = freq
           ext.filterPeaking.frequency.value = freq
-        } catch (e) {
+        } catch (err) {
+          console.err('setfiltfreq', err)
           clearTimeout(ext.filterFreqTimeout)
           //put on the next cycle to let all init properties be set
           ext.filterFreqTimeout = setTimeout(ext.setFilterFeq, 0)
@@ -188,9 +189,7 @@ WaapiWrap.onRun(waCtx => {
       ext.envelopeFollower = newFx('fx_envelopeFollower', {initial: {
         masterFx: fx,
         target: ext,
-        callback: (value) => {
-          fx.setValue('sweep', value)
-        }
+        callback: (value) => fx.setValueIf('sweep', value)
       }})
       
       ext.filterBp = waCtx.createBiquadFilter()

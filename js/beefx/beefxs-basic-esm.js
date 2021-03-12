@@ -109,6 +109,7 @@ WaapiWrap.onRun(waCtx => {
         fx.exo.onActivated(fx)
       }
     }
+    //+ vagy legyen mind a harom fv fx. vagy vagy mindharom ratioFx. (onact mindig ratiofx, de lehet visszahivni egysorossal)
     ratioFx.onActivated = fx => { //:activation changed (or chain was called), recalc!
       dumpChain(fx, 'ratio onactivated start')
       const {ext} = fx
@@ -118,13 +119,6 @@ WaapiWrap.onRun(waCtx => {
         chainedFx.ext.capture({activeChainArr, activeChainLen})
       }
       fx.exo.distributeGain(fx, fx.isActive ? fx.live.gain : 0)
-      
-      /*
-      const activeArr = fullArr.filter(fx => fx.isActive)
-      const aggregated = getAggregatedGain(activeArr)
-      const othersAggregated = aggregated - fx.live.gain 
-      const ratio = SUM_GAIN / aggregated
-      */
       dumpChain(fx, 'ratio onactivated end')
     }
     ratioFx.distributeGain = (fixedFx, fixedGain = fixedFx.live.gain) => {
@@ -161,12 +155,22 @@ WaapiWrap.onRun(waCtx => {
       }
     }[key])
     registerFxType('fx_ratio', ratioFx)
+    
+    const biquadOptions = [
+      ['lowpass', 'lowpass [no gain]'],
+      ['highpass', 'highpass [no gain]'],
+      ['bandpass', 'bandpass [no gain]'],
+      ['lowshelf', 'lowshelf, [no Q]'],
+      ['highshelf', 'highshelf [no Q]'],
+      ['allpass', 'allpass [no gain]'],
+      ['notch', 'notch [no gain]'],
+      ['peaking', 'peaking']
+    ]
 
     const biquadFx = { //8#48d ------- biquadFilter (WA) -------
       def: {
-        filterType: {defVal: 'peaking', type: 'string', subType: 'biquad'},
+        filterType: {defVal: 'peaking', type: 'strings', subType: biquadOptions},
         frequency: {defVal: 800, min: 50, max: 22050, subType: 'exp'},
-        //detune: {defVal: 100, min: 1, max: 10000, subType: 'exp'},
         detune: {defVal: 0, min: -2400, max: 2400},
         gain: {defVal: 0, min: -40, max: 40, subType: 'decibel'},
         Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'}

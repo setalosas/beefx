@@ -33,7 +33,7 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
   &::before {.absLB(0px, 50px); width: 100%; .roco(); .font(24px, 700); .ita(); color: #cc0; 
     .txtCent(); content: 'Click any key to start Web Audio API!';}
 }
-.beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666); }
+.beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666);  z-index: 9999;}
 
 .bfx-top {.relLT(0, 0); .wihi(96%, auto); .bg(@W25); margin: 1%; padding: 1%; 
   .mediamenu {.relLT(0,0); .txtCent(); .roco(); .font(14px, 400); 
@@ -44,7 +44,15 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
   &.video-source {height: 360px;}
   .txtCent();
 }
-.bfx-mid {.relLT(0, 0); .roco(); display: table; margin: auto;}
+.bfx-bigmid {.relLT(0,0);  .roco(); margin: auto; width: fit-content;}
+.bfx-menu {.relLT(0, 0); .bg(@B5); padding: 4px; .bora(10px);// margin: auto;
+  box-shadow: inset 0 0 6px 2px @B75;
+  .mitem {.relLT(0, 0); .inBlk(); padding: 2px; margin: 2px; .bora(4px); .hand();
+    .cb(@B75, @W9);}
+    .mframe {.relLT(0, 0); .inBlk(); padding: 2px; margin: 2px; .cb(@W9, @B5); .bora(4px);}  
+    .off.off {.hide();}
+}
+.bfx-mid {.relLT(0, 0); display: table; margin: auto; margin-top: 2px;}
 .bfx-stage {.relLT(0, 0); display: table-cell; margin: 2px; padding: 0 1px 176px;
   vertical-align: top; .bora(10px);}
   @biqx: 240px;
@@ -54,7 +62,8 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
   .fxr-parval {.inBlk(); padding: 0px;}
   .biquad-canvas {.relLT(4px, 4px); .wihi(@biqx, @biqy); .bg(@B); .bora(6px);
     margin-bottom: 4px;}
-  .fxr-pars {}
+  .bfx-delete {.absRT(4px, 2px); .wihi(14px); .hand();  .font(12px, 400);
+    &::before {content: '❌'; filter: saturate(.5);}}
   &[fxname="Blank"] {padding-bottom: 0;}
   &[fxname="Ratio"] .led-fx {top: 4px;}
   .led-fx {.absLT(-1px, 1px); .bora(50%); --ledhue: 120; .hand();
@@ -94,7 +103,7 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 .selektor {padding: 0 0 4px 0;
   select {.bg(@W5);}
 }
-.selektor.sel-selfx { margin-left: 16px; margin-right: 3px; 
+.selektor.sel-selfx { margin-left: 16px; margin-right: 18px; 
   &::before { content: none;}
   option {.bg(#444);}
   select {.rel(); .textShade(@B);width: 100%; text-align: right;
@@ -103,6 +112,11 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
     border: none; border-radius: 6px 6px 4px 5px;
     backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);}
 }
+.selektor:not(.sel-selfx) {
+  select {max-width: 132px; font-size: 12px;}
+  option {font-size: 12px;}
+}
+[fxname="Blank"] .selektor {margin-right: 3px;}
 
 .ranger {margin-right: 38px;}  
 .ranger::after { max-width: 38px;}
@@ -121,12 +135,60 @@ input[type=range] {.wihi(100%, 21px); margin: 0; .bg(@T); //outline: 1px solid @
   &:focus::-webkit-slider-runnable-track { background: @beebrown; }
 }
 
+.checker input[type=checkbox] { appearance: none; 
+  .relLT(0, 0); .bora(50%); box-shadow: 0 0 3px 1px @B5; .wihi(12px); 
+  background: @W25;
+  &[checked] {.bg(@beeyell);}
+  //&::before {.relLT(0, 0); .wihi(12px); content: '';}
+  //&checked::before {content: 'o';}
+}
+
 //8#b35youtube extension overrides
 
-.beetrigger {.fixLB(0,0); z-index: 9; padding: 2px 6px; border-radius: 0 8px 0 0;
+.beetrigger {.fixLB(0,0); z-index: 9999; padding: 2px 6px; border-radius: 0 8px 0 0;
   .hand(); .cb(yellow, @B5); .roco(); .font(14px, 400);}
 
 .beebody.u2 {.bg(@B25); backdrop-filter: blur(2px); .boraTB(8px, 0); 
-  bottom: 0; top: unset; .wihi(auto, auto); z-index: 999;
+  bottom: 0; top: unset; .wihi(auto, auto); z-index: 9999;
   .bfx-top {.hide();}
 }
+
+//vendegsegben:
+// 
+// .led-fx {width: 16px; height: 16px;
+//   --ledlite: ~"hsl(var(--ledhue, 120), 80%, 50%)";
+//   --ledmid: ~"hsl(var(--ledhue, 120), 80%, 40%)";
+//   --leddark: ~"hsl(var(--ledhue, 120), 80%, 30%)";
+// }
+// .led-fx.bright {
+//   --ledlite: ~"hsl(var(--ledhue, 120), 80%, 70%)";
+//   --ledmid: ~"hsl(var(--ledhue, 120), 80%, 50%)";
+//   --leddark: ~"hsl(var(--ledhue, 120), 80%, 30%)";
+// }
+// .led-fx::before,
+// .led-fx::after {position: absolute; left: 4px; top: 4px; width: 9px; height: 9px;
+//   border-radius: 50%; }
+// .led-fx::before {content: ""; border: 1px solid #333; background: #181818;}
+// 
+// .led-fx::after {content: ""; 
+//   background: radial-gradient(var(--ledlite) 40%, var(--leddark) 70%);
+//   animation: light var(--pulseperiod, 1s) infinite alternate
+//     cubic-bezier(0.785, 0.135, 0.15, 0.86);
+//   border: none;//1px solid transparent;
+//   margin: 1px;
+//   padding: 0px;
+//   box-shadow: 0 0 4px 1px var(--ledmid), inset 0 0 2px 1px var(--ledmid);
+// }
+// .led-fx.animated {will-change: opacity;}
+// .led-fx.no-dark::before {opacity: 0}
+// .led-fx.dim {filter: brightness(.5);}
+// .led-fx.half-dark::before {opacity: 0.7}
+// .led-fx.fix-on:after {animation: none; will-change: auto;}
+// .led-fx.fix-off:after {animation: none; will-change: auto; opacity: 0;}
+// .led-fx.alt-pulse:after {animation-timing-function: cubic-bezier(1, 0.2, 0.5, 0.8);}
+// .led-fx.wide-pulse:after { animation-timing-function: cubic-bezier(.28,.22,0,1.11);}
+// .led-fx.flicker:after { animation-name: light-flicker; }
+// .led-fx.narrow-pulse:after { animation-timing-function: cubic-bezier(1,0,.87,1.17);}
+// 
+// @keyframes light {from {opacity: 0;} to {opacity: 1;}}
+// @keyframes light-flicker {from {opacity: 0.5;} to {opacity: 1;}}

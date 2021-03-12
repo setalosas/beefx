@@ -28,8 +28,10 @@ export const createUI = (config, root) => {
   const init = _ => {  
     ui.frame$ = div$(body, {class: 'beebody' + (root.onYoutube ? ' u2' : '')}, [
       ui.top$ = div$({class: 'bfx-top'}),
-      ui.mainmenu$ = div$({class: 'bfx-menu'}),
-      ui.mid$ = div$({class: 'bfx-mid'}),
+      ui.bigmid$ = div$({class: 'bfx-bigmid'}, [
+        ui.mainmenu$ = div$({class: 'bfx-menu'}),
+        ui.mid$ = div$({class: 'bfx-mid'})
+      ]),
       ui.bottom$ = div$({class: 'bfx-bottom'})//+no bottom
     ])
   }
@@ -74,7 +76,7 @@ export const createUI = (config, root) => {
 
   ui.konfigNames = namesDb => ui.namesDb = namesDb  
   
-  ui.populateMainMenu = (pg, conf) => {
+  ui.populateMainMenu = (pg, conf = {}) => {
     const mItems = []
     mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
@@ -83,7 +85,17 @@ export const createUI = (config, root) => {
     mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Bypass beeFX', click: pg.equalRatios}))
-    set$(ui.mainMenu$, {}, mItems) 
+    mItems.push(div$({class: 'mitem', text: 'Fast BeePM', click: _ => pg.recalcBpm()}))
+    mItems.push(div$({class: 'mitem', text: 'Slow BPM', click: _ => pg.recalcBpm(25)}))
+    mItems.push(ui.bpm$ = div$({class: 'mframe'}))
+    mItems.push(ui.bpmpp$ = div$({class: 'mitem off', text: 'BPM PingPongs!', click: pg.bpmDelays}))
+
+    set$(ui.mainmenu$, {}, mItems) 
+  }
+  ui.set = (key, params) => {
+    const node$ = ui[key + '$']
+    wassert(node$ && node$.nodeType)
+    set$(node$, params)
   }
   
   const checkInput = (stage, ix) => {
@@ -118,12 +130,17 @@ export const createUI = (config, root) => {
         : fx.activate(panel.isActive)
       set$(fxrama$, panel.isActive ? {declass: 'off'} : {class: 'off'})
     }
-        
-    const addRange = (name, callback, value, min, max, step = .001) => 
-      div$({class: 'beectrl ranger', attr: {name}}, 
-        leaf$('input', {attr: {type: 'range', min, max, step, value}, on: {
+
+    const addRange = (parO, name, callback, value, min, max, step = .001) => 
+      parO.control$ = div$({class: 'beectrl ranger', attr: {name}}, 
+        parO.input$ = leaf$('input', {attr: {type: 'range', min, max, step, value}, on: {
           input: event => callback(parseFloat(event.target.value))}}))
-    
+        
+    const addCheckbox = (name, callback) => 
+      div$({class: 'beectrl checker', attr: {name}}, 
+        leaf$('input', {attr: {type: 'checkbox'}, on: {
+          change: event => callback(event.target.value)}}))
+          
     const addListSelector = (name, act, list, callback) =>
       div$({class: 'beectrl selektor sel-' + name, attr: {name}}, 
         leaf$('select', {id: 'opt_', on: {change: event => callback(event.target.value)}},
@@ -155,14 +172,23 @@ export const createUI = (config, root) => {
         }
         //console.log('refreshDispVal', {key, dispVal, type: typeof dispVal})
         set$(pars[key].control$, {attr: {val: num2str(dispVal)}})
+      } else if (parO.type === 'boolean') {
+        const val = fx.getValue(key)
+        const checked = ''
+        set$(parO.input$, val ? {attr: {checked}} : {deattr: {checked}})//:no val at creating
       }
       panel.scene && biquadGraph.render(panel.scene)
     }        
     const onValChanged = key => val => {
-      //console.log('onValChanged', {key, val, type: typeof val})
-      fx.setLinearValue(key, val)
-      //refreshDispVal(key)
-    }        
+      const parO = pars[key]
+      if (parO.type === 'boolean') {
+        fx.setValue(key, val === 'on')
+      } else {
+        //console.log('onValChanged', {key, val, type: typeof val})
+        fx.setLinearValue(key, val)
+        //refreshDispVal(key)
+      }        
+    }
     const {exo} = fx
     
     for (const key in exo.def) {
@@ -171,19 +197,21 @@ export const createUI = (config, root) => {
         continue
       }
       const parO = pars[key] = {
-        type, subType,
-        isExp: false
+        type, subType
       }
       if (type === 'float') {//8#97e -------- float -> input range --------
         const dispName = short + (subType === 'decibel' ? ' (dB)' : '')
         const {val, min, max} = fx.getLinearValues(key)
-        parO.control$ = addRange(dispName, startEndThrottle(onValChanged(key), 30), val, min, max)
+        addRange(parO, dispName, startEndThrottle(onValChanged(key), 30), val, min, max)
+        //parO.input$ = parO.control$.children[0] //+brrrrr
+      } else if (type === 'boolean') {//8#9c7 -------- boolean -> input checkbox --------
+        parO.control$ = addCheckbox(short, onValChanged(key))
         parO.input$ = parO.control$.children[0] //+brrrrr
       } else {
-        console.log({type, subType})
-        if (type === 'string' && subType === 'biquad') {//8#ea7 --- biquad string -> select box ---
-          const val = fx.getValue(key)
-          parO.control$ = addListSelector(short, val, ui.namesDb.biquadOptions, onValChanged(key))
+        if (type === 'strings') {//8#ea7 --- biquad string -> select box ---
+          parO.control$ = addListSelector(short, '', subType, onValChanged(key))
+        } else {
+          console.log({type, subType})
         }
       }
       div$(panel.frame$, {class: 'fxr-par'}, div$({class: 'fxr-parval'}, parO.control$))
@@ -199,16 +227,12 @@ export const createUI = (config, root) => {
       }
       biquadGraph.render(panel.scene)
     }
-    /* isEndRatio
-      ? set$(fxrama$, {html: ''}, panel.frame$)
-      : set$(fxrama$, {attr: {fxname}, html: ''}, [
-          addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),
-          panel.frame$
-        ]) */
+    const isRemoveable = fxname !== 'Blank' && !isEndRatio 
     set$(fxrama$, {attr: {fxname}, html: ''}, [
         !isEndRatio && addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),
         panel.frame$,
-        div$({class: 'led-fx fix-on', click: toggleActiveState})
+        div$({class: 'led-fx fix-on', click: toggleActiveState}),
+        isRemoveable && div$({class: 'bfx-delete', click: _ => pg.changeFx(stage, ix, 'fx_blank')})
       ])
     return panel
   }

@@ -6,11 +6,11 @@
    
 import {Corelib, DOMplusUltra, WaapiWrap, Playground, createUI} from '../improxy-esm.js'
 
-const {$, div$, leaf$, set$} = DOMplusUltra            //: from jQuery
+const {onReadyState: onDomReady, div$, leaf$, set$} = DOMplusUltra 
 const {runPlayground} = Playground
 const {MediaElementPlayer} = window //: from MediaElementJs
 
-const onDomReady = new Promise(resolve => $(resolve))
+//const onDomReady = new Promise(resolve => $(resolve))
 
 const onWaapiReady = new Promise(resolve => WaapiWrap.onRun(resolve))
 
@@ -34,10 +34,13 @@ void (async _ => {
     onYoutube: true
   }
   
+  window.addEventListener('transitionend', _ => _) //+ csekk!
+  
   const tick = _ => {
-    if ($('video')[0]) {
+    const video = document.getElementsByTagName('video')[0]
+    if (video) {
       div$(document.body, {class: 'beetrigger', text: 'BeeeFX!', click: _ => {
-        root.mediaElement = $('video')[0]
+        root.mediaElement = video
         root.ui = createUI(config, root)
         runPlayground(root)
       }})

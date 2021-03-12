@@ -4,10 +4,11 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, BeeFX, createSpectrumVisualizer} from './improxy-esm.js'
+import {Corelib, DOMplusUltra, BeeFX, createSpectrumVisualizer, createBPMAuditor} from './improxy-esm.js'
 
 const {s_a} = Corelib
 const {wassert} = Corelib.Debug
+const {schedule, adelay} = Corelib.Tardis
 //const {$} = DOMplusUltra            //: from jQuery
 
 const createPlayground = root => {
@@ -23,11 +24,12 @@ const createPlayground = root => {
   
   const dis = {
     graphMode: 'parallel', //sequential or parallel (default)
-    beeFxAA
+    beeFxAA,
+    bpmauditor: createBPMAuditor(waCtx),
+    bpm: 0
   }
   
-  const getEndRatios = exc => beeFxAA.map(({stage}) => stage.stEndRatio)
-    .filter(fx => fx !== exc/* && fx.isActivated*/)
+  const getEndRatios = exc => beeFxAA.map(({stage}) => stage.stEndRatio).filter(fx => fx !== exc)
   
   const decompose = _ => {
     input.disconnect()
@@ -122,7 +124,7 @@ const createPlayground = root => {
     }
     beeFxAA.push({fxArr: [], stage: stages[nuIx]})
     
-    stEndRatio.chain(...getEndRatios(stEndRatio))
+    stEndRatio.chain(...getEndRatios())
     ui.rebuildStageEndPanel(nuIx, stEndRatio, dis)
     compose()
     return nuIx
@@ -135,12 +137,43 @@ const createPlayground = root => {
     compose()
   }
   
+  dis.equalRatios = _ => {
+    void beeFxAA[0]?.stage.stEndRatio.chain(...getEndRatios())
+  }
+  
   const init = _ => {
     dis.changeSource(mediaElement)
     input.disconnect()
     input.connect(output)
     output.connect(waCtx.destination)
     //set$(document.body, {on: {mousemove: e => output.gain.value = e.pageY / window.innerHeight}})
+  }
+  
+  dis.recalcBpm = async (calcSec = 15) => {
+    dis.bpmauditor.start(dis.source)
+    for (let elapsed = 0; elapsed < calcSec; elapsed++) { 
+      ui.set('bpm', {text: `Listening for BPM (${calcSec - elapsed}s)...`})
+      await adelay(1000)
+    }
+    const {bpm, candidates, error} = await dis.bpmauditor.stop()
+    if  (bpm > 55 && bpm < 200) {
+      dis.bpm = bpm
+      ui.set('bpmpp', {declass: 'off'})
+    } else {
+      ui.set('bpmpp', {class: 'off'})
+    }
+    ui.set('bpm', {text: `BPM:` + bpm})
+  }
+  
+  dis.bpmDelays = _ => {
+    for (const {fxArr, stage} of beeFxAA) {
+      for (const fx of fxArr) {
+        if (fx.getName().includes('Pong')) {
+          fx.setValue('delayLeft', 240000 / dis.bpm)
+          fx.setValue('delayRight', 120000 / dis.bpm)
+        }
+      }
+    }
   }
   
   dis.setGraphMode = val => {
@@ -215,7 +248,7 @@ export const runPlayground = root => {
     s_a('gain,biquad,blank,blank,blank'),
     s_a('gain,biquad,blank,blank,blank')
   ]
-  const setup = root.onYoutube ? setupYoutube : setupPresetBigBlank
+  const setup = root.onYoutube ? setupYoutube : setupPresetZero
   playground.setGraphMode('parallel')
   
   for (const arr of setup) {
@@ -224,4 +257,5 @@ export const runPlayground = root => {
       playground.addFx(st, 'fx_' + fx)
     }
   }
+  ui.populateMainMenu(playground)
 }

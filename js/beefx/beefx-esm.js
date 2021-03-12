@@ -11,7 +11,7 @@ const {wassert, weject, brexru} = Corelib.Debug
 
 const toExp = val => Math.pow(Math.E, val)
 const fromExp = val => Math.log(val)
-
+/*
 const biquadOptions = [
   ['lowpass', 'lowpass [no gain]'],
   ['highpass', 'highpass [no gain]'],
@@ -21,7 +21,7 @@ const biquadOptions = [
   ['allpass', 'allpass [no gain]'],
   ['notch', 'notch [no gain]'],
   ['peaking', 'peaking']
-]
+]*/
 
 const shortenProps = {
   followerFilterType: 'followerFilter',
@@ -29,7 +29,7 @@ const shortenProps = {
   baseModulationFrequency: 'baseModFreq',
   feedbackRight: 'fbackRight',
   baseFrequency: 'baseFreq',
-  excursionOctave: 'excursionOct.'
+  excursionOctaves: 'excursionOct'
 }
 
 const fxNames = [ //+ ennek ursen kene kezdenie! es register addol
@@ -70,9 +70,10 @@ const createBeeFX = waCtx => {
   const beeFx = {
     fxHash,
     namesDb: {
-      biquadOptions,
       fxNames
-    }
+    },
+    logConnects: true,
+    logDisconnects: true
   }
     
   const pepper = 'zholger'
@@ -145,7 +146,7 @@ const createBeeFX = waCtx => {
       callListenerArray(fx.listenersByKey.all)
     }
     fx.setValue = (key, value) => {
-      console.log('fx.setvalue', {key, value, type: typeof value})
+      console.log(`fx.setvalue ${fx.exo.fxName}.${key}`, {value, type: typeof value})
       const fun = fx.exo.setValue(fx, key, value)
       if (fun) {
         fun()
@@ -154,6 +155,8 @@ const createBeeFX = waCtx => {
         console.warn(`${fx.exo.name}: bad pars`, {key, value})
       }
     }
+    fx.setValueIf = (key, value) => fx.live[key] !== value && fx.setValue(key, value)
+
     fx.setValueAlt = (key, value) => {
       console.log('fx.setaltvalue', {key, value})
       const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
@@ -256,9 +259,14 @@ const createBeeFX = waCtx => {
       debugger
       return
     }
-
+    fxObj.fxName = fxName
     fxObj.def = fxObj.def || {}
     fxObj.name = fxObj.name || fxName[3].toUpperCase() + fxName.substr(4)
+    if (fxObj.fxNamesDb) {
+      for (const db in fxObj.fxNamesDb) {
+        beeFx.namesDb[db] = fxObj.fxNamesDb[db]
+      }
+    }
     for (const key in fxObj.def) {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
@@ -272,9 +280,11 @@ const createBeeFX = waCtx => {
       }
     }
     fxHash[fxName] = fxObj
-    fxNames.push([fxName, fxObj.name])
-    fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1)
-    //fxNames.sort()
+    if (!fxObj.def.uiDisabled) {
+      fxNames.push([fxName, fxObj.name])
+      fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1)
+      //fxNames.sort()
+    }
   }
   
   void (_ => { //: init only Once In A Lifetime
@@ -288,7 +298,7 @@ const createBeeFX = waCtx => {
     function shimConnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
-      //console.log(`shimConnect`, {dis: this, arg: arguments[0]})
+      beeFx.logConnects && console.log(`shimConnect`, {dis: this, arg: arguments[0]})
       wauConnect.apply(this, arguments)
       return node
     }
@@ -296,7 +306,7 @@ const createBeeFX = waCtx => {
     function shimDisconnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
-      //console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
+      beeFx.logDisconnects && console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
       wauDisconnect.apply(this, arguments)
     }
   })()
@@ -307,3 +317,70 @@ const createBeeFX = waCtx => {
 let beeFx
 
 export const BeeFX = waCtx => beeFx || (beeFx = createBeeFX(waCtx))
+
+/*
+beefx-basic
+  - blank
+  - gain
+  - delay
+  - ratio
+  - biquad (kimehetne egy filtersbe)
+beefxs-delays
+  - sima delay tunabol es ha van, wilsobol
+  - pingPongDelayA /cw
+  - pingPongDelayB /Tuna
+beefxs-noise
+  - noiseConvolver /nh
+  - pinking /nh
+  - bitcrusher /Tuna (script)
+beefxs-reverb
+  - ures, ide jonnek a convoluciok
+beefxs-lfo
+  - LFO /Tuna (script)
+  - tremoloLFO /Tuna
+  - phaserLFO /Tuna
+beefxs-chorus
+  - chorusLFO /Tuna
+  - chorusOsc /cw
+beefxs-osc
+  - pitchShifter /cw
+  - moog2 /cw
+  - vibrato /cw
+  - autoWah /cw
+  - wahBass /cw // nem igazan mukodik
+beefxs-env
+  - enveloperFollower /Tuna (script)
+  - wahWahEF /Tuna
+  - gain
+tunx (mind OK)
+  - FixGain
+  - Blank
+  - PitchShifter
+  - NoiseConvolver
+  - Pinking
+  - Moog2
+  - Vibrato
+  - AutoWah 
+  - PingPongDelayCW 
+  - WahBass
+  - MyPanner
+tuna (missing)
+  - Cabinet
+  - Compressor
+  - Convolver
+  - Delay
+  - MoogFilter  
+  - Overdrive
+cw
+  - Delay
+  - Reverb
+  - Distortion
+  - Telephone
+  - LFO
+  - Chorus (mono & stereo?)
+  - Flanger (mono & stereo?)
+  - RingModulator
+  - DelayChorus?
+  - NoiseGate
+  - Apollo
+*/

@@ -21,10 +21,15 @@ import './beefx/beefxs-lfo-esm.js'
 import './beefx/beefxs-chorus-esm.js'
 import './beefx/beefxs-osc-esm.js'
 import './beefx/beefxs-env-esm.js'
+import { detectBPMa } from './beefx/bpma-esm.js'
+import { detectBPMj } from './beefx/bpmj-esm.js'
+import { createBPMAuditor } from './beefx/beefx-bpm-esm.js'
 import * as Playground from './playground-esm.js'
 import { createUI } from './ui-esm.js'
 
 export {
   Corelib, Logre, createStore, Vomitter, DOMplusUltra, DragWithDOM,
-  WaapiWrap, BeeFX, Playground, createSpectrumVisualizer, createBiquadGrapher, createUI
+  WaapiWrap, BeeFX, Playground,
+  detectBPMa, detectBPMj, createBPMAuditor,
+  createSpectrumVisualizer, createBiquadGrapher, createUI
 }

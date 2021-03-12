@@ -26,7 +26,8 @@ WaapiWrap.onRun(waCtx => {
         masterFx: {defVal: {}},
         target: {defVal: {}, type: 'skipui'},
         callback: {defVal: nop, type: 'skipui'}
-      }
+      },
+      uiDisabled: true
     }
     
     LFOFx.setValue = ({ext}, key, value) => ({
