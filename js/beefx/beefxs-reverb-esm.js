@@ -8,6 +8,7 @@ import {Corelib, BeeFX, WaapiWrap} from '../improxy-esm.js'
 
 const {nop, isArr, getRnd, getRndFloat} = Corelib
 const {wassert} = Corelib.Debug
+const {createPerfTimer, startEndThrottle} = Corelib.Tardis
 const {round} = Math
 const {fetch} = window
 
@@ -57,26 +58,59 @@ WaapiWrap.onRun(waCtx => {
       'Cement Blocks 1',
       'Cement Blocks 2',
       'In The Silo Revised'
-    ].map(a => a.map ? a : [a, a]).sort((a, b) => a[1] > b[1])
+    ].map(a => a.map ? a : [a, a]).sort((a, b) => a[1] > b[1] ? 1 : -1)
     
     const convPrefix = '//beefx.mork.work/pres/impulses/imodeler/' //+kurva youtube
     
     const getFullConvImpulsePath = conv => convPrefix + conv + '.wav'
-    //
+    
+    const loadBuffer = (convolver, value) => fetch(getFullConvImpulsePath(value))
+      .then(response => {
+         if (!response.ok) {
+           throw new Error("HTTP error, status = " + response.status)
+         }
+         return response.arrayBuffer()
+       })
+       .then(buffer => {
+         waCtx.decodeAudioData(buffer, decodedData => {
+           convolver.buffer = decodedData
+         })
+       })
+    
+    const convolverCommonDef = {
+      highCut: {defVal: 22050, min: 20, max: 22050, subType: 'exp'},
+      lowCut: {defVal: 20, min: 20, max: 22050, subType: 'exp'},
+      dryLevel: {defVal: .5, min: 0, max: 1},
+      wetLevel: {defVal: 1, min: 0, max: 1},
+      level: {defVal: 1, min: 0, max: 1}
+    }
+
     const convolverFx = { //8#289 --------- Convolver (Tuna) ----------
       def: {
         buffer: {defVal: convPresets[0][0], type: 'strings', subType: convPresets},
-        highCut: {defVal: 22050, min: 20, max: 22050, subType: 'exp'},
-        lowCut: {defVal: 20, min: 20, max: 22050, subType: 'exp'},
-        dryLevel: {defVal: 1, min: 0, max: 1},
-        wetLevel: {defVal: 1, min: 0, max: 1},
-        level: {defVal: 1, min: 0, max: 1}
+        ...convolverCommonDef
       },
+      name: 'Convolver (from sample)',
       fxNamesDb: {convPresets}
     }
     
-    convolverFx.setValue = (fx, key, value) => ({
+    convolverFx.setValue = (fx, key, value, {ext} = fx) => ({
       buffer: _ => loadBuffer(fx.ext.convolver, value),
+      impDuration: _ => {
+        ext.impDuration = value
+        ext.convolver.buffer = ext.regenerateImpulseBuffer()
+      },
+      impDecay: _ => {
+        ext.impDecay = value
+        ext.impDuration += .0001
+        ext.convolver.buffer = ext.regenerateImpulseBuffer()
+      },
+      impReverse: _ => {
+        ext.impReverse = value
+        const curDur = ext.impDuration //: sometimes it won't work without duration regen :-(
+        setTimeout(_ => fx.setValue('impDuration', curDur - .001), 50)//: so we get around it
+        setTimeout(_ => fx.setValue('impDuration', curDur), 100)
+      },
       highCut: _ => fx.setAt('filterHigh', 'frequency', value),
       lowCut: _ => fx.setAt('filterLow', 'frequency', value),
       dryLevel: _ => fx.setAt('dry', 'gain', value),
@@ -86,6 +120,10 @@ WaapiWrap.onRun(waCtx => {
     
     convolverFx.construct = (fx, {initial}) => {
       const {ext} = fx
+      
+      ext.impDuration = initial.impDuration
+      ext.impDecay = initial.impDecay
+      ext.impReverse = initial.impReverse
       
       ext.convolver = waCtx.createConvolver()
       ext.dry = waCtx.createGain()
@@ -104,42 +142,49 @@ WaapiWrap.onRun(waCtx => {
       ext.wet.connect(fx.output)
       ext.dry.connect(fx.output)
       ext.output = fx.output //: for setValue
+      
+      ext.regenerateImpulseBuffer = startEndThrottle(_ => createImpulseResponse(ext), 400)
     }
     
-    const createImpulseResponse = (duration, decay = 2, reverse = false) => {
-      const sampleRate = waCtx.sampleRate
-      const length = sampleRate * duration
+    const createImpulseResponse = ({convolver, impDuration, impDecay, impReverse}) => {
+      const timer = createPerfTimer()
+      
+      const {sampleRate} = waCtx
+      const length = sampleRate * impDuration
       const impulse = waCtx.createBuffer(2, length, sampleRate)
       const impulseL = impulse.getChannelData(0)
       const impulseR = impulse.getChannelData(1)
 
       for (let i = 0; i < length; i++) {
-        const n = reverse ? length - i : i
-        impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)
-        impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay)
+        const n = impReverse ? length - i : i
+        impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, impDecay)
+        impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, impDecay)
       }
-      return impulse
+      convolver.buffer = impulse
+      
+      console.log(`createImpResponse spent`, timer.sum().summary, {impDuration, impDecay, impReverse})
+      const tab = []
+      for (let i = 0; i < 10; i++) {
+        tab.push({L: impulseL[i * 1000] * 1000, R: impulseR[i * 1000] * 1000})
+      }
+      console.table(tab)
     }
-    
-    const loadBuffer = (convolver, value) => fetch(getFullConvImpulsePath(value))
-      .then(response => {
-         if (!response.ok) {
-           throw new Error("HTTP error, status = " + response.status)
-         }
-         return response.arrayBuffer()
-       })
-       .then(buffer => {
-         waCtx.decodeAudioData(buffer, decodedData => {
-           convolver.buffer = decodedData
-         })
-       })
 
     registerFxType('fx_convolver', convolverFx)
     
-    /*const convolverGenFx = {
-      def: {...convolverFx.def, buffer: undef},
-      buffer: undef
-    */
+    const convolverGenFx = { //8#298 --------- Convolver with generated impulse (Tuna+CW) ----------
+      ...convolverFx,
+      def: {
+        impDuration: {defVal: 2.5, min: .1, max: 6, subType: 'exp'},
+        impDecay: {defVal: 2., min: 1, max: 3},
+        impReverse: {defVal: false, type: 'boolean'},
+        ...convolverCommonDef
+      },
+      name: 'Convolver (generated impulse)'
+    } //:haromszor fogja meghivni a generatort (mindharom ertek setValue-janal)
+    
+    registerFxType('fx_convolverGen', convolverGenFx)
+    
     const reverbFx = { //8#289 --------- Convolver (CW) ----------
       def: {
         buffer: {defVal: 'cardiod-rear-levelled', type: 'strings', subType: convPresets}

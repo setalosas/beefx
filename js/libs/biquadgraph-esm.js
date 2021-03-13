@@ -19,7 +19,7 @@ export const createBiquadGrapher = waCtx => {// in ou
     canvas$.width = width 
     canvas$.height = height
     const curveColor = 'hsl(120, 90%, 50%)' // 'hsl(335, 78%, 49%)'
-    const phaseColor = 'hsl(245, 68%, 69%)'
+    const phaseColor = 'hsl(275, 78%, 72%)'
     const playheadColor = 'hsl(120, 90%, 40%)'
     const gridColor = 'hsla(0, 0%, 66%, .5)'
     const hzTextColor = 'hsla(200, 68%, 82%, .75)'
@@ -36,6 +36,8 @@ export const createBiquadGrapher = waCtx => {// in ou
     const canvasWidth = parseFloat(window.getComputedStyle(canvas$, null).width)
 
     const frequencyHz = new Float32Array(width)
+    //const frequencyHzLog = frequencyHz.map((_, index) => Math.pow(1.4, index))
+
     const magResponse = new Float32Array(width)
     const phaseResponse = new Float32Array(width)
     const nOctaves = 11
@@ -59,7 +61,7 @@ export const createBiquadGrapher = waCtx => {// in ou
     canvasContext.clearRect(0, 0, width, height)
     canvasContext.font = '18px roboto condensed'
     
-    canvasBeginDraw(curveColor, 4) //5#88e ----- draw magResponse curve -----
+    canvasBeginDraw(curveColor, 5) //5#88e ----- draw magResponse curve -----
     
     let [magMax, magMin] = [0, 9E9]
     for (let x = 0; x < width; ++x) {
@@ -78,7 +80,7 @@ export const createBiquadGrapher = waCtx => {// in ou
     const hasText = true
     
     if (hasPhase) {
-      canvasBeginDraw(phaseColor, 3) //5#88e ----- draw phaseResponse curve -----
+      canvasBeginDraw(phaseColor, 4) //5#88e ----- draw phaseResponse curve -----
 
       let [phaseMax, phaseMin] = [0, 9E9]
       for (let x = 0; x < width; ++x) {

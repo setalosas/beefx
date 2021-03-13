@@ -26,7 +26,7 @@
     "exclude_matches": [ "https://*.youtube.com/tv*" ],
     "run_at": "document_start"
   } ],
-  "content_security_policy": "script-src 'self' https://res.mork.work https://beefx.mork.work; object-src 'self'",
+  "content_security_policy": "script-src 'self' https://beefx.mork.work; object-src 'self'",
   "icons": {
     "128": "icons/icon128.png",
     "16": "icons/icon16.png",
@@ -39,7 +39,6 @@
     "tabs",
     "storage",
     "tabs",
-    "https://res.mork.work/",
     "activeTab",
     "unlimitedStorage",
     "idle",

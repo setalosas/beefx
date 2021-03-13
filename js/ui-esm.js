@@ -6,7 +6,7 @@
    
 import {Corelib, DOMplusUltra, createBiquadGrapher} from './improxy-esm.js'
 
-const {isNum, isFun, clamp} = Corelib
+const {Ø, isNum, isFun, clamp} = Corelib
 const {wassert} = Corelib.Debug
 const {post, startEndThrottle} = Corelib.Tardis
 const {div$, leaf$, set$, canvas$} = DOMplusUltra
@@ -82,6 +82,7 @@ export const createUI = (config, root) => {
     mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Sample', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Random', click: pg.equalRatios}))
+    mItems.push(div$({class: 'mitem', text: 'Save to video', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Bypass beeFX', click: pg.equalRatios}))
@@ -122,6 +123,21 @@ export const createUI = (config, root) => {
       scene: null,
       isActive: true
     }
+    const addPanelScene = filterKey => {
+      set$(panel.frame$, {class: 'extgraph'})
+      panel.scene = {
+        canvas$: canvas$(panel.frame$, {class: 'biquad-canvas'}), 
+        width: CANVAS_SIZE, height: CANVAS_SIZE / 2, 
+        filterKey
+      }
+      renderPanelScene()
+    }
+    const renderPanelScene = _ => {
+      if (panel.scene) {
+        panel.scene.filter = fx.ext[panel.scene.filterKey]
+        panel.scene.filter && biquadGraph.render(panel.scene)
+      }
+    }
     
     const toggleActiveState = _ => {
       panel.isActive = !panel.isActive
@@ -139,7 +155,7 @@ export const createUI = (config, root) => {
     const addCheckbox = (name, callback) => 
       div$({class: 'beectrl checker', attr: {name}}, 
         leaf$('input', {attr: {type: 'checkbox'}, on: {
-          change: event => callback(event.target.value)}}))
+          change: event => callback(event.target.checked)}}))
           
     const addListSelector = (name, act, list, callback) =>
       div$({class: 'beectrl selektor sel-' + name, attr: {name}}, 
@@ -153,6 +169,7 @@ export const createUI = (config, root) => {
       }*/
       maxwi = clamp(maxwi, 2, 4) // 2 3 4 maxwi is valis
       const absval = Math.abs(num)
+      wassert(typeof num !== Ø)
       wassert(isFun(num.toFixed))
       const str = absval >= 100 // 309 11000
         ? num.toFixed(0) : absval >= 10 // 99.78 (2)
@@ -176,13 +193,14 @@ export const createUI = (config, root) => {
         const val = fx.getValue(key)
         const checked = ''
         set$(parO.input$, val ? {attr: {checked}} : {deattr: {checked}})//:no val at creating
+        parO.input$.checked = val
       }
-      panel.scene && biquadGraph.render(panel.scene)
+      renderPanelScene()
     }        
     const onValChanged = key => val => {
       const parO = pars[key]
       if (parO.type === 'boolean') {
-        fx.setValue(key, val === 'on')
+        fx.setValue(key, val)
       } else {
         //console.log('onValChanged', {key, val, type: typeof val})
         fx.setLinearValue(key, val)
@@ -218,15 +236,10 @@ export const createUI = (config, root) => {
       refreshDispVal(key) //: initial display
       fx.onValueChange(key, _ => refreshDispVal(key))
     }
-    if (fx.ext.biquad) { //: all fxs that have a biquad
-      set$(panel.frame$, {class: 'extgraph'})
-      panel.scene = {
-        canvas$: canvas$(panel.frame$, {class: 'biquad-canvas'}), 
-        width: CANVAS_SIZE, height: CANVAS_SIZE / 2, 
-        filter: fx.ext.biquad
-      }
-      biquadGraph.render(panel.scene)
-    }
+    exo.freqGraph && addPanelScene(exo.freqGraph)
+    //fx.ext.biquad && addPanelScene('biquad')
+    //fx.ext.IIR && addPanelScene('IIR')
+
     const isRemoveable = fxname !== 'Blank' && !isEndRatio 
     set$(fxrama$, {attr: {fxname}, html: ''}, [
         !isEndRatio && addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),

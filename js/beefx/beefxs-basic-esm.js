@@ -175,7 +175,8 @@ WaapiWrap.onRun(waCtx => {
         gain: {defVal: 0, min: -40, max: 40, subType: 'decibel'},
         Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'}
       },
-      name: 'BiquadFilter'
+      name: 'BiquadFilter',
+      freqGraph: 'biquad'
     }
     
     const detuneFactor = Math.log(2) / 1200

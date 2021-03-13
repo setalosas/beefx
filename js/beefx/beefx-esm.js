@@ -72,8 +72,8 @@ const createBeeFX = waCtx => {
     namesDb: {
       fxNames
     },
-    logConnects: true,
-    logDisconnects: true
+    logConnects: false,
+    logDisconnects: false
   }
     
   const pepper = 'zholger'
