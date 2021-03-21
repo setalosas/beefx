@@ -24,11 +24,26 @@ const config = {
   useAudio: false
 }
 
+const mp3s = [
+  ['/au/cascandy.mp3', 'Cascandy - Take Me Baby Reeemix SNOE (audio)','9PCz1KPAJ0c'],
+  ['/au/astrud.mp3', 'Astrud Gilberto - Agua de Beber (audio)', 'qZx-Z3_n4t8'], 
+  ['/au/jorge.mp3', 'Nightmares on Wax - Jorge (audio)', 'uFpwKExK9Uw'], 
+  ['/au/sensual.mp3', 'The Herbaliser - The Sensual Woman (audio)', 'UPVbcXiK4y8'], 
+  ['/au/djsensei.mp3', 'DJ Sensei - The Sinphony (audio)', '94fQIqRCi4o'], 
+  ['/au/sunny.mp3', 'Montefiori Cocktail - Sunny (audio)', 'pNmX9MgM2vc'], 
+  ['/au/devendra.mp3', 'Devendra Barnhardt - Angelica (audio)'], 
+  ['/au/telstar.mp3', 'Tornadoes - Telstar (audio)'], 
+  ['/au/chachacha.mp3', 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)'], 
+  ['/au/iggy.mp3', 'Iggy Pop - Do Not Go Gentle Into That Good Night (audio)'], 
+  ['//youtube.com/watch?v=_8SBdkru4IY', 'Future Sound Of London - Essential Mix (youtube)']
+]
+
 void (async _ => {
   await onDomReady
   await adelay(1000)// = await onBeeFxExtReady()
   
   const root = {
+    mp3s,
     waCtx: await onWaapiReady,
     mediaElement: null
   }
@@ -36,37 +51,26 @@ void (async _ => {
   
   if (config.platform === 'standalone') {
     root.mmenu$ = div$(root.ui.top$, {class: 'mediamenu'}, [
-      div$({class: 'mm-item', text: 'Cascandy - Take Me Baby Reeemix SNOE (audio)', 
-        click: _ => loadAudio('/au/cascandy.mp3')}),
-      div$({class: 'mm-item', text: 'Astrud Gilberto - Agua de Beber (audio)', 
-        click: _ => loadAudio('/au/astrud.mp3')}),
-      div$({class: 'mm-item', text: 'Devendra Barnhardt - Angelica (audio)', 
-        click: _ => loadAudio('/au/devendra.mp3')}),
-      div$({class: 'mm-item', text: 'Tornadoes - Telstar (audio)', 
-        click: _ => loadAudio('/au/telstar.mp3')}),
-      div$({class: 'mm-item', text: 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)', 
-        click: _ => loadAudio('/au/chachacha.mp3')}),
-      div$({class: 'mm-item', text: 'Iggy Pop - Do Not Go Gentle Into That Good Night (audio)', 
-        click: _ => loadAudio('/au/iggy.mp3')}),
-      div$({class: 'mm-item yt', text: 'Future Sound Of London - Essential Mix (youtube)', 
-        click: _ => loadVideo('//youtube.com/watch?v=_8SBdkru4IY')}),
+      ...mp3s.map(([src, text, videoId]) => 
+        div$({class: 'mm-item', text, click: _ => loadAudio(src, text, videoId)})),
       leaf$('input', {attr: {type: 'file', accept: 'audio/*'}, on: {
         change: event => {
           const file = event.target.files[0]
           const fileUrl = window.URL.createObjectURL(file)
           loadAudio(fileUrl)
         }
-      }}) 
+      }})
     ])
     
-    const loadVideo = url => {
+    const loadVideo = (url, title) => {
       root.mmenu$.remove()
       set$(root.ui.top$, {class: 'video-source'})
-      waitForMediaElement(root.ui.insertVideoPlayer(url))
+      waitForMediaElement(root.ui.insertVideoPlayer(url, title))
     }
-    const loadAudio = url => {
+    const loadAudio = (url, title, videoId) => {
       root.mmenu$.remove()
-      waitForMediaElement(root.ui.insertAudioPlayer(url))
+      root.localAudio = {url, title, videoId}
+      waitForMediaElement(root.ui.insertAudioPlayer(url, title, videoId))
     }
     const waitForMediaElement = tmpMediaElement => new MediaElementPlayer(tmpMediaElement, {
       stretching: 'none',

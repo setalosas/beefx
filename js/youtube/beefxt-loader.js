@@ -3,7 +3,9 @@
    object-property-newline, object-curly-newline, no-void, quotes, no-unreachable */
 
 const konfig = {
-  contentScript: 'https://beefx.mork.work/js/youtube/beefxt-main-esm.js',
+  contentScripts: [
+    'https://beefx.mork.work/js/youtube/beefxt-main-esm.js'
+  ],
   styles: [
     'https://beefx.mork.work/css/beefx.css',
     'https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap'
@@ -41,7 +43,9 @@ const onReadyState = _ => new Promise(resolve => document.getElementsByTagName('
 
 onReadyState().then(_ => {
   console.log('injecting content script', konfig.contentScript)
-  injectContentScript(konfig.contentScript)
+  for (const contentScript of konfig.contentScripts) {
+    injectContentScript(contentScript)
+  }
   console.log('injecting styles', konfig.styles)
   for (const style of konfig.styles) {
     injectCss(style)

@@ -22,10 +22,10 @@ WaapiWrap.onRun(waCtx => {
         attackTime: {defVal: 3, min: 0, max: 5000}, // /1000
         releaseTime: {defVal: 500, min: 0, max: 500}, // /1000
         masterFx: {defVal: {}},
-        target: {defVal: {}, type: 'skipui'},
-        callback: {defVal: nop, type: 'skipui'}
+        target: {defVal: {}, subType: 'skipui'},
+        callback: {defVal: nop, subType: 'skipui'}
       },
-      uiDisabled: true
+      uiSelectDisabled: true
     }
     
     envelopeFollowerFx.setValue = ({ext}, key, value) => ({

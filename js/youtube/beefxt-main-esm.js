@@ -38,6 +38,7 @@ void (async _ => {
   
   const tick = _ => {
     const video = document.getElementsByTagName('video')[0]
+    console.log('found video', video)
     if (video) {
       div$(document.body, {class: 'beetrigger', text: 'BeeeFX!', click: _ => {
         root.mediaElement = video

@@ -4,204 +4,89 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, WaapiWrap} from '../improxy-esm.js'
-
-const {nop, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
-const {post} = Corelib.Tardis
-const {round} = Math
+import {BeeFX, WaapiWrap} from '../improxy-esm.js'
 
 WaapiWrap.onRun(waCtx => {
-  const {registerFxType, newFx} = BeeFX(waCtx)
-
-  const createBasicFxTypes = _ => {
-    const blankFx = { //8#bbb ------- blank -------
-      def: {}
-    }
-    blankFx.construct = (fx, pars) => {//: gainFx egy van, fx az instancia
-      fx.start.connect(fx.output)
-    }
-    registerFxType('fx_blank', blankFx)
-    
-    const gainFx = { //8#a00 ------- gain -------
-      def: {
-        gain: {defVal: 1, min: 0, max: 4, name: 'gain'}
-      }
-    }
-    gainFx.construct = (fx, pars) => {//: gainFx egy van, fx az instancia
-      const {ext} = fx
-      ext.gain = waCtx.createGain()
-      fx.start.connect(ext.gain)
-      ext.gain.connect(fx.output)
-    }
-    gainFx.setValue = (fx, key, value) => ({
-      gain: _ => fx.setAt('gain', 'gain', value)
-    }[key])
-    registerFxType('fx_gain', gainFx)
-
-    const delayFx = { //8#a0a ------- delay -------
-      def: {
-        delayTime: {defVal: 0, min: 0, max: 1}
-      }
-    }
-    delayFx.construct = (fx, pars) => {//: delayFx egy van, fx az instancia
-      const {ext} = fx
-      ext.delay = waCtx.createDelay()
-      fx.start.connect(ext.delay)
-      ext.delay.connect(fx.output)
-    }
-    delayFx.setValue = (fx, key, value) => ({
-      delayTime: _ => fx.setAt('delay', 'delayTime', value) //fx.ext.delay.delayTime.value = value
-    }[key])
-    registerFxType('fx_delay', delayFx)
-    
-    const ratioFx = { //8#666 ------- ratio -------
-      def: {
-        gain: {defVal: .25, min: 0.01, max: 1, name: 'Stage ratio'}
-      }
-    }
-    const getAggregatedGain = arr => arr.reduce((acc, fx) => acc + fx.live.gain, 0)
-    
-    const dumpChain = (fx, msg) => {
-      console.log(msg)
-      const {ext} = fx
-      const tab = []
-      const arr =  ext.chainArr
-      for (const chainFx of arr) {
-        tab.push({
-          zholger: chainFx.zholger,
-          gain: chainFx.live.gain,
-          isActive: chainFx.isActive,
-          isThisMe: fx === chainFx
-        })
-      }
-      console.table(tab)
-      console.log(`sumGain: ${ext.sumGain} syncLen: ${ext.chainLen}`)
-    }
-    
-    ratioFx.construct = (fx, pars) => {//: ratioFx egy van, fx az instancia
-      const {ext, exo} = fx
-      ext.capture({
-        gain: waCtx.createGain(),
-        chainArr: [],
-        activeChainArr: [],
-        chainLen: 0,
-        activeChainLen: 0
-      })
-      fx.start.connect(ext.gain)
-      ext.gain.connect(fx.output)
-
-      fx.chain = (...arr) => {
-        arr = isArr(arr[0]) ? arr[0] : arr
-        const chainArr = [fx, ...arr.filter(f => f !== fx)] //: no duplicates!
-        const chainLen = chainArr.length
-        const sumGain = exo.def.gain.max + exo.def.gain.min * (chainLen - 1)
-        const resetGain = sumGain / chainLen
-        //: i.e.4 => 1 + 3 * .01 = 1.03 => 0.2575
-        
-        for (const chainedFx of chainArr) {
-          chainedFx.setValueAlt('gain', resetGain)
-          chainedFx.ext.capture({chainArr, chainLen, sumGain, resetGain})
-        }
-        console.log(`ration chaining`, {fx, chainArr, chainLen, sumGain, resetGain, ext})
-        fx.setValue('gain', fx.live.gain)
-        dumpChain(fx, 'fx.chain.end')
-        fx.exo.onActivated(fx)
-      }
-    }
-    //+ vagy legyen mind a harom fv fx. vagy vagy mindharom ratioFx. (onact mindig ratiofx, de lehet visszahivni egysorossal)
-    ratioFx.onActivated = fx => { //:activation changed (or chain was called), recalc!
-      dumpChain(fx, 'ratio onactivated start')
-      const {ext} = fx
-      const activeChainArr = ext.chainArr.filter(fx => fx.isActive)
-      const activeChainLen = activeChainArr.length
-      for (const chainedFx of ext.chainArr) {
-        chainedFx.ext.capture({activeChainArr, activeChainLen})
-      }
-      fx.exo.distributeGain(fx, fx.isActive ? fx.live.gain : 0)
-      dumpChain(fx, 'ratio onactivated end')
-    }
-    ratioFx.distributeGain = (fixedFx, fixedGain = fixedFx.live.gain) => {
-      console.group('%cdistributee', 'background: #ff8', fixedFx.zholger, dumpChain(fixedFx, 'before'))
-      const {ext, exo} = fixedFx
-      if (ext.activeChainLen > 1) {
-        const othersAggregated = getAggregatedGain(ext.activeChainArr.filter(f => f !== fixedFx))
-        const remaining = ext.sumGain - fixedGain // 3.5
-        const factor = remaining / othersAggregated
-        
-        wassert(othersAggregated * 1.0001 >= exo.def.gain.min * (ext.activeChainLen - 1))
-        console.log('dist', {othersAggregated, remaining, factor})
-        
-        for (const chainFx of ext.activeChainArr) {
-          if (fixedFx !== chainFx) {
-            const oldVal = chainFx.live.gain
-            const newVal = oldVal * factor
-            console.log('--->', chainFx.zholger, {oldVal, newVal})
-            chainFx.setValueAlt('gain', Math.max(newVal, exo.def.gain.min))
-          }
-        }
-      }
-      console.groupEnd()
-    }
-    ratioFx.setValue = (fx, key, value) => ({
-      gain: _ => {
-        fx.setAt('gain', 'gain', value)
-        post(_ => ratioFx.distributeGain(fx))
-      }
-    }[key])
-    ratioFx.setValueAlt = (fx, key, value) => ({
-      gain: _ => {
-        fx.setAt('gain', 'gain', value)
-      }
-    }[key])
-    registerFxType('fx_ratio', ratioFx)
-    
-    const biquadOptions = [
-      ['lowpass', 'lowpass [no gain]'],
-      ['highpass', 'highpass [no gain]'],
-      ['bandpass', 'bandpass [no gain]'],
-      ['lowshelf', 'lowshelf, [no Q]'],
-      ['highshelf', 'highshelf [no Q]'],
-      ['allpass', 'allpass [no gain]'],
-      ['notch', 'notch [no gain]'],
-      ['peaking', 'peaking']
-    ]
-
-    const biquadFx = { //8#48d ------- biquadFilter (WA) -------
-      def: {
-        filterType: {defVal: 'peaking', type: 'strings', subType: biquadOptions},
-        frequency: {defVal: 800, min: 50, max: 22050, subType: 'exp'},
-        detune: {defVal: 0, min: -2400, max: 2400},
-        gain: {defVal: 0, min: -40, max: 40, subType: 'decibel'},
-        Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'}
-      },
-      name: 'BiquadFilter',
-      freqGraph: 'biquad'
-    }
-    
-    const detuneFactor = Math.log(2) / 1200
-    //: const hz = Math.pow2(detune / 1200)
-    //: const detune = Math.log(hz) / Math.log(2) * 1200
-    //: const detune = Math.log(hz) / detuneFactor
-    
-    biquadFx.construct = (fx, pars) => {
-      const {ext} = fx
-      ext.biquad = waCtx.createBiquadFilter()
-      fx.start.connect(ext.biquad)
-      ext.biquad.connect(fx.output)
-    }
-    biquadFx.setValue = (fx, key, value) => ({
-      filterType: _ => fx.ext.biquad.type = value,
-      frequency: _ => fx.setAt('biquad', 'frequency', value),
-      detune: _ => fx.setAt('biquad', 'detune', value /*Math.log(value) / detuneFactor*/),
-      gain: _ => fx.setAt('biquad', 'gain', value),
-      Q: _ => fx.ext.biquad.Q.value = value
-    }[key])
-    
-    registerFxType('fx_biquad', biquadFx)
-      
-    //+ sima lo hi szuro! vagy lo hi pan!
-  }
+  const {connectArr, registerFxType} = BeeFX(waCtx)
   
-  createBasicFxTypes()
+  const blankFx = { //8#bbb ------- blank -------
+    def: {}
+  }
+  blankFx.construct = (fx, pars) => {
+    fx.start.connect(fx.output)
+  }
+  registerFxType('fx_blank', blankFx)
+  
+  const gainFx = { //8#a00 ------- gain -------
+    def: {
+      gain: {defVal: 1, min: 0, max: 4, name: 'gain'}
+    }
+  }
+  gainFx.setValue = (fx, key, value) => ({
+    gain: _ => fx.setAt('gain', 'gain', value)
+  }[key])
+  
+  gainFx.construct = (fx, pars, {ext} = fx) => {
+    ext.gain = waCtx.createGain()
+    connectArr(fx.start, ext.gain, fx.output)
+  }
+  registerFxType('fx_gain', gainFx)
+
+  const delayFx = { //8#a0a ------- delay -------
+    def: {
+      delayTime: {defVal: 0, min: 0, max: 1}
+    }
+  }
+  delayFx.setValue = (fx, key, value) => ({
+    delayTime: _ => fx.setAt('delay', 'delayTime', value)
+  }[key])
+
+  delayFx.construct = (fx, pars, {ext} = fx) => {
+    ext.delay = waCtx.createDelay()
+    connectArr(fx.start, ext.delay, fx.output)
+  }
+  registerFxType('fx_delay', delayFx)
+  
+  const biquadOptions = [ //8#48d ------- biquadFilter (WA) -------
+    ['lowpass', 'lowpass [no gain]'],
+    ['highpass', 'highpass [no gain]'],
+    ['bandpass', 'bandpass [no gain]'],
+    ['lowshelf', 'lowshelf, [no Q]'],
+    ['highshelf', 'highshelf [no Q]'],
+    ['allpass', 'allpass [no gain]'],
+    ['notch', 'notch [no gain]'],
+    ['peaking', 'peaking']
+  ]
+  const biquadFx = {
+    def: {
+      filterType: {defVal: 'peaking', type: 'strings', subType: biquadOptions},
+      frequency: {defVal: 800, min: 50, max: 22050, subType: 'exp'},
+      detune: {defVal: 0, min: -2400, max: 2400},
+      gain: {defVal: 0, min: -40, max: 40, subType: 'decibel'},
+      Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'}
+    },
+    name: 'BiquadFilter',
+    freqGraph: [
+      {filter: 'biquad'}
+    ]
+  }
+  const detuneFactor = Math.log(2) / 1200
+  //: const hz = Math.pow2(detune / 1200)
+  //: const detune = Math.log(hz) / Math.log(2) * 1200
+  //: const detune = Math.log(hz) / detuneFactor
+  
+  biquadFx.setValue = (fx, key, value) => ({
+    filterType: _ => fx.ext.biquad.type = value,
+    frequency: _ => fx.setAt('biquad', 'frequency', value),
+    detune: _ => fx.setAt('biquad', 'detune', value),
+    gain: _ => fx.setAt('biquad', 'gain', value),
+    Q: _ => fx.ext.biquad.Q.value = value
+  }[key])
+    
+  biquadFx.construct = (fx, pars, {ext} = fx) => {
+    ext.biquad = waCtx.createBiquadFilter()
+    connectArr(fx.start, ext.biquad, fx.output)
+  }
+
+  registerFxType('fx_biquad', biquadFx)
 })

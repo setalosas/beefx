@@ -31,26 +31,20 @@ export const detectBPMj = buffer => {
       }
       peaks.push(max)
     }
-    peaks.sort((a, b) => b.volume - a.volume) // We then sort the peaks according to volume...
-    //peaks = peaks.splice(0, peaks.length * 0.5)// ...take the loudest half of those...
-  
+    peaks.sort((a, b) => b.volume - a.volume) 
+    // We then sort the peaks according to volume...take the loudest half of those...
     // ...and re-sort it back based on position.
-  
-    //peaks.sort((a, b) => a.position - b.position)
   
     return peaks.splice(0, peaks.length * 0.5).sort((a, b) => a.position - b.position)
   }
 
   function getIntervals (peaks) {
-    // What we now do is get all of our peaks, and then measure the distance to
-    // other peaks, to create intervals.  Then based on the distance between
-    // those peaks (the distance of the intervals) we can calculate the BPM of
-    // that particular interval.
+    // What we now do is get all of our peaks, and then measure the distance to other peaks,
+    // to create intervals.  Then based on the distance between those peaks (the distance of 
+    // the intervals) we can calculate the BPM of that particular interval. The interval 
+    // that is seen the most should have the BPM that corresponds to the track itself.
   
-    // The interval that is seen the most should have the BPM that corresponds
-    // to the track itself.
-  
-    var groups = []
+    const groups = []
   
     peaks.forEach(function (peak, index) {
       for (var i = 1; (index + i) < peaks.length && i < 10; i++) {
@@ -127,30 +121,6 @@ export const detectBPMj = buffer => {
       resolve(bpm)
     }
   })
-  
-  /*const detect = _ => {
-    console.log('bpm.detect sec:', buffer.duration)
-    
-    const {length, numberOfChannels, sampleRate} = buffer
-    const context = new OfflineAudioContext(numberOfChannels, length, sampleRate)
-
-    const source = context.createBufferSource()
-    source.buffer = buffer
-
-    const filter = context.createBiquadFilter()
-    filter.type = 'lowpass'
-
-    source.connect(filter)//Pipe the song into the filter, and the filter into the offline context
-    filter.connect(context.destination)
-    
-    source.start(0) // Schedule the sound to start playing at time:0
-
-    const foundPeaks = findPeaks(source.buffer.getChannelData(0))
-    const intervals = identifyIntervals(foundPeaks)
-    const groups = groupByTempo(intervals)
-    const candidates = getTopCandidates(groups).splice(0, 10)
-    bpm.capture({foundPeaks, intervals, groups, candidates})
-  }*/
   
   return detectj()
 }

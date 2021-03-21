@@ -11,17 +11,6 @@ const {wassert, weject, brexru} = Corelib.Debug
 
 const toExp = val => Math.pow(Math.E, val)
 const fromExp = val => Math.log(val)
-/*
-const biquadOptions = [
-  ['lowpass', 'lowpass [no gain]'],
-  ['highpass', 'highpass [no gain]'],
-  ['bandpass', 'bandpass [no gain]'],
-  ['lowshelf', 'lowshelf, [no Q]'],
-  ['highshelf', 'highshelf [no Q]'],
-  ['allpass', 'allpass [no gain]'],
-  ['notch', 'notch [no gain]'],
-  ['peaking', 'peaking']
-]*/
 
 const shortenProps = {
   followerFilterType: 'followerFilter',
@@ -29,41 +18,11 @@ const shortenProps = {
   baseModulationFrequency: 'baseModFreq',
   feedbackRight: 'fbackRight',
   baseFrequency: 'baseFreq',
-  excursionOctaves: 'excursionOct'
+  excursionOctaves: 'excursionOct',
+  pitchCorrection: 'autoTune'
 }
 
-const fxNames = [ //+ ennek ursen kene kezdenie! es register addol
-/*
-  ['fx_blank', 'Blank'],
-  ['fx_gain', 'Gain'],
-  ['fx_ratio', 'Ratio'], //+ez nem valaszthato
-  ['fx_delay', 'Delay'],
-  ['fx_biquad', 'Biquad Filter'],
-  ['fx_pitchShifter', 'Pitch Shifter'],
-  ['fx_noiseConvolver', 'Noise Convolver'],
-  
-  ['fx_dev', 'Distortion'],
-  ['fx_dev', 'Reverb'],
-  ['fx_dev', 'Telephone'],
-  ['fx_dev', 'Gain LFO'],
-  ['fx_dev', 'Chorus'],
-  ['fx_dev', 'Flange'],
-  ['fx_dev', 'Ring mod'],
-  ['fx_dev', 'Stereo Chorus'],
-  ['fx_dev', 'Stereo Flange'],
-  ['fx_dev', 'Mod Delay'],
-  ['fx_dev', 'Ping-pong delay'],
-  ['fx_dev', 'LFO Filter'],
-  ['fx_dev', 'Envelope Follower (testing only)'],
-  ['fx_dev', 'Autowah'],
-  ['fx_dev', 'Noise Gate'],
-  ['fx_dev', 'Wah Bass'],
-  ['fx_dev', 'Distorted Wah Chorus'],
-  ['fx_dev', 'Vibrato'],
-  ['fx_dev', 'BitCrusher'],
-  ['fx_dev', 'Apollo Quindar Tones']
-  */
-]
+const fxNames = []
 
 const createBeeFX = waCtx => {
   const fxHash = {}
@@ -73,7 +32,9 @@ const createBeeFX = waCtx => {
       fxNames
     },
     logConnects: false,
-    logDisconnects: false
+    logDisconnects: false,
+    logSetValue: true,
+    logSetValueAlt: true
   }
     
   const pepper = 'zholger'
@@ -86,7 +47,8 @@ const createBeeFX = waCtx => {
       start: waCtx.createGain(),
       output: waCtx.createGain(),
       isRelaxed: false,
-      bypass: false,
+      isActive: false,
+      //bypass: false,
       listenersByKey: {},
       exo: {}, //fxHash[type]
       ext: {}, //instance's filters are here
@@ -146,7 +108,8 @@ const createBeeFX = waCtx => {
       callListenerArray(fx.listenersByKey.all)
     }
     fx.setValue = (key, value) => {
-      console.log(`fx.setvalue ${fx.exo.fxName}.${key}`, {value, type: typeof value})
+      beeFx.logSetValue && 
+        console.log(`➔fx.setvalue ${fx.exo.fxName}.${key}`, {value, type: typeof value})
       const fun = fx.exo.setValue(fx, key, value)
       if (fun) {
         fun()
@@ -158,13 +121,15 @@ const createBeeFX = waCtx => {
     fx.setValueIf = (key, value) => fx.live[key] !== value && fx.setValue(key, value)
 
     fx.setValueAlt = (key, value) => {
-      console.log('fx.setaltvalue', {key, value})
+      beeFx.logSetValueAlt &&
+        console.log('⇨fx.setaltvalue', {key, value})
       const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
       if (fun) {
         fun()
         fx.valueChanged(key, value)
       } else {
-        console.warn(`setValueAlt: ${fx.exo.name}: bad pars`, {key, value})
+        console.error(`setValueAlt: ${fx.exo.name}: bad pars`, {key, value})
+        debugger
       }
     }
     
@@ -193,6 +158,8 @@ const createBeeFX = waCtx => {
     fx.getName = _ => fx.exo.name
     fx.getShortName = _ => fx.exo.name.substr(3)
     
+    fx.getPepper = _ => fx[pepper]
+    
     fx.initPars = pars => {
       const {exo} = fx
       const {initial = {}, options = {}} = pars
@@ -211,13 +178,30 @@ const createBeeFX = waCtx => {
       }
     }
     
+    fx.getFullState = _ => {
+      const {ext, exo, live, isActive} = fx
+      const state = {
+        fxName: exo.fxName,
+        isActive,
+        live
+      }
+      return state
+    }
+    
+    fx.restoreFullState = state => {
+      const {isActive, live} = state
+      fx.setWithPars(live) //: only the externally observable state can be restored, not the internal
+      fx.activate(isActive)
+    }
+    
     return fx
   }
   
-  beeFx.connectArr = (...arr) => {
+  beeFx.connectArr = (...arr) => { //: array item in arr: node + in/out index
     const arrarr = arr.map(item => isArr(item) ? item : [item])
     
     for (let ix = 0; ix < arrarr.length - 1; ix++) {
+      //console.log(`connectArr calls connect()`, arrarr[ix + 1])
       arrarr[ix][0].connect(...arrarr[ix + 1])
     }
   }
@@ -280,11 +264,17 @@ const createBeeFX = waCtx => {
       }
     }
     fxHash[fxName] = fxObj
-    if (!fxObj.def.uiDisabled) {
+    if (!fxObj.uiSelectDisabled) {
       fxNames.push([fxName, fxObj.name])
       fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1)
       //fxNames.sort()
     }
+  }
+  const addConnectionToStats = (src, dest) => {
+    //ha nincs pepper, de igazi node, adjon hozza egyet!
+  }
+  const addDisconnectionToStats = (src, dst) => {
+    // elvileg mindenhol kell peppernek lenni, de adjon hozza egyet (ha elobb hivtak disconnectet mint connectet, lehet)
   }
   
   void (_ => { //: init only Once In A Lifetime
@@ -294,20 +284,26 @@ const createBeeFX = waCtx => {
     const wauDisconnect = proto.disconnect
     proto.connect = shimConnect
     proto.disconnect = shimDisconnect
+    let cc = 0
+    let dc = 0
 
     function shimConnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
-      beeFx.logConnects && console.log(`shimConnect`, {dis: this, arg: arguments[0]})
+      cc++
+      beeFx.logConnects && console.log(`shimConnect`, {cc, from: this, to: arguments[0]})
       wauConnect.apply(this, arguments)
+      addConnectionToStats(this, arguments[0])
       return node
     }
 
     function shimDisconnect () {
       const node = arguments[0]
       arguments[0] = node?.[pepper] ? node.input : node
-      beeFx.logDisconnects && console.log(`shimDisconnect`, {dis: this, arg: arguments[0]})
+      dc++
+      beeFx.logDisconnects && console.log(`shimDisconnect`, {dc, from: this, to: arguments[0]})
       wauDisconnect.apply(this, arguments)
+      addDisconnectionToStats(this, arguments[0])
     }
   })()
   
@@ -323,8 +319,12 @@ beefx-basic
   - blank
   - gain
   - delay
-  - ratio
   - biquad (kimehetne egy filtersbe)
+beefx-ratio
+  - ratio
+beefxs-amp
+  - amp
+  - ampEx  
 beefxs-delays
   - sima delay tunabol es ha van, wilsobol
   - pingPongDelayA /cw
@@ -348,10 +348,19 @@ beefxs-osc
   - vibrato /cw
   - autoWah /cw
   - wahBass /cw // nem igazan mukodik
+beefxs-bpmtrans
+  - bpmtransformer  
 beefxs-env
   - enveloperFollower /Tuna (script)
   - wahWahEF /Tuna
   - gain
+beefxs-reverb
+  - convolver /Tuna  
+  - convolverGen /cw
+  - reverb /cw
+  - cabinet /Tuna
+beefxs-compressor
+  - compressor /Tuna  
 tunx (mind OK)
   - FixGain
   - Blank
@@ -365,15 +374,11 @@ tunx (mind OK)
   - WahBass
   - MyPanner
 tuna (missing)
-  - Cabinet
-  - Compressor
-  - Convolver
   - Delay
   - MoogFilter  
   - Overdrive
 cw
   - Delay
-  - Reverb
   - Distortion
   - Telephone
   - LFO

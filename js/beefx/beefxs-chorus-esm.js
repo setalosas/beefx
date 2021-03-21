@@ -105,9 +105,8 @@ WaapiWrap.onRun(waCtx => {
       ext.gain = waCtx.createGain()
 
       connectArr(ext.osc, ext.gain, ext.delayNode.delayTime)
+      connectArr(fx.start, ext.delayNode, fx.output)
       fx.start.connect(fx.output)
-      fx.start.connect(ext.delayNode)
-      ext.delayNode.connect(fx.output)
 
       ext.osc.start(0)
     }

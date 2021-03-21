@@ -6,7 +6,7 @@
 
 import {Corelib, detectBPMa, detectBPMj} from '../improxy-esm.js'
 
-const {Ø, undef, isFun, isArr, getRnd, nop, s_a} = Corelib
+const {Ø, no, yes, undef, isFun, isArr, getRnd, nop, s_a} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {post, createPerfTimer} = Corelib.Tardis
 
@@ -54,11 +54,10 @@ export const createBPMAuditor = waCtx => { //: allegro
         dis.audioBuffer = concatenateAudioBuffers(dis.audioBuffer, inputBuffer)
 
         const {sum} = timer.sum().dur
-        sum > 1 && console.log(`bpm onaudioproc(${inputBuffer.length}) ${sum}ms`, dis.audioBuffer)
+        sum > 9 && console.log(`bpm onaudioproc(${inputBuffer.length}) ${sum}ms`, dis.audioBuffer)
       }
     }
     
-    // Buffer
     dis.audioBuffer = null
     dis.isAnalysing = false
   }
@@ -92,13 +91,15 @@ export const createBPMAuditor = waCtx => { //: allegro
       bpm: '???'
     }
     try {
-      bpmj = await detectBPMj(dis.audioBuffer)
-      bpmj.bpm = bpmj.candidates?.[0]?.tempo  
-      timer.mark('bpmj')
-
-      bpma = await detectBPMa(dis.audioBuffer)
-      bpma.bpm = bpma.candidates?.[0]?.tempo  
-      timer.mark('bpma')
+      if (yes) {
+        bpmj = await detectBPMj(dis.audioBuffer)
+        bpmj.bpm = bpmj.candidates?.[0]?.tempo  
+        timer.mark('bpmj')
+      } else {
+        bpma = await detectBPMa(dis.audioBuffer)
+        bpma.bpm = bpma.candidates?.[0]?.tempo  
+        timer.mark('bpma')
+      }
     } catch (err) {
       console.warn(err)
       bpmj.error = err
@@ -106,7 +107,7 @@ export const createBPMAuditor = waCtx => { //: allegro
     disconnectAuditor()
     console.log(`BPM, candidates`, timer.sum().summary, bpma, bpmj)
     console.log('bpmj', bpmj.candidates)
-    console.log('bpma', bpma.candidates)
+    //console.log('bpma', bpma.candidates)
     return bpmj
   }
   

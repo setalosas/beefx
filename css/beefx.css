@@ -45,6 +45,7 @@
 }
 body {
   background: #777;
+  font: 400 11px roboto condensed;
 }
 body::after {
   position: absolute;
@@ -87,16 +88,18 @@ body::after {
   height: 100%;
   background: #666;
   z-index: 9999;
+  background-blend-mode: color-burn;
+  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
 }
 .bfx-top {
   position: relative;
   left: 0;
   top: 0;
-  width: 96%;
+  width: 100%;
   height: auto;
-  background: rgba(255, 255, 255, 0.25);
-  margin: 1%;
-  padding: 1%;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 4px;
+  backdrop-filter: blur(3px);
   text-align: center;
 }
 .bfx-top .mediamenu {
@@ -120,7 +123,8 @@ body::after {
 }
 .bfx-top .mediamenu .mm-item {
   width: fit-content;
-  background: rgba(255, 255, 255, 0.5);
+  min-width: 50%;
+  background: rgba(255, 255, 255, 0.8);
   cursor: pointer;
 }
 .bfx-top .mediamenu .yt {
@@ -137,40 +141,553 @@ body::after {
   margin: auto;
   width: fit-content;
 }
-.bfx-menu {
+.off.off.off {
+  display: none;
+}
+.bfx-horbar {
   position: relative;
   left: 0;
   top: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.75);
   padding: 4px;
   border-radius: 10px;
   box-shadow: inset 0 0 6px 2px rgba(0, 0, 0, 0.75);
 }
-.bfx-menu .mitem {
+.bfx-horbar .mitem {
   position: relative;
   left: 0;
   top: 0;
   display: inline-block;
-  padding: 2px;
+  padding: 1px 2px;
   margin: 2px;
   border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  color: rgba(0, 0, 0, 0.75);
-  background-color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 400;
 }
-.bfx-menu .mframe {
+.bfx-horbar .mitem:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-horbar .mitem.act {
+  color: #ffb;
+}
+.bfx-horbar .mframe {
   position: relative;
   left: 0;
   top: 0;
   display: inline-block;
-  padding: 2px;
+  padding: 1px 2px;
   margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   color: rgba(255, 255, 255, 0.9);
   background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
 }
-.bfx-menu .off.off {
+.bfx-horbar .mframe:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-horbar .mframe.act {
+  color: #ffb;
+}
+.bfx-horbar .rt {
+  float: right;
+}
+.bfx-horbar .bfx-rama {
+  display: inline-block;
+  margin: 0 0 -1px;
+  padding-top: 8px;
+  box-shadow: inset 0 0 6px 1px #000000;
+  background: linear-gradient(157deg, #b3c3cc, #7a5f52);
+}
+.bfx-horbar .bfx-rama .label {
+  display: inline-block;
+  padding: 0px 6px;
+  margin: -2px 0 0;
+  vertical-align: text-top;
+  font-size: 12px;
+  font-weight: 400;
+}
+.bfx-horbar .bfx-rama .beectrl {
+  display: inline-block;
+  margin-left: 96px;
+  margin-top: 0px;
+  height: 22px;
+  box-shadow: inset 0 0 2px 1px transparent;
+}
+.bfx-horbar .bfx-rama .beectrl input {
+  box-shadow: inset 0 0 2px 1px transparent;
+  max-height: 18px;
+  padding-top: 2px;
+}
+.bfx-horbar .bfx-rama input[type=checkbox] {
+  margin-top: 5px;
+  margin-bottom: 3px;
+}
+.bfx-horbar .bfx-rama .bfx-parval {
+  display: inline-block;
+  margin-right: 4px;
+  height: 22px;
+  vertical-align: top;
+  box-shadow: inset 0 0 2px 1px transparent;
+}
+.mbar {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  vertical-align: top;
+}
+.bfx-grab-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+  box-shadow: 0 0 6px 1px #c00, inset 0 0 4px 2px #ff8;
+}
+.bfx-grab-frame .grabber {
+  width: 45%;
+  height: 45%;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 24px;
+  font-weight: 700;
+  color: transparent;
+  text-align: center;
+}
+.bfx-grab-frame .grabber div {
+  position: relative;
+  left: 0;
+  top: 50%;
+  transform: translatey(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+.bfx-grab-frame:hover .grabber {
+  color: #ffffff;
+}
+.bfx-grab-frame .grabber:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+.bfx-grab-frame .grab-to-1 {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.bfx-grab-frame .grab-to-2 {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.bfx-grab-frame .grab-to-3 {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+.bfx-grab-frame .grab-to-4 {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+.emu-frame {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+}
+.beetrigger ~ .beebody .emu-frame {
+  bottom: 100%;
+}
+a#thumbnail.emulated {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 120px;
+  height: 66px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  vertical-align: top;
+  background-size: 100%;
+}
+.video-strip {
+  text-align: center;
+}
+.video-strip .video-in-strip {
+  position: relative;
+  left: 0;
+  top: 2px;
+  display: inline-block;
+  width: 244px;
+  height: 137px;
+  margin: 1px 5px;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.5);
+}
+.video-strip .video-in-strip:empty {
+  height: 1px;
+}
+.video-strip .video-in-strip::after {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 0 6px;
+  color: #000000;
+  background-color: rgba(255, 255, 255, 0.8);
+  content: attr(vidinfo);
+}
+.video-strip .video-in-strip iframe {
+  border-radius: 8px;
+  transform: scale(0.75);
+  transform-origin: 0 0;
+}
+.video-strip .video-in-strip .mock-holder {
+  position: absolute;
+  left: 0;
+  top: 27px;
+  padding: 20px 0;
+}
+.relinblk {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  vertical-align: top;
+}
+.bfx-mixerbar {
+  text-align: center;
+  display: table;
+  margin: auto;
+}
+.bfx-mixerbar .mixer-inframe {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .fader-frame {
+  display: table-cell;
+  min-width: 200px;
+  min-height: 100px;
+  background: #040;
+  background: linear-gradient(157deg, #47d18c, #0f3d26);
+}
+.bfx-mixerbar .player-frame {
+  display: table-cell;
+  min-width: 100px;
+  vertical-align: top;
+}
+.bfx-mixerbar .player-frame.left-player {
+  position: relative;
+  left: 0;
+  top: 0;
+}
+.bfx-mixerbar .player-frame.right-player {
+  position: relative;
+  right: 0;
+  top: 0;
+}
+.bfx-mixerbar .player-frame.right-player > div {
+  float: right;
+}
+.bfx-mixerbar .player-frame.local-player {
+  background: #008;
+  background: linear-gradient(157deg, #4775d1, #0f1f3d);
+}
+.bfx-mixerbar .player-frame.remote-player {
+  background: #500;
+  background: linear-gradient(157deg, #d14747, #3d0f0f);
+}
+.bfx-mixerbar .player-frame .bpm-buttons {
+  position: relative;
+  left: 0;
+  top: 0;
+  margin-right: 4px;
+}
+.bfx-mixerbar .player-frame .bpm-buttons .mitem {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: block;
+}
+.bfx-mixerbar .player-frame .bpm-buttons .mitem:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .player-frame .bpm-buttons .mitem.act {
+  color: #ffb;
+}
+.bfx-mixerbar .player-frame .bpm-display {
+  position: relative;
+  left: 0;
+  top: 0;
+}
+.bfx-mixerbar .player-frame .bpm-display .mframe {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .player-frame .bpm-display .mframe:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .player-frame .bpm-display .mframe.act {
+  color: #ffb;
+}
+.bfx-mixerbar .player-frame .bfx-rama {
+  width: 240px;
+}
+.bfx-mixerbar .player-frame .player-navframe {
+  position: relative;
+  left: 0;
+  top: 0;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 256px;
+  height: 144px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.25);
+  background-size: cover;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .media-title {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  padding: 0 2px;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+  font-size: 13px;
+  font-weight: 400;
+  text-shadow: 0 0 1px #ffffff, 0 0 3px #ffffff, 0 0 6px #ffffff;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .nav-abscmd {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+  padding: 4px 6px;
+  margin-top: 60px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .nav-abscmd:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .nav-abscmd.act {
+  color: #ffb;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .drag-bar {
+  position: absolute;
+  left: 2px;
+  bottom: 27px;
+  width: 252px;
+  height: 10px;
+  margin: 80px 0 0;
+  background: #666666;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .drag-bar .time {
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  color: #ffffff;
+  text-shadow: 0 0 1px #000000, 0 0 2px #000000, 0 0 4px #000000;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .drag-bar .curr {
+  position: absolute;
+  left: 50%;
+  top: -11px;
+  transform: translateX(-50%);
+  color: #ffb;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .drag-bar .dur {
+  position: absolute;
+  right: 2px;
+  top: -11px;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .drag-bar::after {
+  position: absolute;
+  left: 0;
+  top: 0;
+  content: '';
+  width: var(--prog);
+  height: 100%;
+  border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.5);
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .player-nav {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  padding: 6px 0 4px 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .player-nav .nav-cmd {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+  margin: 0 2px;
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .player-nav .nav-cmd:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mixerbar .player-frame .player-navframe .nav-thumb .player-nav .nav-cmd.act {
+  color: #ffb;
+}
+.dispatcher-frame {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 30px;
+  background: red;
+}
+.input-selector {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 20px;
+  padding: 1px 0 2px;
+  border-radius: 8px;
+  background: rgba(191, 64, 64, 0.6);
+  text-align: center;
+  backdrop-filter: blur(2px);
+}
+.input-selector .input-label {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  color: #ccc;
+  padding: 3px 4px 0 0;
+}
+.input-selector .input-cmd {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  margin: 1px 1px 2px;
+  color: #ccc;
+}
+.input-selector .input-cmd:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.input-selector .input-cmd.act {
+  color: #ffb;
+}
+.input-selector .input-cmd.act {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.mixer-frame.off ~ .bfx-mid .input-selector {
   display: none;
+}
+.bfx-mainmenu {
+  background: #4d4d4d;
+}
+.bfx-mixermenu {
+  background: #666666;
+}
+.bfx-bpmmenu {
+  background: rgba(0, 0, 0, 0.75);
+}
+.bfx-bpmmenu .mitem {
+  background: rgba(255, 255, 255, 0.2);
 }
 .bfx-mid {
   position: relative;
@@ -178,7 +695,7 @@ body::after {
   top: 0;
   display: table;
   margin: auto;
-  margin-top: 2px;
+  margin-top: -2px;
 }
 .bfx-stage {
   position: relative;
@@ -186,7 +703,7 @@ body::after {
   top: 0;
   display: table-cell;
   margin: 2px;
-  padding: 0 1px 176px;
+  padding: 0 1px 184px;
   vertical-align: top;
   border-radius: 10px;
 }
@@ -200,28 +717,41 @@ body::after {
   font-size: 14px;
   font-weight: 400;
   border-radius: 8px;
-  min-width: 248px;
 }
-.bfx-rama .fxr-parval {
-  display: inline-block;
-  padding: 0px;
+.bfx-rama:hover::before {
+  position: fixed;
+  right: 4px;
+  bottom: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  content: attr(pepper);
+  color: rgba(255, 255, 255, 0.5);
 }
-.bfx-rama .biquad-canvas {
-  position: relative;
-  left: 4px;
-  top: 4px;
-  width: 240px;
-  height: 120px;
-  background: #000000;
-  border-radius: 6px;
-  margin-bottom: 4px;
+.bfx-rama .bfx-foldicon {
+  position: absolute;
+  right: 20px;
+  top: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+}
+.bfx-rama .bfx-foldicon::after {
+  content: '➖';
+}
+.bfx-rama.folded .bfx-foldicon::after {
+  content: '➕';
+}
+.bfx-rama.folded {
+  height: 18px;
+  overflow: hidden;
+}
+.bfx-rama .selektor.sel-selfx {
+  margin-right: 36px;
 }
 .bfx-rama .bfx-delete {
   position: absolute;
-  right: 4px;
+  right: 2px;
   top: 2px;
-  width: 14px;
-  height: 14px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 400;
@@ -230,13 +760,7 @@ body::after {
   content: '❌';
   filter: saturate(0.5);
 }
-.bfx-rama[fxname="Blank"] {
-  padding-bottom: 0;
-}
-.bfx-rama[fxname="Ratio"] .led-fx {
-  top: 4px;
-}
-.bfx-rama .led-fx {
+.bfx-rama .bfxact.led-fx {
   position: absolute;
   left: -1px;
   top: 1px;
@@ -244,28 +768,86 @@ body::after {
   --ledhue: 120;
   cursor: pointer;
 }
-.bfx-rama .led-fx::before {
+.bfx-rama .bfxact::before {
   box-shadow: 0 0 4px 1px #000000;
 }
-.bfx-rama.off {
+.bfx-rama.bypass {
   filter: saturate(0.2);
 }
-.bfx-rama.off .led-fx {
+.bfx-rama.bypass .bfxact.led-fx {
   --ledhue: 200;
 }
-.st-bottomframe {
+.bfx-rama.bypass::before {
+  content: none;
+}
+.bfx-rama.isBlank {
+  height: 18px;
+}
+.bfx-rama.isFixed.isGain {
+  height: 24px;
+}
+.fxr-pars .fxr-parval .html {
+  position: relative;
+  left: 6px;
+  top: 0;
+  width: 223px;
+  padding: 3px 6px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px dotted #ffffff;
+  font-size: 11px;
+  font-weight: 400;
+}
+.fxr-pars .graph-canvas {
+  position: relative;
+  left: 4px;
+  top: 4px;
+  width: 240px;
+  height: 120px;
+  background: #000000;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  box-shadow: inset -1px -1px 1px 0px rgba(255, 255, 255, 0.8);
+}
+.bfx-mid .bfx-rama {
+  min-width: 248px;
+}
+.bfx-mid .bfx-rama.hasStageMark::after {
+  position: absolute;
+  left: 24px;
+  top: -2px;
+  content: var(--stage);
+  font-size: 24px;
+  font-weight: 700;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.2);
+}
+.bfx-mid .bfx-rama.isFixed {
+  padding-bottom: 0;
+}
+.bfx-mid .bfx-rama.isFixed .bfxact.led-fx {
+  top: 3px;
+}
+.bfx-mid .st-bottomframe {
   position: absolute;
   left: 0;
   bottom: 3px;
 }
-.st-bottomframe .st-endratio {
+.bfx-mid .st-bottomframe .isEndRatio {
   position: relative;
   left: 0;
   top: 0;
-  padding-top: 5px;
+  padding: 5px 2px 3px;
+  margin-bottom: 2px;
   box-shadow: inset 0 0 10px 1px black;
 }
-.st-bottomframe .st-spectrum {
+.bfx-mid .st-bottomframe .isEndRatio .bfxact.led-fx {
+  left: 1px;
+  top: 4px;
+}
+.bfx-mid .st-bottomframe .st-spectrum {
   position: relative;
   left: 0;
   top: 0;
@@ -273,7 +855,7 @@ body::after {
   padding: 2px 2px 0;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.5));
 }
-.st-bottomframe .st-spectrum canvas {
+.bfx-mid .st-bottomframe .st-spectrum canvas {
   position: relative;
   left: 0;
   top: 0;
@@ -282,49 +864,150 @@ body::after {
   border-radius: 6px;
   background: #000000;
 }
+.stage-narrowframe .bfx-stage {
+  padding: 0;
+}
+.stage-narrowframe .bfx-stage .bfx-rama .beectrl {
+  padding: 4px 8px;
+  margin: 13px 0 0;
+}
+.stage-narrowframe .bfx-stage .bfx-rama .beectrl::before {
+  right: unset;
+  left: 8px;
+  top: -12px;
+}
+.stage-narrowframe .bfx-stage .bfx-rama .beectrl::after {
+  left: unset;
+  right: 8px;
+  top: -12px;
+}
+.player-stframe .bfx-stage {
+  padding-bottom: 0;
+}
+.bfx-topmenu {
+  position: relative;
+  left: -1px;
+  top: 0;
+  text-align: right;
+  padding-right: 2px;
+  margin-left: 18px;
+}
+.bfx-mitem {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  margin: 2px .5px;
+  padding: 1px 2px 0;
+}
+.bfx-mitem:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bfx-mitem.act {
+  color: #ffb;
+}
+.bfx-mitem.wled {
+  padding-right: 16px;
+}
+.bfx-mitem.wled.send .led-fx {
+  --ledhue: 50;
+}
+.bfx-mitem.wled.listen .led-fx {
+  --ledhue: 0;
+}
+.bfx-mitem.wled.active {
+  color: #eee;
+  background-color: #555;
+}
+.bfx-mitem.wled:not(.active) .led-fx {
+  filter: saturate(0) opacity(0.5);
+}
+.bfx-mitem.wled:not(.active) .led-fx::after {
+  animation: none;
+  will-change: auto;
+}
+.bfx-mitem.wled .led-fx {
+  position: absolute;
+  right: 0px;
+  top: -1px;
+  left: unset;
+  --pulseperiod: .5s;
+}
+.bfx-mitem.wled .led-fx::before {
+  box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3);
+}
 .bfx-st1 {
+  --stage: 'A';
   background: rgba(0, 0, 0, 0.2);
 }
-.bfx-st1 .st-spectrum canvas {
-  filter: hue-rotate(160deg);
-}
-.bfx-st2 {
-  background: rgba(0, 0, 0, 0.4);
-}
-.bfx-st2 .st-spectrum canvas {
-  filter: hue-rotate(220deg);
-}
-.bfx-st3 {
-  background: rgba(0, 0, 0, 0.3);
-}
-.bfx-st3 .st-spectrum canvas {
-  filter: hue-rotate(280deg);
-}
-.bfx-st4 {
-  background: rgba(0, 0, 0, 0.5);
-}
-.bfx-st4 .st-spectrum canvas {
-  filter: hue-rotate(-20deg);
+.bfx-st1 .huerot {
+  filter: hue-rotate(130deg);
 }
 .bfx-st1 .bfx-rama {
-  background: linear-gradient(157deg, #c2f0d9, #45b82e);
+  background: linear-gradient(157deg, #b8ebad, #45b82e);
+}
+.bfx-st2 {
+  --stage: 'B';
+  background: rgba(0, 0, 0, 0.2);
+}
+.bfx-st2 .huerot {
+  filter: hue-rotate(220deg);
 }
 .bfx-st2 .bfx-rama {
-  background: linear-gradient(157deg, #bcbcf5, #4cb2e6);
+  background: linear-gradient(157deg, #bce2f5, #4cb2e6);
+}
+.bfx-st3 {
+  --stage: 'C';
+  background: rgba(0, 0, 0, 0.2);
+}
+.bfx-st3 .huerot {
+  filter: hue-rotate(280deg);
 }
 .bfx-st3 .bfx-rama {
-  background: linear-gradient(157deg, #f5bcf5, #804ce6);
+  background: linear-gradient(157deg, #cfbcf5, #804ce6);
+}
+.bfx-st4 {
+  --stage: 'D';
+  background: rgba(0, 0, 0, 0.2);
+}
+.bfx-st4 .huerot {
+  filter: hue-rotate(340deg);
 }
 .bfx-st4 .bfx-rama {
-  background: linear-gradient(157deg, #f4bebe, #e052b1);
+  background: linear-gradient(157deg, #f0c2e0, #d161ac);
 }
 .mejs__audio,
 audio {
   margin: 6px auto;
 }
+.mejs__audio::after {
+  position: absolute;
+  left: 100%;
+  top: 14px;
+  width: fit-content;
+  margin-left: 4px;
+  content: var(--title);
+  color: rgba(255, 255, 255, 0.8);
+}
 .mejs__video {
   z-index: 99;
   margin: auto;
+}
+audio {
+  width: 240px;
+  height: 28px;
+  filter: invert(1) contrast(0.6);
 }
 .beectrl {
   position: relative;
@@ -362,6 +1045,13 @@ audio {
 }
 .selektor select {
   background: rgba(255, 255, 255, 0.5);
+  max-width: 132px;
+  font-size: 12px;
+}
+.selektor option {
+  color: #ffffff;
+  background-color: #444;
+  font-size: 12px;
 }
 .selektor.sel-selfx {
   margin-left: 16px;
@@ -370,35 +1060,28 @@ audio {
 .selektor.sel-selfx::before {
   content: none;
 }
-.selektor.sel-selfx option {
-  background: #444;
-}
 .selektor.sel-selfx select {
   position: relative;
-  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
   width: 100%;
   text-align: right;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.75));
+  max-width: unset;
+  font-size: 13px;
   color: #ffffff;
+  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.75));
   border: none;
   border-radius: 6px 6px 4px 5px;
   backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);
-}
-.selektor:not(.sel-selfx) select {
-  max-width: 132px;
-  font-size: 12px;
-}
-.selektor:not(.sel-selfx) option {
-  font-size: 12px;
 }
 [fxname="Blank"] .selektor {
   margin-right: 3px;
 }
 .ranger {
-  margin-right: 38px;
+  --mari: 38px;
+  margin-right: var(--mari);
 }
 .ranger::after {
-  max-width: 38px;
+  max-width: var(--mari);
 }
 input[type=range] {
   width: 100%;
@@ -438,10 +1121,10 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   position: relative;
   left: 0;
   top: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
   width: 12px;
   height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
   background: rgba(255, 255, 255, 0.25);
 }
 .checker input[type=checkbox][checked] {
@@ -452,14 +1135,23 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   left: 0;
   bottom: 0;
   z-index: 9999;
-  padding: 2px 6px;
-  border-radius: 0 8px 0 0;
+  padding: 12px 6px;
+  border-radius: 40% 90% 50% 0;
+  box-shadow: 2px 0 3px 1px #000000, 1px -2px 6px 2px #000000;
   cursor: pointer;
-  color: yellow;
+  color: #ffe000;
   background-color: rgba(0, 0, 0, 0.5);
+  background-blend-mode: color-burn;
+  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
   font: 400 11px roboto condensed;
   font-size: 14px;
   font-weight: 400;
+  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
+}
+.beetrigger:hover {
+  transform-origin: 10% 90%;
+  transform: scale(5);
+  transition: transform 1s 0s ease-out;
 }
 .beebody.u2 {
   background: rgba(0, 0, 0, 0.25);
@@ -473,4 +1165,88 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 }
 .beebody.u2 .bfx-top {
   display: none;
+}
+.led-fx {
+  width: 16px;
+  height: 16px;
+  --ledlite: hsl(var(--ledhue, 120), 80%, 50%);
+  --ledmid: hsl(var(--ledhue, 120), 80%, 40%);
+  --leddark: hsl(var(--ledhue, 120), 80%, 30%);
+}
+.led-fx.bright {
+  --ledlite: hsl(var(--ledhue, 120), 80%, 70%);
+  --ledmid: hsl(var(--ledhue, 120), 80%, 50%);
+  --leddark: hsl(var(--ledhue, 120), 80%, 30%);
+}
+.led-fx::before,
+.led-fx::after {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.led-fx::before {
+  content: "";
+  border: 1px solid #333;
+  background: #181818;
+}
+.led-fx::after {
+  content: "";
+  background: radial-gradient(var(--ledlite) 40%, var(--leddark) 70%);
+  animation: light var(--pulseperiod, 1s) infinite alternate cubic-bezier(0.785, 0.135, 0.15, 0.86);
+  border: none;
+  margin: 1px;
+  padding: 0px;
+  box-shadow: 0 0 4px 1px var(--ledmid), inset 0 0 2px 1px var(--ledmid);
+}
+.led-fx.animated {
+  will-change: opacity;
+}
+.led-fx.no-dark::before {
+  opacity: 0;
+}
+.led-fx.dim {
+  filter: brightness(0.5);
+}
+.led-fx.half-dark::before {
+  opacity: 0.7;
+}
+.led-fx.fix-on:after {
+  animation: none;
+  will-change: auto;
+}
+.led-fx.fix-off:after {
+  animation: none;
+  will-change: auto;
+  opacity: 0;
+}
+.led-fx.alt-pulse:after {
+  animation-timing-function: cubic-bezier(1, 0.2, 0.5, 0.8);
+}
+.led-fx.wide-pulse:after {
+  animation-timing-function: cubic-bezier(0.28, 0.22, 0, 1.11);
+}
+.led-fx.flicker:after {
+  animation-name: light-flicker;
+}
+.led-fx.narrow-pulse:after {
+  animation-timing-function: cubic-bezier(1, 0, 0.87, 1.17);
+}
+@keyframes light {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes light-flicker {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
 }

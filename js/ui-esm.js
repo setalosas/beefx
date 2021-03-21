@@ -4,61 +4,53 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, createBiquadGrapher} from './improxy-esm.js'
+import {Corelib, DOMplusUltra, FxUi, MixerUi} from './improxy-esm.js'
 
-const {Ø, isNum, isFun, clamp} = Corelib
-const {wassert} = Corelib.Debug
+const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib
+const {wassert, brexru} = Corelib.Debug
 const {post, startEndThrottle} = Corelib.Tardis
-const {div$, leaf$, set$, canvas$} = DOMplusUltra
+const {secToString} = Corelib.DateHumanizer
+const {div$, leaf$, set$, toggleClass$, setClass$, canvas$, haltEvent} = DOMplusUltra
+const {round} = Math
   
 export const createUI = (config, root) => {
   const {body} = document
   
-  const biquadGraph = createBiquadGrapher(root.waCtx)
-  const CANVAS_SIZE = 300
-  
-  const aStage = {
-    frame$: null,
-    fxarr: []
-  }
-
   const stageArr = []
-  const ui = {stageArr}
-  
-  const init = _ => {  
-    ui.frame$ = div$(body, {class: 'beebody' + (root.onYoutube ? ' u2' : '')}, [
-      ui.top$ = div$({class: 'bfx-top'}),
-      ui.bigmid$ = div$({class: 'bfx-bigmid'}, [
-        ui.mainmenu$ = div$({class: 'bfx-menu'}),
-        ui.mid$ = div$({class: 'bfx-mid'})
-      ]),
-      ui.bottom$ = div$({class: 'bfx-bottom'})//+no bottom
-    ])
+  const ui = {
+    root,
+    stageArr,
+    videoStripHolderArr$: [],
+    videoStripMockArr$: []
   }
   
-  ui.addStage = stage => {
-    const stageObj = {
-      fxarr: []
+  //8#79c Utilities, primitives, konfig
+  
+  ui.konfigNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
+  
+  ui.setHost = host => (key, params) => {
+    const node$ = host[key + '$']
+    wassert(node$ && node$.nodeType)
+    set$(node$, params)
+  }
+  ui.set = ui.setHost(ui)
+  
+  ui.toggleCmd = (host, node$ = brexru(), key, onChange = nop) => (on = !host[key]) => {
+    if (on !== host[key]) {
+      host[key] = on
+      setClass$(node$, host[key], 'act')
+      onChange(on)
     }
-    set$(ui.mid$, {}, 
-      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stage + 1)}, [
-        stageObj.ramas$ = div$({class: 'bfx-ramas'}),
-        stageObj.bottomFrame$ = div$({class: 'st-bottomframe'}, [
-          stageObj.endRatio$ = div$({class: 'bfx-rama st-endratio'}),
-          stageObj.spectrama$ = div$({class: 'st-spectrum'},
-            stageObj.spectcanv$ = canvas$())
-        ])   
-      ]))
-
-    stageArr.push(stageObj)
-    return stageObj
   }
   
-  ui.insertAudioPlayer = url => {
+  ui.insertAudioPlayerInto = (node$, url, title = 'no title') => 
+    leaf$('audio', node$, {attr: {src: url, controls: '', title}}) 
+  
+  ui.insertAudioPlayer = (url, title = 'no title') => {
     void ui.player?.remove()
     
-    set$(ui.top$, {}, 
-      ui.player$ = leaf$('audio', {attr: {src: url, startVolume: .2, controls: ''}}))  
+    set$(ui.top$, {css: {__title: '"' + title + '"'}}, 
+      ui.player$ = leaf$('audio', {attr: {src: url, startVolume: .2, controls: '', title}}))  
       
     return ui.player$
   }
@@ -73,10 +65,54 @@ export const createUI = (config, root) => {
       
     return ui.player$
   }
-
-  ui.konfigNames = namesDb => ui.namesDb = namesDb  
   
-  ui.populateMainMenu = (pg, conf = {}) => {
+  //8#393 DOM framework building
+  
+  const init = _ => {  
+    ui.frame$ = div$(body, {class: 'beebody' + (root.onYoutube ? ' u2' : '')}, [
+      ui.top$ = div$({class: 'bfx-top'}),
+      ui.bigmid$ = div$({class: 'bfx-bigmid off'}, [
+        ui.mainmenu$ = div$({class: 'bfx-horbar bfx-mainmenu'}),
+        ui.videoStrip$ = div$({class: 'bfx-horbar video-strip off'}, 
+          ui.videoStripArr$ = '1234'.split('').map(numch => parseInt(numch)).map(num => 
+            div$({class: 'video-in-strip vid' + num}, [ 
+              ui.videoStripHolderArr$[num - 1] = div$({class: 'media-holder'}),
+              ui.videoStripMockArr$[num - 1] = !root.onYoutube && div$({class: 'mock-holder'})
+            ]))),
+        ui.mixermenu$ = div$({class: 'bfx-horbar bfx-mixermenu off'}),
+        ui.auxmenu$ = no && div$({class: 'bfx-horbar mixer-frame'}, [
+          ui.bpmbar$ = div$({class: 'bfx-bpmbar mbar'}),
+          ui.syncbar$ = div$({class: 'bfx-syncbar mbar'})
+        ]),
+        ui.mixerFrame$ = div$({class: 'bfx-horbar mixer-frame off'}, [
+          ui.mixerBar$ = div$({class: 'bfx-mixerbar'}, [
+            ui.playerLeft$ = div$({class: 'player-frame left-player mixer-inframe'}),
+            ui.fader$ = div$({class: 'fader-frame mixer-inframe'}),
+            ui.playerRight$ = div$({class: 'player-frame right-player mixer-inframe'})
+          ]),
+          no && div$({class: 'dispatcher-frame'})
+        ]),
+        ui.mid$ = div$({class: 'bfx-mid'})
+      ])
+    ])
+    FxUi.extendUi(ui)
+    MixerUi.extendUi(ui)
+  }
+  
+  ui.start = playground => {
+    ui.pg = playground
+    populateMainMenu()
+    populateMixerMenu()
+    //ui.startMixer()
+  }
+  
+  ui.finalize = _ => {
+    wassert(ui.pg)
+    ui.finalizeMixer()
+  }
+  
+  const populateMainMenu = _ => {
+    const {pg} = ui
     const mItems = []
     mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
@@ -85,169 +121,51 @@ export const createUI = (config, root) => {
     mItems.push(div$({class: 'mitem', text: 'Save to video', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Bypass beeFX', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Fast BeePM', click: _ => pg.recalcBpm()}))
-    mItems.push(div$({class: 'mitem', text: 'Slow BPM', click: _ => pg.recalcBpm(25)}))
-    mItems.push(ui.bpm$ = div$({class: 'mframe'}))
-    mItems.push(ui.bpmpp$ = div$({class: 'mitem off', text: 'BPM PingPongs!', click: pg.bpmDelays}))
+    mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
+    /*
+    mItems.push(div$({class: 'mitem rt', text: 'BPM/Speed...', 
+      click: _ => toggleClass$(ui.bpmbar$, 'off')}))
+    mItems.push(div$({class: 'mitem rt', text: 'Sync...', 
+      click: _ => toggleClass$(ui.syncbar$, 'off')}))      */
+    mItems.push(ui.mixerCmd$ = 
+      div$({class: 'mitem rt', text: 'Mixer...', click: _ => ui.toggleMixer()}))
 
+    set$(ui.bigmid$, {declass: 'off'})
     set$(ui.mainmenu$, {}, mItems) 
   }
-  ui.set = (key, params) => {
-    const node$ = ui[key + '$']
-    wassert(node$ && node$.nodeType)
-    set$(node$, params)
+  const populateMixerMenu = _ => {
+    const {pg} = ui
+    const mItems = []
+    mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
+    mItems.push(ui.grabCmd$ = div$({class: 'mitem rt', text: 'Grab!', click: _ => ui.toggleGrab()}))
+    mItems.push(ui.listCmd$ = div$({class: 'mitem rt', text: 'List', click: _ => ui.toggleList()}))
+    mItems.push(ui.autoplayCmd$ = 
+      div$({class: 'mitem rt', text: 'Autoplay', click: _ => ui.toggleAutoplay()}))
+    set$(ui.mixermenu$, {}, mItems) 
+  }
+  //8#c7f Stages. - stageObj (in stageArr) creation.
+    
+  ui.addStage = (stageIx, parent$ = ui.mid$, pars = {}) => {
+    const stageObj = {
+      stageIx,             //: stage index
+      fxPanelObjArr: [],    //:fx panel objects in the stage
+      ...pars
+    }        
+    set$(parent$, {}, 
+      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stageIx + 1)}, [
+        stageObj.inputSelector$ = stageIx < 100 && div$({class: 'input-selector huerot'}),
+        stageObj.ramas$ = div$({class: 'bfx-ramas'}),
+        stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
+          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
+          stageObj.spectrama$ = div$({class: 'st-spectrum huerot'},
+            stageObj.spectcanv$ = canvas$())
+        ])   
+      ]))
+    return stageArr[stageIx] = stageObj //eslint-disable-line no-return-assign
   }
   
-  const checkInput = (stage, ix) => {
-    const stageObj = stageArr[stage]
-    return {stageObj, fxitem: ix === -1 ? {} : stageObj.fxarr[ix] || (stageObj.fxarr[ix] = {
-      fxrama$: div$(stageObj.ramas$, {class: 'bfx-rama'})
-    })}
-  }
-  
-  ui.rebuildStageEndPanel = (stage, ratioFx, pg) => {
-    ui.rebuildFxPanel(stage, -1, ratioFx, pg)
-  }
-
-  ui.rebuildFxPanel = (stage, ix, fx, pg) => {
-    const isEndRatio = ix === -1
-    const {stageObj, fxitem} = checkInput(stage, ix)
-    const fxrama$ = isEndRatio ? stageObj.endRatio$ : fxitem.fxrama$  // = stageObj.fxarr[ix]
-    const fxname = fx.getName()
-    fxitem.fx = fx
-
-    const pars = {}
-    const panel = {
-      frame$: div$({class: 'fxr-pars'}),
-      scene: null,
-      isActive: true
-    }
-    const addPanelScene = filterKey => {
-      set$(panel.frame$, {class: 'extgraph'})
-      panel.scene = {
-        canvas$: canvas$(panel.frame$, {class: 'biquad-canvas'}), 
-        width: CANVAS_SIZE, height: CANVAS_SIZE / 2, 
-        filterKey
-      }
-      renderPanelScene()
-    }
-    const renderPanelScene = _ => {
-      if (panel.scene) {
-        panel.scene.filter = fx.ext[panel.scene.filterKey]
-        panel.scene.filter && biquadGraph.render(panel.scene)
-      }
-    }
-    
-    const toggleActiveState = _ => {
-      panel.isActive = !panel.isActive
-      fxname === 'Ratio' 
-        ? pg.activateStage(stage, panel.isActive)
-        : fx.activate(panel.isActive)
-      set$(fxrama$, panel.isActive ? {declass: 'off'} : {class: 'off'})
-    }
-
-    const addRange = (parO, name, callback, value, min, max, step = .001) => 
-      parO.control$ = div$({class: 'beectrl ranger', attr: {name}}, 
-        parO.input$ = leaf$('input', {attr: {type: 'range', min, max, step, value}, on: {
-          input: event => callback(parseFloat(event.target.value))}}))
-        
-    const addCheckbox = (name, callback) => 
-      div$({class: 'beectrl checker', attr: {name}}, 
-        leaf$('input', {attr: {type: 'checkbox'}, on: {
-          change: event => callback(event.target.checked)}}))
-          
-    const addListSelector = (name, act, list, callback) =>
-      div$({class: 'beectrl selektor sel-' + name, attr: {name}}, 
-        leaf$('select', {id: 'opt_', on: {change: event => callback(event.target.value)}},
-          list.map(([value, name]) => 
-            leaf$('option', {text: name, attr: {value, ...(name === act ? {selected: ''} : {})}}))))
-            
-    const num2str = (num, maxwi = 4) => {
-      /*if (type === int) {
-        return round(num)
-      }*/
-      maxwi = clamp(maxwi, 2, 4) // 2 3 4 maxwi is valis
-      const absval = Math.abs(num)
-      wassert(typeof num !== Ø)
-      wassert(isFun(num.toFixed))
-      const str = absval >= 100 // 309 11000
-        ? num.toFixed(0) : absval >= 10 // 99.78 (2)
-          ? num.toFixed(maxwi - 2) : absval >= 1 // 5.437 0.939 (3)
-            ? num.toFixed(maxwi - 1) : num.toFixed(maxwi - 1)
-            
-      return str
-    }        
-
-    const refreshDispVal = key => {
-      const parO = pars[key]
-      const dispVal = fx.getValue(key) //: minmaxnak is lehet dispvalja
-      if (parO.type === 'float') {
-        const {val} = fx.getLinearValues(key)
-        if (val !== parseFloat(parO.input$.value)) {
-          parO.input$.value = val
-        }
-        //console.log('refreshDispVal', {key, dispVal, type: typeof dispVal})
-        set$(pars[key].control$, {attr: {val: num2str(dispVal)}})
-      } else if (parO.type === 'boolean') {
-        const val = fx.getValue(key)
-        const checked = ''
-        set$(parO.input$, val ? {attr: {checked}} : {deattr: {checked}})//:no val at creating
-        parO.input$.checked = val
-      }
-      renderPanelScene()
-    }        
-    const onValChanged = key => val => {
-      const parO = pars[key]
-      if (parO.type === 'boolean') {
-        fx.setValue(key, val)
-      } else {
-        //console.log('onValChanged', {key, val, type: typeof val})
-        fx.setLinearValue(key, val)
-        //refreshDispVal(key)
-      }        
-    }
-    const {exo} = fx
-    
-    for (const key in exo.def) {
-      const {defVal, type, name, short, subType} = exo.def[key]
-      if (type === 'skipui') {
-        continue
-      }
-      const parO = pars[key] = {
-        type, subType
-      }
-      if (type === 'float') {//8#97e -------- float -> input range --------
-        const dispName = short + (subType === 'decibel' ? ' (dB)' : '')
-        const {val, min, max} = fx.getLinearValues(key)
-        addRange(parO, dispName, startEndThrottle(onValChanged(key), 30), val, min, max)
-        //parO.input$ = parO.control$.children[0] //+brrrrr
-      } else if (type === 'boolean') {//8#9c7 -------- boolean -> input checkbox --------
-        parO.control$ = addCheckbox(short, onValChanged(key))
-        parO.input$ = parO.control$.children[0] //+brrrrr
-      } else {
-        if (type === 'strings') {//8#ea7 --- biquad string -> select box ---
-          parO.control$ = addListSelector(short, '', subType, onValChanged(key))
-        } else {
-          console.log({type, subType})
-        }
-      }
-      div$(panel.frame$, {class: 'fxr-par'}, div$({class: 'fxr-parval'}, parO.control$))
-      refreshDispVal(key) //: initial display
-      fx.onValueChange(key, _ => refreshDispVal(key))
-    }
-    exo.freqGraph && addPanelScene(exo.freqGraph)
-    //fx.ext.biquad && addPanelScene('biquad')
-    //fx.ext.IIR && addPanelScene('IIR')
-
-    const isRemoveable = fxname !== 'Blank' && !isEndRatio 
-    set$(fxrama$, {attr: {fxname}, html: ''}, [
-        !isEndRatio && addListSelector('selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stage, ix, nfx)),
-        panel.frame$,
-        div$({class: 'led-fx fix-on', click: toggleActiveState}),
-        isRemoveable && div$({class: 'bfx-delete', click: _ => pg.changeFx(stage, ix, 'fx_blank')})
-      ])
-    return panel
+  ui.resetStage = stageIx => { //:nothing to do? NOT USED
+    // endratioba az ujat kell befuzni, pl volume? led!
   }
   
   init()

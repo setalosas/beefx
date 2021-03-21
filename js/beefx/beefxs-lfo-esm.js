@@ -24,10 +24,10 @@ WaapiWrap.onRun(waCtx => {
         oscillation: {defVal: .3, min: -22050, max: 22050},
         phase: {defVal: 0, min: 0, max: PI2},
         masterFx: {defVal: {}},
-        target: {defVal: {}, type: 'skipui'},
-        callback: {defVal: nop, type: 'skipui'}
+        target: {defVal: {}, subType: 'skipui'},
+        callback: {defVal: nop, subType: 'skipui'}
       },
-      uiDisabled: true
+      uiSelectDisabled: true
     }
     
     LFOFx.setValue = ({ext}, key, value) => ({

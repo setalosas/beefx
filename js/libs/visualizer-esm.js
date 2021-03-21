@@ -19,7 +19,8 @@ const visualizerState = {
   lowFreq: false,
   rejSp: undef,
   visHash: {},
-  pending: []
+  pending: [],
+  cnt: 0
 }
 
 const initVisualizerState = _ => {
@@ -35,17 +36,20 @@ const addVisualizer = vis => {
 }
 
 const visualizerTick = async _ => {
-  if (visualizerState.isActive) {
-    for (const visix in visualizerState.visHash) {
-      const vis = visualizerState.visHash[visix]
-      wassert(vis)
-      vis.drawSpectrum()
+  visualizerState.cnt++
+  if (visualizerState.cnt % 3 === 1) {
+    if (visualizerState.isActive) {
+      for (const visix in visualizerState.visHash) {
+        const vis = visualizerState.visHash[visix]
+        wassert(vis)
+        vis.drawSpectrum()
+      }
     }
   }
-  requestAnimationFrame(visualizerTick)
+  setTimeout(_ => requestAnimationFrame(visualizerTick), 0)
 }
 
-export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix) => {
+export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix, mayday) => {
   wassert(canvas$)
   
   initVisualizerState()
@@ -56,6 +60,7 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix)
   const FFT_SIZE = 128 // 64 // 128 // 2048
   
   const vis = {
+    isActive: true,
     analyser: analyserNode,
     prevFreqs: [],
     freqs: undef,
@@ -74,9 +79,27 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix)
 
     addVisualizer(vis)
   }
+  
+  vis.setActive = val => vis.isActive = val
 
   vis.drawSpectrum = async _ => {
+    if (!vis.isActive) {
+      return
+    }
     vis.analyser.getByteFrequencyData(vis.freqs)
+    if (mayday) {
+      const MAYDAY_LIMIT = 180
+      let ok = false
+      for (let i = 0; i < vis.len; i++) {
+        if (vis.freqs[i] < MAYDAY_LIMIT) {
+          ok = true
+          break
+        }
+      }
+      if (!ok) {
+        mayday({freqs: vis.freqs, MAYDAY_LIMIT})
+      }
+    }
 
     const drawContext = canvas$.getContext('2d')
     canvas$.width = WIDTH
