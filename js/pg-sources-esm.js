@@ -12,11 +12,17 @@ const {schedule, adelay, NoW, since, startEndThrottle, post} = Corelib.Tardis
 
 export const extendWithSources = (playground, root) => {
   const {waCtx, ui} = root
-  const {stages} = playground
+  const {iterateStages, getStage} = playground
   
   //8#a48 ------------ Debug primitives ------------
   
   const crumb = 'aschne'
+  
+  const logSources = false
+  
+  const slog = (...args) => logSources && console.log(...args)
+  //const wlog = (...args) => logSources && console.warn(...args)
+  const tlog = (...args) => logSources && console.table(...args)
   
   const dbgLog = (main, msg, crumb, ixObj, node) => {
     const msgSt = 'font-weight: 700;'
@@ -112,7 +118,7 @@ export const extendWithSources = (playground, root) => {
     const newSource = createSource(sourceIx, mediaElement, destStageIxArr)
     
     if (!sourceIx) { //: local main media, we will listen its state changes
-      console.log('sources calling initlocalmedialisteners')
+      slog('sources calling initlocalmedialisteners')
       playground.players.initLocalMediaListeners(mediaElement)
     }
     dbgMarkNode(newSource, {sourceIx}, `chgSrc (re)created`)
@@ -121,9 +127,9 @@ export const extendWithSources = (playground, root) => {
       autoPlayMedia(sourceIx)
     }
     for (const stageIx of destStageIxArr) {
-      const stage = stages[stageIx]
+      const stage = getStage(stageIx)
       newSource.sourceNode.connect(stage.stInput)
-      console.log(`💦reconnecting source[${sourceIx}] -> stage[${stage.ix}]`)
+      slog(`💦reconnecting source[${sourceIx}] -> stage[${stage.ix}]`)
     }
     dbgCheckConsistency()
     sources.refreshUiAfterChange()
@@ -133,8 +139,8 @@ export const extendWithSources = (playground, root) => {
   
   playground.changeStageSourceIndex = (stageIx, newSourceIx, {isFirst} = {}) => {
     stageIx = parseInt(stageIx)
-    wassert(stageIx >= 0 && stageIx < stages.length)  //: stageIx 0..3, sourceIx 0..4
-    const stage = stages[stageIx]
+    wassert(stageIx >= 0 && stageIx < 64)  //: stageIx 0..63, sourceIx 0..4
+    const stage = getStage(stageIx)
     
     if (!sourceArr[newSourceIx]) { //: no such valid source
       return console.warn(`There is no source[${newSourceIx}] for stage ${stageIx}`)
@@ -145,12 +151,12 @@ export const extendWithSources = (playground, root) => {
       if (oldSourceIx === newSourceIx) {
         return console.warn(`chgStageSrc: same old & new! stage[${stageIx}] srcIx=${newSourceIx}`)
       }
-      console.log(`playground.chgStageSrc [${stageIx}] sourceIx: ${oldSourceIx} -> ${newSourceIx}`)
+      slog(`playground.chgStageSrc [${stageIx}] sourceIx: ${oldSourceIx} -> ${newSourceIx}`)
       
       disconnectSource(oldSourceIx, stageIx) //: this is a volatile state until connectSrc
     }
     //: evth is ok now, old (if there was one) has been disconnected, and there IS a new one
-    console.log(`chgStageSrcIx: connecting source ${newSourceIx} to stage ${stageIx}`)
+    slog(`chgStageSrcIx: connecting source ${newSourceIx} to stage ${stageIx}`)
     connectSource(newSourceIx, stageIx)
     dbgCheckConsistency()
     sources.refreshUiAfterChange()
@@ -160,7 +166,7 @@ export const extendWithSources = (playground, root) => {
   
   const connectSource = (sourceIx, stageIx) => {
     const currSource = sourceArr[sourceIx]
-    const stage = stages[stageIx]
+    const stage = getStage(stageIx)
     wassert(!currSource.destStageIxArr.includes(stageIx)) //: can't be already there
     
     currSource.sourceNode.connect(stage.stInput)
@@ -168,28 +174,28 @@ export const extendWithSources = (playground, root) => {
     currSource.destStageIxArr.push(stageIx)
     autoPlayMedia(sourceIx)
     
-    console.log(`💦➕source[${sourceIx}] connected to stage[${stageIx}]`, currSource)
+    slog(`💦➕source[${sourceIx}] connected to stage[${stageIx}]`, currSource)
   }
   
   const disconnectSource = (sourceIx, stageIx) => {
     const currSource = sourceArr[sourceIx]
-    const stage = stages[stageIx]
+    const stage = getStage(stageIx)
     wassert(currSource.destStageIxArr.includes(stageIx)) //: must be there
     
     currSource.destStageIxArr = currSource.destStageIxArr.filter(ix => ix !== stageIx)
     currSource.sourceNode.disconnect(stage.stInput)
     
-    console.log(`💦➖source[${sourceIx}] disconnected from stage[${stageIx}]`, currSource)
+    slog(`💦➖source[${sourceIx}] disconnected from stage[${stageIx}]`, currSource)
   }
   
   sources.refreshUiAfterChange = _ => {//post(_ => {
     sourceArr.map(({destStageIxArr}, sourceIx) => sourceIx && 
       ui.setVideoTargetInfo(sourceIx, destStageIxArr.map(a => 'ABCD'[a]).join(', ') || 'Mute'))
-    for (const stage of stages) {
-      console.log(`setting input selectors: stage[${stage.ix}] = ${stage.stSource}`)
+    iterateStages(stage => { 
+      slog(`setting input selectors: stage[${stage.ix}] = ${stage.stSource}`)
       ui.setStageInputState(stage.ix, stage.stSource)
-    }
-    console.table(sourceArr.map(src => ({...src, stages: src.destStageIxArr.join(', ')})))
+    })
+    tlog(sourceArr.map(src => ({...src, stages: src.destStageIxArr.join(', ')})))
   }
   
   return sources  

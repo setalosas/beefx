@@ -33,6 +33,19 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
   &::before {.absLB(0px, 50px); width: 100%; .roco(); .font(24px, 700); .ita(); color: #cc0; 
     .txtCent(); content: 'Click any key to start Web Audio API!';}
 }
+//8#49c------  Preset menu bottom right ------
+@previewWidth: 500px;
+.preset-menu { .fixRB(0, 0); z-index: 9999; max-width: @previewWidth; .txtCent(); 
+  .bg(hsla(0,0%,40%,.6)); transition: transform .1s 0s; border-radius: 8px 0 0 0;
+  &::before {.absRB(0, 100%); .cb(@B, @W); content: 'Change preset';}
+  &.hidden:not(:hover) {transform: translateY(calc(~"100% - 8px")); 
+    transition: transform .5s 4s;}
+  .preset-item { .mitemBase(); .hand(); .bg(hsla(0,0%,50%,.6));
+    .preset-preview {.hide(); .fixRB(@previewWidth + 10px, 2px); .cb(@W, @B75);padding: 6px;
+      .bora(8px); .txtLeft();}
+    &:hover .preset-preview {.blk();}
+  }
+}
 .beeBg(){ @y1: hsl(45, 100%, 40%); @y2: hsl(60, 100%, 40%);
   background-blend-mode: color-burn;
   background: 
@@ -41,8 +54,8 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 .beebody {.fixLT(0, 0); .wihi(100%, 100%); .bg(#666); z-index: 9999; .beeBg();}
 .bfx-top {.relLT(0, 0); .wihi(100%, auto); .bg(@B3); padding: 2px 4px; .backBlur(3px);
   .mediamenu {.relLT(0,0); .txtCent(); .roco(); .font(14px, 400); 
-    input, div {.relLT(0, 0); .blk(); padding: 4px; margin: 4px auto; .bg(@W75);}
-    .mm-item {width: fit-content; min-width: 50%; .bg(@W8); .hand();}
+    input, div {.relLT(0, 0); .blk(); padding: 4px; margin: 0 auto; .bg(@W75);}
+    .mm-item {width: fit-content; min-width: 50%; .bg(@W8); .hand(); .bordTB(2px, @B25);}
     .yt {.bg(fade(#f00, 30%));}
   }
   &.video-source {height: 360px;}
@@ -168,6 +181,7 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
   vertical-align: top; .bora(10px);}
 //8#70f ---- Stage fx panels (general bfx-rama, in any stage) -------  
 .bfx-rama {.relLT(0,0); margin: 3px 1px; padding: 2px; color: @W; .font(14px,400);.bora(8px);
+  box-shadow: inset 1px 1px 1px 0 @W5;
   &:hover::before {.fixRB(4px, 4px); .font(16px, 700); content: attr(pepper); color: @W5;}
   
   //.bfx-rama.isRemoveable
@@ -175,7 +189,8 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
   .bfx-foldicon::after {content: '➖';}
   &.folded .bfx-foldicon::after {content: '➕';}
   // then bfx rama->
-  &.folded {height: 18px; overflow: hidden;} 
+  //&.folded {height: 18px; overflow: hidden;} 
+  &.folded .fxr-parval:not(.fxt-info):not(.fxt-cmd) {.hide();}  // keep graph/cmd/html when folded
   //&.isFoldable 
   .selektor.sel-selfx {margin-right: 36px;}
   //&.isBlank .selektor.sel-selfx {margin-right: 36px;}
@@ -188,8 +203,10 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
   .bfxact.led-fx {.absLT(-1px, 1px); .bora(50%); --ledhue: 120; .hand();}
   .bfxact::before {.bsh0(4px, 1px, @B);}
   // then bfx rama->  
-  &.bypass {filter: saturate(.2); .bfxact.led-fx {--ledhue: 200;} &::before {content: none;}}
-    
+  &.bypass {filter: saturate(.2) brightness(.8); 
+    .bfxact.led-fx {--ledhue: 200;} 
+    &::before {content: none;} // because filter fucks up fixed positioning
+  }    
   &.isBlank {height:18px;}
   &.isFixed.isGain {height: 24px;} 
   
@@ -197,15 +214,22 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
 }
 @biqx: 240px;
 @biqy: 120px;
-.fxr-pars {  
-  .fxr-parval {//.fxr-parval {padding: 0px;}
-    .html {.relLT(6px, 0); width: 223px; padding: 3px 6px; margin-bottom: 4px;
-      .bora(6px); .bg(@B1); border: 1px dotted @W;.font(11px, 400);}}
-  .graph-canvas {.relLT(4px, 4px); .wihi(@biqx, @biqy); .bg(@B); .bora(6px);
-    margin-bottom: 4px; box-shadow: inset -1px -1px 1px 0px @W8;}
+.fxr-pars {.txtCent(); 
+  .fxr-parval {.txtLeft();//.fxr-parval {padding: 0px;}
+  &.fxt-cmd {.inBlk(); .txtCent();}
+  .html, .info {.relLT(6px, 0); width: 223px; padding: 3px 6px; margin-bottom: 4px;
+    .bora(6px); word-break: break-word; .bg(@B15); border: 1px dotted @W;.font(11px, 400);
+    em { &::before {content: '◽️'; font-style: normal; }}
+  }}
+  .graph-canvas {.relLT(0, 0); .blk(); .wihi(@biqx, @biqy); .bora(6px);
+    margin: 2px 0 4px 4px; padding: 0 0 0 0; box-shadow: inset -1px -1px 1px 0px @W8;
+    .bg(@B);
+    //&:hover {.wihi(600px, 300px);}
+    &.gr-scope {.bg(hsl(210, 100%, 6%));}
+  }
 }
 //8#a5c ---- Mid/effect  section 'standrard' bfx-rama -------  
-.bfx-mid .bfx-rama {min-width: 248px;
+.bfx-mid .bfx-rama {width: 248px;
   &.hasStageMark::after {.absLT(24px, -2px); content: var(--stage);
     .font(24px, 700);  .ita(); color: @W75; text-shadow: 1px 1px 0px @B2;}
      
@@ -231,24 +255,57 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
 
 //8#66f---- Topmenu used in endStage ramas, but it's universal -------
 .bfx-topmenu {.relLT(-1px, 0); .txtRight(); padding-right: 2px; margin-left: 18px;}
-.bfx-mitem {.relLT(0,0); .mitemBase(); .hand(); margin: 2px .5px; padding: 1px 2px 0; 
+.bfx-mitem, .bee-cmd {.relLT(0,0); .mitemBase(); .hand(); 
+  margin: 2px .5px; padding: 1px 2px 0; 
+  &.active {.cb(#eee, #555);}
   &.wled {padding-right: 16px; 
     &.send .led-fx {--ledhue: 50;}
     &.listen .led-fx {--ledhue: 0;}
-    &.active { .cb(#eee, #555);}
     &:not(.active) .led-fx { filter: saturate(0) opacity(.5);
       &::after {animation: none; will-change: auto;}}
     .led-fx {.absRT(0px, -1px); left: unset; --pulseperiod: .5s; 
       &::before {.bsh0(2px, 1px, @B3);}}
 }}
+.bee-cmd[state='active'] {.cb(#ffa, @B75); .textShade(currentColor);} //override
+.bee-cmd[state='alert'] {.cb(#faa, @B75); .textShade(currentColor);} //override
+//.bee-cmd {.relLT(0,0); .mitemBase(); .hand();}
+
+body {//8#b3d---- Stage coloring -------
+  --sat1mod: 0%;
+  --sat2mod: -20%;
+  --lit1mod: -5%;
+  --lit2mod: -10%;
+}
 .colorize(@hue, @sat1, @lit1, @sat2, @lit2) {
-  .huerot {filter: hue-rotate(@hue);}
+  .gr-scope, .gr-sampleGraph, .gr-spectrogram, .huerot {filter: hue-rotate(@hue);}
+  --hue: @hue - 20deg;
+  --sat1: ~"calc(@{sat1} + var(--sat1mod))";
+  --lit1: ~"calc(@{lit1} + var(--lit1mod))";
+  --sat2: ~"calc(@{sat2} + var(--sat2mod))";
+  --lit2: ~"calc(@{lit2} + var(--lit2mod))";
+  .bfx-rama {.bg(linear-gradient(157deg, 
+    ~"hsl(var(--hue), var(--sat1), var(--lit1))", 
+    ~"hsl(var(--hue), var(--sat2), var(--lit2))"
+    ));}
+    /*
+  
   .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
 }
 .bfx-st1 {--stage: 'A'; .bg(@B2); .colorize(130deg, 60%, 80%, 60%, 45%);}
 .bfx-st2 {--stage: 'B'; .bg(@B2); .colorize(220deg, 75%, 85%, 75%, 60%);}
 .bfx-st3 {--stage: 'C'; .bg(@B2); .colorize(280deg, 75%, 85%, 75%, 60%);}
 .bfx-st4 {--stage: 'D'; .bg(@B2); .colorize(340deg, 60%, 85%, 55%, 60%);}
+
+.bfx-st5 {--stage: 'E'; .bg(@B2); .colorize(60deg, 60%, 80%, 60%, 45%);}
+.bfx-st6 {--stage: 'F'; .bg(@B2); .colorize(180deg, 70%, 75%, 70%, 50%);} // a 20 szep!
+.bfx-st7 {--stage: 'G'; .bg(@B2); .colorize(250deg, 75%, 85%, 75%, 60%);}
+.bfx-st8 {--stage: 'H'; .bg(@B2); .colorize(30deg, 60%, 85%, 55%, 60%);}
+
+.bfx-st9 {--stage: 'I'; .bg(@B2); .colorize(90deg, 60%, 80%, 60%, 45%);}
+.bfx-st10 {--stage: 'J'; .bg(@B2); .colorize(310deg, 65%, 80%, 65%, 50%);}
+.bfx-st11 {--stage: 'K'; .bg(@B2); .colorize(150deg, 5%, 85%, 5%, 60%);}
+.bfx-st12 {--stage: 'L'; .bg(@B2); .colorize(45deg, 60%, 85%, 55%, 60%);}
 .mejs__audio, audio {margin: 6px auto;}  
 .mejs__audio::after {.absLT(100%,14px); width: fit-content; margin-left: 4px;
   content: var(--title); color: @W8;}
@@ -263,10 +320,10 @@ audio{.wihi(240px, 28px); filter: invert(1) contrast(.6);}
 
 .beectrl {.rel(); margin-left: 80px;}
 .beectrl::before, 
-.beectrl::after {.font(13px, 400); .textShade(currentColor); .txtcut();}
-.beectrl::before {.absRT(100%, 2px); margin-right: 6px; color: @beename; .textShade(@W5);
+.beectrl::after {.font(13px, 300); .textShade(currentColor); .txtcut();}
+.beectrl::before {.absRT(100%, 2px); margin-right: 4px; color: @beename; .textShade(@W5);
   content: attr(name) ':'; max-width: 80px; }
-.beectrl::after {.absLT(100%, 3px); margin-left: 6px; color: @beeval; content: attr(val);}
+.beectrl::after {.absLT(100%, 3px); margin-left: 5px; color: @beeval; content: attr(val);}
 
 .selektor {padding: 0 0 4px 0; 
   select {.bg(@W5); max-width: 132px; font-size: 12px;}
@@ -275,39 +332,42 @@ audio{.wihi(240px, 28px); filter: invert(1) contrast(.6);}
 //8#c8f ----- selektor -----
 .selektor.sel-selfx { margin-left: 16px; margin-right: 18px; 
   &::before {content: none;}
-  select {.rel(); width: 100%; text-align: right; max-width: unset; font-size: 13px;
-    color: @W; .textShade(@B);
-    .bg(linear-gradient(45deg, @W25, @W75));
+  select {.rel(); width: 100%; .txtRight(); max-width: unset; font-size: 13px;
+    color: @W; text-shadow: 0 0 1px @B, 1px 1px 3px @B, 2px 2px 6px @B;
+    .bg(linear-gradient(135deg, @T 30%, @B15));
     border: none; border-radius: 6px 6px 4px 5px;
-    backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);}
+  }
 }
 [fxname="Blank"] .selektor {margin-right: 3px;}
 //8#cc0 ----- ranger -----
 .ranger {--mari: 38px; margin-right: var(--mari);}  
 .ranger::after { max-width: var(--mari);}
-input[type=range] {.wihi(100%, 21px); margin: 0; .bg(@T); .noUA();
+input[type=range] {.wihi(100%, 20px); margin: 0; .bg(@T); .noUA();
   &::-webkit-slider-thumb {.wihi(10px, 20px); .bora(5px); .hand(); margin-top: -9px;
     .bg(@beeyell); box-shadow: 1px 1px 2px 0px @B; border: 1px solid @B; .noUA();}
-  &::-webkit-slider-runnable-track {.wihi(100%, 4px); .hand(); .bora(2px);
+  &::-webkit-slider-runnable-track {.wihi(100%, 4px); .hand(); .bora(2px); z-index: 1;
     box-shadow: 1px 1px 1px @B5; .bg(@B5); border: 1px solid @B5;}
   &:focus {outline: none;}
   &:focus::-webkit-slider-runnable-track {.bg(@beebrown);}
+  &[disabled] {filter: saturate(0);}
+  &::before {.absRT(1px, -6px); .roco(); .font(11px, 300); color: @W; content: attr(unit);}
 }
 //8#8c0 ----- checker -----
-.checker input[type=checkbox] {.noUA(); .relLT(0,0);.wihi(12px);.bora(50%); .bsh0();.bg(@W25);
+.checker input[type=checkbox] {.noUA(); .relLT(0, 0); .wihi(12px); .bora(50%); .hand();
+  outline: none; .bsh0(); .bg(@W25);
   &[checked] {.bg(@beeyell);}}
 
 //8#b35youtube extension overrides
 
 .beetrigger {.fixLB(0,0); z-index: 9999; padding: 12px 6px; border-radius: 40% 90% 50% 0;
-  box-shadow: 2px 0 3px 1px @B, 1px -2px 6px 2px @B;
+  box-shadow: 2px 0 3px 1px @B, 1px -2px 6px 2px @B; filter: saturate(0);
   .hand(); .cb(#ffe000, @B5); .beeBg(); .roco(); .font(14px, 400); .textShade(@B);
+  &.hasvideo {filter: none;}
   &:hover {.tori(10%, 90%); transform: scale(5); transition: transform 1s 0s ease-out;}}
 
-.beebody.u2 {.bg(@B25); backdrop-filter: blur(2px); .boraTB(8px, 0); 
-  bottom: 0; top: unset; .wihi(auto, auto); z-index: 9999;
-  .bfx-top {.hide();}
-}
+.beebody.u2:not(.nu2) {.bg(@B25); backdrop-filter: blur(2px); .boraTB(8px, 0); 
+  bottom: 0; top: unset; .wihi(auto, auto); z-index: 9999;}
+.beebody.u2 .bfx-top {.hide();}
 
 //vendegsegben:
 

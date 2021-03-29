@@ -4,11 +4,12 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib} from './improxy-esm.js'
+import {Corelib, DOMplusUltra} from './improxy-esm.js'
 
 const {Ø, s_a, undef, clamp, nop, isNum, getRnd, hashOfString} = Corelib
 const {wassert} = Corelib.Debug
 const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
+const {q$} = DOMplusUltra
 const {BroadcastChannel} = window
 
 export const createRadio = _ => {
@@ -79,9 +80,9 @@ export const extendWithPlayers = (playground, root) => {
   
   const scrapingYoutubeForVideoInfo = _ => {
     const real = {}
-    const h1Big = document.querySelector('h1 .ytd-video-primary-info-renderer')?.textContent
-    const h1Mini = document.querySelector('h1 .miniplayer-title')?.textContent
-    const miniplayer = document.querySelector('ytd-miniplayer')
+    const h1Big = q$('h1 .ytd-video-primary-info-renderer')?.textContent
+    const h1Mini = q$('h1 .miniplayer-title')?.textContent
+    const miniplayer = q$('ytd-miniplayer')
     const videoInMiniplayer = miniplayer?.querySelector('ytd-player')
 
     if (videoInMiniplayer) {
@@ -96,7 +97,7 @@ export const extendWithPlayers = (playground, root) => {
        //console.log(`🔷${real.videoId}`)
     } else {
       real.videoTitle = h1Big
-      real.videoId = document.querySelector('.ytd-page-manager[video-id]')?.getAttribute('video-id')
+      real.videoId = q$('.ytd-page-manager[video-id]')?.getAttribute('video-id')
       //console.log(`🟥${real.videoTitle}`)
       //console.log(`🔶 ${real.videoId}`)
     }

@@ -80,6 +80,67 @@ body::after {
   text-align: center;
   content: 'Click any key to start Web Audio API!';
 }
+.preset-menu {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  max-width: 500px;
+  text-align: center;
+  background: rgba(102, 102, 102, 0.6);
+  transition: transform .1s 0s;
+  border-radius: 8px 0 0 0;
+}
+.preset-menu::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  color: #000000;
+  background-color: #ffffff;
+  content: 'Change preset';
+}
+.preset-menu.hidden:not(:hover) {
+  transform: translateY(calc(100% - 8px));
+  transition: transform .5s 4s;
+}
+.preset-menu .preset-item {
+  position: relative;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  background: rgba(128, 128, 128, 0.6);
+}
+.preset-menu .preset-item:hover {
+  color: #ffc;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.preset-menu .preset-item.act {
+  color: #ffb;
+}
+.preset-menu .preset-item .preset-preview {
+  display: none;
+  position: fixed;
+  right: 510px;
+  bottom: 2px;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 6px;
+  border-radius: 8px;
+  text-align: left;
+}
+.preset-menu .preset-item:hover .preset-preview {
+  display: block;
+}
 .beebody {
   position: fixed;
   left: 0;
@@ -118,7 +179,7 @@ body::after {
   top: 0;
   display: block;
   padding: 4px;
-  margin: 4px auto;
+  margin: 0 auto;
   background: rgba(255, 255, 255, 0.75);
 }
 .bfx-top .mediamenu .mm-item {
@@ -126,6 +187,8 @@ body::after {
   min-width: 50%;
   background: rgba(255, 255, 255, 0.8);
   cursor: pointer;
+  border-top: 2px solid rgba(0, 0, 0, 0.25);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.25);
 }
 .bfx-top .mediamenu .yt {
   background: rgba(255, 0, 0, 0.3);
@@ -717,6 +780,7 @@ a#thumbnail.emulated {
   font-size: 14px;
   font-weight: 400;
   border-radius: 8px;
+  box-shadow: inset 1px 1px 1px 0 rgba(255, 255, 255, 0.5);
 }
 .bfx-rama:hover::before {
   position: fixed;
@@ -741,9 +805,8 @@ a#thumbnail.emulated {
 .bfx-rama.folded .bfx-foldicon::after {
   content: '➕';
 }
-.bfx-rama.folded {
-  height: 18px;
-  overflow: hidden;
+.bfx-rama.folded .fxr-parval:not(.fxt-info):not(.fxt-cmd) {
+  display: none;
 }
 .bfx-rama .selektor.sel-selfx {
   margin-right: 36px;
@@ -772,13 +835,10 @@ a#thumbnail.emulated {
   box-shadow: 0 0 4px 1px #000000;
 }
 .bfx-rama.bypass {
-  filter: saturate(0.2);
+  filter: saturate(0.2) brightness(0.8);
 }
 .bfx-rama.bypass .bfxact.led-fx {
   --ledhue: 200;
-}
-.bfx-rama.bypass::before {
-  content: none;
 }
 .bfx-rama.isBlank {
   height: 18px;
@@ -786,7 +846,18 @@ a#thumbnail.emulated {
 .bfx-rama.isFixed.isGain {
   height: 24px;
 }
-.fxr-pars .fxr-parval .html {
+.fxr-pars {
+  text-align: center;
+}
+.fxr-pars .fxr-parval {
+  text-align: left;
+}
+.fxr-pars .fxr-parval.fxt-cmd {
+  display: inline-block;
+  text-align: center;
+}
+.fxr-pars .fxr-parval .html,
+.fxr-pars .fxr-parval .info {
   position: relative;
   left: 6px;
   top: 0;
@@ -794,24 +865,35 @@ a#thumbnail.emulated {
   padding: 3px 6px;
   margin-bottom: 4px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.1);
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.15);
   border: 1px dotted #ffffff;
   font-size: 11px;
   font-weight: 400;
 }
+.fxr-pars .fxr-parval .html em::before,
+.fxr-pars .fxr-parval .info em::before {
+  content: '◽️';
+  font-style: normal;
+}
 .fxr-pars .graph-canvas {
   position: relative;
-  left: 4px;
-  top: 4px;
+  left: 0;
+  top: 0;
+  display: block;
   width: 240px;
   height: 120px;
-  background: #000000;
   border-radius: 6px;
-  margin-bottom: 4px;
+  margin: 2px 0 4px 4px;
+  padding: 0 0 0 0;
   box-shadow: inset -1px -1px 1px 0px rgba(255, 255, 255, 0.8);
+  background: #000000;
+}
+.fxr-pars .graph-canvas.gr-scope {
+  background: #000f1f;
 }
 .bfx-mid .bfx-rama {
-  min-width: 248px;
+  width: 248px;
 }
 .bfx-mid .bfx-rama.hasStageMark::after {
   position: absolute;
@@ -892,7 +974,8 @@ a#thumbnail.emulated {
   padding-right: 2px;
   margin-left: 18px;
 }
-.bfx-mitem {
+.bfx-mitem,
+.bee-cmd {
   position: relative;
   left: 0;
   top: 0;
@@ -910,82 +993,332 @@ a#thumbnail.emulated {
   margin: 2px .5px;
   padding: 1px 2px 0;
 }
-.bfx-mitem:hover {
+.bfx-mitem:hover,
+.bee-cmd:hover {
   color: #ffc;
   background-color: rgba(0, 0, 0, 0.5);
 }
-.bfx-mitem.act {
+.bfx-mitem.act,
+.bee-cmd.act {
   color: #ffb;
 }
-.bfx-mitem.wled {
-  padding-right: 16px;
-}
-.bfx-mitem.wled.send .led-fx {
-  --ledhue: 50;
-}
-.bfx-mitem.wled.listen .led-fx {
-  --ledhue: 0;
-}
-.bfx-mitem.wled.active {
+.bfx-mitem.active,
+.bee-cmd.active {
   color: #eee;
   background-color: #555;
 }
-.bfx-mitem.wled:not(.active) .led-fx {
+.bfx-mitem.wled,
+.bee-cmd.wled {
+  padding-right: 16px;
+}
+.bfx-mitem.wled.send .led-fx,
+.bee-cmd.wled.send .led-fx {
+  --ledhue: 50;
+}
+.bfx-mitem.wled.listen .led-fx,
+.bee-cmd.wled.listen .led-fx {
+  --ledhue: 0;
+}
+.bfx-mitem.wled:not(.active) .led-fx,
+.bee-cmd.wled:not(.active) .led-fx {
   filter: saturate(0) opacity(0.5);
 }
-.bfx-mitem.wled:not(.active) .led-fx::after {
+.bfx-mitem.wled:not(.active) .led-fx::after,
+.bee-cmd.wled:not(.active) .led-fx::after {
   animation: none;
   will-change: auto;
 }
-.bfx-mitem.wled .led-fx {
+.bfx-mitem.wled .led-fx,
+.bee-cmd.wled .led-fx {
   position: absolute;
   right: 0px;
   top: -1px;
   left: unset;
   --pulseperiod: .5s;
 }
-.bfx-mitem.wled .led-fx::before {
+.bfx-mitem.wled .led-fx::before,
+.bee-cmd.wled .led-fx::before {
   box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3);
+}
+.bee-cmd[state='active'] {
+  color: #ffa;
+  background-color: rgba(0, 0, 0, 0.75);
+  text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
+}
+.bee-cmd[state='alert'] {
+  color: #faa;
+  background-color: rgba(0, 0, 0, 0.75);
+  text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
+}
+body {
+  --sat1mod: 0%;
+  --sat2mod: -20%;
+  --lit1mod: -5%;
+  --lit2mod: -10%;
 }
 .bfx-st1 {
   --stage: 'A';
   background: rgba(0, 0, 0, 0.2);
+  --hue: 110deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(80% + var(--lit1mod));
+  --sat2: calc(60% + var(--sat2mod));
+  --lit2: calc(45% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
 }
+.bfx-st1 .gr-scope,
+.bfx-st1 .gr-sampleGraph,
+.bfx-st1 .gr-spectrogram,
 .bfx-st1 .huerot {
   filter: hue-rotate(130deg);
 }
 .bfx-st1 .bfx-rama {
-  background: linear-gradient(157deg, #b8ebad, #45b82e);
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
 }
 .bfx-st2 {
   --stage: 'B';
   background: rgba(0, 0, 0, 0.2);
+  --hue: 200deg;
+  --sat1: calc(75% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(75% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
 }
+.bfx-st2 .gr-scope,
+.bfx-st2 .gr-sampleGraph,
+.bfx-st2 .gr-spectrogram,
 .bfx-st2 .huerot {
   filter: hue-rotate(220deg);
 }
 .bfx-st2 .bfx-rama {
-  background: linear-gradient(157deg, #bce2f5, #4cb2e6);
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
 }
 .bfx-st3 {
   --stage: 'C';
   background: rgba(0, 0, 0, 0.2);
+  --hue: 260deg;
+  --sat1: calc(75% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(75% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
 }
+.bfx-st3 .gr-scope,
+.bfx-st3 .gr-sampleGraph,
+.bfx-st3 .gr-spectrogram,
 .bfx-st3 .huerot {
   filter: hue-rotate(280deg);
 }
 .bfx-st3 .bfx-rama {
-  background: linear-gradient(157deg, #cfbcf5, #804ce6);
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
 }
 .bfx-st4 {
   --stage: 'D';
   background: rgba(0, 0, 0, 0.2);
+  --hue: 320deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(55% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
 }
+.bfx-st4 .gr-scope,
+.bfx-st4 .gr-sampleGraph,
+.bfx-st4 .gr-spectrogram,
 .bfx-st4 .huerot {
   filter: hue-rotate(340deg);
 }
 .bfx-st4 .bfx-rama {
-  background: linear-gradient(157deg, #f0c2e0, #d161ac);
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st5 {
+  --stage: 'E';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 40deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(80% + var(--lit1mod));
+  --sat2: calc(60% + var(--sat2mod));
+  --lit2: calc(45% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st5 .gr-scope,
+.bfx-st5 .gr-sampleGraph,
+.bfx-st5 .gr-spectrogram,
+.bfx-st5 .huerot {
+  filter: hue-rotate(60deg);
+}
+.bfx-st5 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st6 {
+  --stage: 'F';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 160deg;
+  --sat1: calc(70% + var(--sat1mod));
+  --lit1: calc(75% + var(--lit1mod));
+  --sat2: calc(70% + var(--sat2mod));
+  --lit2: calc(50% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st6 .gr-scope,
+.bfx-st6 .gr-sampleGraph,
+.bfx-st6 .gr-spectrogram,
+.bfx-st6 .huerot {
+  filter: hue-rotate(180deg);
+}
+.bfx-st6 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st7 {
+  --stage: 'G';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 230deg;
+  --sat1: calc(75% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(75% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st7 .gr-scope,
+.bfx-st7 .gr-sampleGraph,
+.bfx-st7 .gr-spectrogram,
+.bfx-st7 .huerot {
+  filter: hue-rotate(250deg);
+}
+.bfx-st7 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st8 {
+  --stage: 'H';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 10deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(55% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st8 .gr-scope,
+.bfx-st8 .gr-sampleGraph,
+.bfx-st8 .gr-spectrogram,
+.bfx-st8 .huerot {
+  filter: hue-rotate(30deg);
+}
+.bfx-st8 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st9 {
+  --stage: 'I';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 70deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(80% + var(--lit1mod));
+  --sat2: calc(60% + var(--sat2mod));
+  --lit2: calc(45% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st9 .gr-scope,
+.bfx-st9 .gr-sampleGraph,
+.bfx-st9 .gr-spectrogram,
+.bfx-st9 .huerot {
+  filter: hue-rotate(90deg);
+}
+.bfx-st9 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st10 {
+  --stage: 'J';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 290deg;
+  --sat1: calc(65% + var(--sat1mod));
+  --lit1: calc(80% + var(--lit1mod));
+  --sat2: calc(65% + var(--sat2mod));
+  --lit2: calc(50% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st10 .gr-scope,
+.bfx-st10 .gr-sampleGraph,
+.bfx-st10 .gr-spectrogram,
+.bfx-st10 .huerot {
+  filter: hue-rotate(310deg);
+}
+.bfx-st10 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st11 {
+  --stage: 'K';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 130deg;
+  --sat1: calc(5% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(5% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st11 .gr-scope,
+.bfx-st11 .gr-sampleGraph,
+.bfx-st11 .gr-spectrogram,
+.bfx-st11 .huerot {
+  filter: hue-rotate(150deg);
+}
+.bfx-st11 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
+}
+.bfx-st12 {
+  --stage: 'L';
+  background: rgba(0, 0, 0, 0.2);
+  --hue: 25deg;
+  --sat1: calc(60% + var(--sat1mod));
+  --lit1: calc(85% + var(--lit1mod));
+  --sat2: calc(55% + var(--sat2mod));
+  --lit2: calc(60% + var(--lit2mod));
+  /*
+  
+  .bfx-rama {.bg(linear-gradient(157deg, hsl(@hue - 20deg, @sat1, @lit1), hsl(@hue - 20deg, @sat2, @lit2)));}
+  */
+}
+.bfx-st12 .gr-scope,
+.bfx-st12 .gr-sampleGraph,
+.bfx-st12 .gr-spectrogram,
+.bfx-st12 .huerot {
+  filter: hue-rotate(45deg);
+}
+.bfx-st12 .bfx-rama {
+  background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
 }
 .mejs__audio,
 audio {
@@ -1016,7 +1349,7 @@ audio {
 .beectrl::before,
 .beectrl::after {
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 300;
   text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -1026,7 +1359,7 @@ audio {
   position: absolute;
   right: 100%;
   top: 2px;
-  margin-right: 6px;
+  margin-right: 4px;
   color: #ffffff;
   text-shadow: 0 0 1px rgba(255, 255, 255, 0.5), 0 0 3px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.5);
   content: attr(name) ':';
@@ -1036,7 +1369,7 @@ audio {
   position: absolute;
   left: 100%;
   top: 3px;
-  margin-left: 6px;
+  margin-left: 5px;
   color: #ffe500;
   content: attr(val);
 }
@@ -1067,11 +1400,10 @@ audio {
   max-width: unset;
   font-size: 13px;
   color: #ffffff;
-  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.75));
+  text-shadow: 0 0 1px #000000, 1px 1px 3px #000000, 2px 2px 6px #000000;
+  background: linear-gradient(135deg, transparent 30%, rgba(0, 0, 0, 0.15));
   border: none;
   border-radius: 6px 6px 4px 5px;
-  backdrop-filter: brightness(1) invert(1) hue-rotate(180deg) saturate(2);
 }
 [fxname="Blank"] .selektor {
   margin-right: 3px;
@@ -1085,7 +1417,7 @@ audio {
 }
 input[type=range] {
   width: 100%;
-  height: 21px;
+  height: 20px;
   margin: 0;
   background: transparent;
   appearance: none;
@@ -1106,6 +1438,7 @@ input[type=range]::-webkit-slider-runnable-track {
   height: 4px;
   cursor: pointer;
   border-radius: 2px;
+  z-index: 1;
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(0, 0, 0, 0.5);
@@ -1116,6 +1449,19 @@ input[type=range]:focus {
 input[type=range]:focus::-webkit-slider-runnable-track {
   background: #a95c0f;
 }
+input[type=range][disabled] {
+  filter: saturate(0);
+}
+input[type=range]::before {
+  position: absolute;
+  right: 1px;
+  top: -6px;
+  font: 400 11px roboto condensed;
+  font-size: 11px;
+  font-weight: 300;
+  color: #ffffff;
+  content: attr(unit);
+}
 .checker input[type=checkbox] {
   appearance: none;
   position: relative;
@@ -1124,6 +1470,8 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   width: 12px;
   height: 12px;
   border-radius: 50%;
+  cursor: pointer;
+  outline: none;
   box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
   background: rgba(255, 255, 255, 0.25);
 }
@@ -1138,6 +1486,7 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   padding: 12px 6px;
   border-radius: 40% 90% 50% 0;
   box-shadow: 2px 0 3px 1px #000000, 1px -2px 6px 2px #000000;
+  filter: saturate(0);
   cursor: pointer;
   color: #ffe000;
   background-color: rgba(0, 0, 0, 0.5);
@@ -1148,12 +1497,15 @@ input[type=range]:focus::-webkit-slider-runnable-track {
   font-weight: 400;
   text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
 }
+.beetrigger.hasvideo {
+  filter: none;
+}
 .beetrigger:hover {
   transform-origin: 10% 90%;
   transform: scale(5);
   transition: transform 1s 0s ease-out;
 }
-.beebody.u2 {
+.beebody.u2:not(.nu2) {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
   border-radius: 8px 8px 0 0;

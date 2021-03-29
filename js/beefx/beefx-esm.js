@@ -4,12 +4,13 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
 
-import {Corelib} from '../improxy-esm.js'
+import {Corelib} from './beeproxy-esm.js'
 
-const {Ø, undef, isFun, isArr, getRnd, nop, s_a} = Corelib
+const {Ø, undef, isFun, isArr, getRnd, nop, s_a, clamp} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
+const {round, pow, max} = Math
 
-const toExp = val => Math.pow(Math.E, val)
+const toExp = val => pow(Math.E, val)
 const fromExp = val => Math.log(val)
 
 const shortenProps = {
@@ -25,6 +26,9 @@ const shortenProps = {
 const fxNames = []
 
 const createBeeFX = waCtx => {
+  const konfig = {
+    useSetTargetForDelayTime: true //: this is not evident
+  }
   const fxHash = {}
   const beeFx = {
     fxHash,
@@ -33,8 +37,8 @@ const createBeeFX = waCtx => {
     },
     logConnects: false,
     logDisconnects: false,
-    logSetValue: true,
-    logSetValueAlt: true
+    logSetValue: false,
+    logSetValueAlt: false
   }
     
   const pepper = 'zholger'
@@ -48,11 +52,12 @@ const createBeeFX = waCtx => {
       output: waCtx.createGain(),
       isRelaxed: false,
       isActive: false,
-      //bypass: false,
       listenersByKey: {},
-      exo: {}, //fxHash[type]
-      ext: {}, //instance's filters are here
-      live: {} //actual param values, accessed only from the base
+      exo: {}, //: fxHash[type] - 'class' of the fx, the fx type definition object
+      int: {}, //: the fx instance's internal data, e.g. the nodes are here
+      atm: {}, //: actual param values, externally accessible part of the fx state
+               //: normally accessed through get/setValue
+      past: {} //: previous values of atm       
     }
     
     fx.connect = dest => fx.output.connect(dest[pepper] ? dest.input : dest)
@@ -76,8 +81,8 @@ const createBeeFX = waCtx => {
           } else {
             fx.input.connect(fx.output)
           }
-          // activate: input -> start (same as tuna - start = activateNode)
-          // deactivate: input -> output (same as tuna)
+          //: activate: input -> start (same as in tuna, start ~= activateNode)
+          //: deactivate: input -> output (same as tuna)
         }
         fx.exo.onActivated && fx.exo.onActivated(fx, on)
       }
@@ -87,8 +92,14 @@ const createBeeFX = waCtx => {
     fx.relax = _ => fx.isRelaxed = true
     fx.revive = _ => fx.isRelaxed = false
     
-    fx.setAt = (node, key, value, par) =>
-      fx.ext[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
+    fx.setAt = (node, key, value) =>
+      fx.int[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
+    
+    fx.setDelayTime = (node, sec) => konfig.useSetTargetForDelayTime
+      ? fx.setAt(node, 'delayTime', sec)
+      : fx.int[node].delayTime.value = sec
+      
+    //8#34c------ Parameter change listeneres --------
     
     fx.onValueChange = (key, callback) => {
       fx.listenersByKey[key] || (fx.listenersByKey[key] = [])
@@ -102,27 +113,42 @@ const createBeeFX = waCtx => {
         }
       }
     }
-    fx.valueChanged = (key, value) => {
-      fx.live[key] = value
+    fx.valueChanged = (key, value = fx.atm[key]) => {
+      fx.atm[key] = value
       callListenerArray(fx.listenersByKey[key])
       callListenerArray(fx.listenersByKey.all)
     }
+    
+    //8#368------- Basic parameter access (set/get) --------
+    
     fx.setValue = (key, value) => {
       beeFx.logSetValue && 
         console.log(`➔fx.setvalue ${fx.exo.fxName}.${key}`, {value, type: typeof value})
-      const fun = fx.exo.setValue(fx, key, value)
-      if (fun) {
-        fun()
-        fx.valueChanged(key, value)
-      } else {
-        console.warn(`${fx.exo.name}: bad pars`, {key, value})
+        
+      fx.past[key] = fx.atm[key]
+      fx.atm[key] = value
+      
+      const {arrayKey = key, ix = -1, type} = fx.exo.def[key]
+      if (type !== 'graph') {
+        const fun = fx.exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
+  //+ nem kene az array tozsdeft meghivni
+        if (fun) {
+          fun()
+          fx.valueChanged(key, value)
+        } else {
+          console.warn(`${fx.exo.name}: bad pars`, {key, value})
+        }
       }
     }
-    fx.setValueIf = (key, value) => fx.live[key] !== value && fx.setValue(key, value)
+    fx.setValueIf = (key, value) => fx.atm[key] !== value && fx.setValue(key, value)
 
     fx.setValueAlt = (key, value) => {
       beeFx.logSetValueAlt &&
         console.log('⇨fx.setaltvalue', {key, value})
+
+      fx.past[key] = fx.atm[key]
+      fx.atm[key] = value
+
       const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
       if (fun) {
         fun()
@@ -132,6 +158,10 @@ const createBeeFX = waCtx => {
         debugger
       }
     }
+    
+    fx.getValue = key => fx.atm[key]
+    
+    //8#c88------- Linear-exponential conversion (set/get) --------
     
     fx.setLinearValue = (key, val) => {
       const parO = fx.exo.def[key]
@@ -153,23 +183,58 @@ const createBeeFX = waCtx => {
       }
     }
     
-    fx.getValue = key => fx.live[key]
+    //8#1a6------- Arrays (set/get) --------
+    
+    fx.setValueArray = (key, srcArr) => {
+      const par = fx.exo.def[key]
+
+      wassert(par.arrayIx && !par.arrayKey)
+      
+      const [amin, amax] = par.arrayIx
+      for (let ix = amin; ix <= amax; ix++) {
+        fx.setValue(key + `[${ix}]`, srcArr[ix] || 0)
+      }
+    }
+    
+    fx.getValueArray = key => {
+      const par = fx.exo.def[key]
+      const ret = []
+      
+      wassert(par.arrayIx && !par.arrayKey)
+
+      const [amin, amax] = par.arrayIx
+      for (let ix = amin; ix <= amax; ix++) {
+        ret[ix] = fx.atm[key + `[${ix}]`]
+      }
+      return ret
+    }
+    
+    //8#892------- Getter helpers --------
     
     fx.getName = _ => fx.exo.name
     fx.getShortName = _ => fx.exo.name.substr(3)
     
     fx.getPepper = _ => fx[pepper]
     
+    //8#a72------- Fx initialization --------    
+    
     fx.initPars = pars => {
       const {exo} = fx
-      const {initial = {}, options = {}} = pars
-      fx.live = {}
+      const {initial = {}} = pars
       for (const key in exo.def) {
         const {defVal = 0} = exo.def[key]
         initial[key] = merge(defVal, initial[key])
         //initial[key] = typeof initial[key] !== 'undefined' ? initial[key] : defVal
       }
+      fx.atm = {}
+      fx.preloadPars(initial)
       pars.initial = initial
+    }
+    
+    fx.preloadPars = pars => {
+      for (const key in pars) {
+        fx.atm[key] = pars[key]
+      }
     }
     
     fx.setWithPars = pars => {
@@ -178,24 +243,42 @@ const createBeeFX = waCtx => {
       }
     }
     
+    //8#879-------Fx state(get/set) --------
+    
     fx.getFullState = _ => {
-      const {ext, exo, live, isActive} = fx
+      const {exo, atm, isActive} = fx
+      const atmState = {}
+      for (const key in exo.def) {
+        const par = exo.def[key]
+        const {type} = par
+        if (!['graph', 'html', 'info'].includes(type)) {
+          atmState[key] = atm[key]
+        }
+      }
       const state = {
         fxName: exo.fxName,
         isActive,
-        live
+        atmState
       }
       return state
     }
     
     fx.restoreFullState = state => {
-      const {isActive, live} = state
-      fx.setWithPars(live) //: only the externally observable state can be restored, not the internal
+      const {isActive, atmState} = state
+      fx.setWithPars(atmState) //: only the externally observable state can be restored, not the internal
       fx.activate(isActive)
     }
     
     return fx
   }
+  
+  //8#c69 -------- BeeFX interface --------
+  
+  beeFx.getPresetPath = sub => '//beefx.mork.work/pres/' + sub // full url 'cause of youtube
+  
+  beeFx.dB2Gain = db => max(0, round(1000 * pow(2, db / 6)) / 1000)
+  
+  beeFx.gain2dB = gain => clamp(round(Math.log2(gain) * 6 * 1000) / 1000, -60, 60)
   
   beeFx.connectArr = (...arr) => { //: array item in arr: node + in/out index
     const arrarr = arr.map(item => isArr(item) ? item : [item])
@@ -226,11 +309,13 @@ const createBeeFX = waCtx => {
       return null
     }
     const fx = newFxBase(type)
-    fx.exo = fxHash[type] //: exo = {..., def, construct, ...}
-    fx.initPars(pars)        //: changes or creates pars.initial
-    fx.exo.construct(fx, pars) //: not using return value
+    const {optional = {activate: true}} = pars
+    fx.exo = fxHash[type]       //: exo = {..., def, construct, ...}
+    fx.initPars(pars)           //: changes or creates pars.initial
+    fx.exo.construct(fx, pars)  //: not using return value
     fx.setWithPars(pars.initial)
-    fx.activate()
+    
+    fx.activate(optional.activate)
     
     //+randomize! reset!
     
@@ -251,11 +336,27 @@ const createBeeFX = waCtx => {
         beeFx.namesDb[db] = fxObj.fxNamesDb[db]
       }
     }
+    let hasArray = false //: reorder the parameter definition object - shaky
+    for (const key in fxObj.def) {
+      const par = fxObj.def[key]
+      if (par.arrayIx) {
+        hasArray = true
+        const [amin, amax] = par.arrayIx
+        for (let ix = amin; ix <= amax; ix++) {
+          const newDef = {...par, arrayKey: key, ix}
+          fxObj.def[key + `[${ix}]`] = newDef
+        }
+        par.subType = 'skipui'
+      } else if (hasArray) {
+        delete fxObj.def[key]
+        fxObj.def[key] = par
+      }
+    }
     for (const key in fxObj.def) {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
       par.name = par.name || key
-      par.short = shortenProps[par.name] || par.name
+      par.short = par.uiLabel || shortenProps[par.name] || par.name
       if (par.subType === 'exp') {
         par.isExp = true
         par.linMin = fromExp(par.min)
@@ -270,6 +371,9 @@ const createBeeFX = waCtx => {
       //fxNames.sort()
     }
   }
+  
+  //8#e92------- Connect/disconnect override --------
+    
   const addConnectionToStats = (src, dest) => {
     //ha nincs pepper, de igazi node, adjon hozza egyet!
   }
@@ -292,7 +396,13 @@ const createBeeFX = waCtx => {
       arguments[0] = node?.[pepper] ? node.input : node
       cc++
       beeFx.logConnects && console.log(`shimConnect`, {cc, from: this, to: arguments[0]})
-      wauConnect.apply(this, arguments)
+      try {
+        wauConnect.apply(this, arguments)
+      } catch (err) {
+        console.log(node, arguments)
+        console.error(err)
+        debugger
+      }
       addConnectionToStats(this, arguments[0])
       return node
     }
@@ -302,7 +412,13 @@ const createBeeFX = waCtx => {
       arguments[0] = node?.[pepper] ? node.input : node
       dc++
       beeFx.logDisconnects && console.log(`shimDisconnect`, {dc, from: this, to: arguments[0]})
-      wauDisconnect.apply(this, arguments)
+      try {
+        wauDisconnect.apply(this, arguments)
+      } catch (err) {
+        console.log(node, arguments)
+        console.error(err)
+        debugger
+      }
       addDisconnectionToStats(this, arguments[0])
     }
   })()
@@ -329,6 +445,7 @@ beefxs-delays
   - sima delay tunabol es ha van, wilsobol
   - pingPongDelayA /cw
   - pingPongDelayB /Tuna
+  - Delay /Tuna
 beefxs-noise
   - noiseConvolver /nh
   - pinking /nh
@@ -360,7 +477,10 @@ beefxs-reverb
   - reverb /cw
   - cabinet /Tuna
 beefxs-compressor
-  - compressor /Tuna  
+  - compressor /Tuna 
+beefxs-overdrive
+  - overdrive  
+  - overdriveWAC 
 tunx (mind OK)
   - FixGain
   - Blank
@@ -374,9 +494,7 @@ tunx (mind OK)
   - WahBass
   - MyPanner
 tuna (missing)
-  - Delay
   - MoogFilter  
-  - Overdrive
 cw
   - Delay
   - Distortion

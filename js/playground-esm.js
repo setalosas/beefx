@@ -4,9 +4,9 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, Visualizer, createBPMAuditor, Players, Sources} from './improxy-esm.js'
+import {Corelib, BeeFX, Visualizer, BPM, Players, Sources, StateManager} from './improxy-esm.js'
 
-const {s_a, undef, isFun, isNum, getRnd, hashOfString} = Corelib
+const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
 const {wassert, weject} = Corelib.Debug
 const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {createSpectrumVisualizer} = Visualizer
@@ -21,7 +21,21 @@ const createPlayground = root => {
   const output = waCtx.createGain()
   const stages = []
   
+  const iterateStages = callback => {
+    for (const stage of stages) {
+      stage && callback(stage)
+    }
+  }
+  
+  const getStageArr = _ => stages.filter(stage => stage)
+  
+  const getFilteredStages = filter => getStageArr().filter(stage => filter(stage))
+  
+  const getStage = stageIx => stages[stageIx] || console.warn(`No stage[${stageIx}]`) || undef
+
   const dis = {
+    iterateStages, 
+    getStage,
     graphMode: 'parallel', //sequential or parallel (default)
     bpmAuditor: undef,
     bpmTransformer: newFx('fx_bpmTransformer'),
@@ -40,18 +54,18 @@ const createPlayground = root => {
   const players = dis.players = Players.extendWithPlayers(dis, root)
   const {radio} = players
   
-  const getEndRatios = exc => stages.map(stage => stage.stEndRatio).filter(fx => fx !== exc)
+  const getEndRatios = _ => getStageArr().map(stage => stage.stEndRatio)
   
   //8#a6c Compose & decompose - they won't touch sources, starting from stInput of stages
   
   const decompose = _ => {
-    for (const {fxArr, stInput, stEndRatio} of stages) {
+    iterateStages(({fxArr, stInput, stEndRatio}) => {
       stInput.disconnect()
       for (const fx of fxArr) {
         fx.disconnect()
       }
       stEndRatio.disconnect()
-    }
+    })
   }
   const connectArrayDest = (array, dest) => {
     for (let ix = 0; ix < array.length; ix++) {
@@ -61,7 +75,7 @@ const createPlayground = root => {
   const compose = _ => {
     let unconnected = null
     
-    for (const {fxArr, stInput, stEndRatio, stSource, stAnalyzer, ix} of stages) {
+    iterateStages(({fxArr, stInput, stEndRatio, stSource, stAnalyzer, ix}) => {
       if (fxArr[0]) {
         if (dis.graphMode === 'parallel') { //: parallel can handle empty stages
           if (stEndRatio.isActive) {
@@ -80,7 +94,7 @@ const createPlayground = root => {
           unconnected = lastFx
         }
       }
-    }
+    })
     wassert(unconnected || dis.graphMode === 'parallel')
     void unconnected?.connect(output)
   }
@@ -104,12 +118,18 @@ const createPlayground = root => {
   
   const changeFxLow = (stage, ix, name) => {
     weject(isNum(stage))
-    console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${name})`)
+    //console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${name})`)
     const {fxArr} = stage
     wassert(ix <= fxArr.length) //: the array can't have a gap
+    void fxArr[ix]?.deactivate(false)
     fxArr[ix] = newFx(name)
-    const isFixed = name === 'fx_gain' && !ix //: the first fx in every stage is a fix gain
-    ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], {isFixed})
+    
+    if (fxArr[ix]) {
+      const isFixed = name === 'fx_gain' && !ix //: the first fx in every stage is a fix gain
+      ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], {isFixed, hasStageMark: isFixed})
+    } else {
+      console.error(`Bad Fx type:`, name)
+    }
   }
     
   dis.changeFx = (stageIx, ix, name) => {
@@ -179,10 +199,11 @@ const createPlayground = root => {
     const {stEndRatio} = stages[stage]
     
     stEndRatio.onValueChange('gain', _ => {
-      if (!stEndRatio.ext.shared.lastFixedFx) {
-        return //console.warn('no lastFixedFx', stEndRatio, stEndRatio.ext.shared)
+      if (!stEndRatio.int.shared.lastFixedFx) {
+        return //console.warn('no lastFixedFx', stEndRatio, stEndRatio.int.shared)
       }
-      if (stage === dis.senderStage && stEndRatio.isActive && stEndRatio.ext.shared.lastFixedFx === stEndRatio) {
+      const isThisLastFixed = true // stEndRatio.int.shared.lastFixedFx === stEndRatio
+      if (stage === dis.senderStage && stEndRatio.isActive && isThisLastFixed) {
         lazySend({cmd: 'ratio', data: {gain: stEndRatio.getValue('gain')}, fp: dis.fingerPrint})
       }
     })
@@ -199,7 +220,9 @@ const createPlayground = root => {
   
   //8#59c  ---------------- Stage init / change ----------------
   
-  const initStage = (nuIx, uiStage) => { // stage & ui exists, endRatio & analyser will be created
+  const initStage = (nuIx, uiStage) => { //: stage & ui exists, endRatio & others will be created
+    const {spectcanv$, levelMeter$} = uiStage
+    
     const mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
       dis.activateStage(nuIx, false)
       for (const fx of stages[nuIx].fxArr) {
@@ -207,14 +230,13 @@ const createPlayground = root => {
       }
       console.warn(`❗️❗️❗️ Overload in stage ${nuIx}, turning off. ❗️❗️❗️`)
     }
-    const {spectcanv$, levelMeter$} = uiStage
     const stAnalyzer = waCtx.createAnalyser()
     const vis = createSpectrumVisualizer(stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
     const stEndRatio = newFx('fx_ratio')
     const stInput = waCtx.createGain()
     const stSource = 0
     const fxArr = []
-    const fpo = ui.rebuildStageEndPanel(nuIx, stEndRatio, dis, {hasStageMark: true})
+    const fpo = ui.rebuildStageEndPanel(nuIx, stEndRatio)
     stages[nuIx] = {uiStage, fxArr, stEndRatio, stAnalyzer, vis, ix: nuIx, stInput, stSource, fpo}
     changeFxLow(stages[nuIx], 0, 'fx_gain')
     stEndRatio.chain(...getEndRatios())
@@ -223,9 +245,9 @@ const createPlayground = root => {
     return stages[nuIx]
   }
   
-  dis.addStage = _ => {
+  dis.addStage = ch => {
     decompose()
-    const nuIx = stages.length
+    const nuIx = ascii(ch) - ascii('A')
     const uiStage = ui.addStage(nuIx)//:only once, restore will call ui.resetState()
     const stage = initStage(nuIx, uiStage)
     compose()
@@ -237,8 +259,8 @@ const createPlayground = root => {
   const saveStageState = stageIx => {
     const {fxArr, stEndRatio} = stages[stageIx]
     const state = {
-      fxStates: [],
-      stEndRatioState: stEndRatio.getFullState()
+      fxStates: []
+      //stEndRatioState: stEndRatio.getFullState() //: dont save stInput, it's not real, no state
     }
     for (const fx of fxArr) {
       state.fxStates.push(fx.getFullState())
@@ -254,18 +276,23 @@ const createPlayground = root => {
     //: check for state vs actual stage length mismatch
     const stage = stages[stageIx]
     const {fxStates, stEndRatioState} = state
-    stage.stEndRatio = newFx('fx_ratio')
-    stage.stEndRatio.restoreFullState(stEndRatioState)
+    //stage.stEndRatio = newFx('fx_ratio')
+    //stage.stEndRatio.restoreFullState(stEndRatioState)
     let ix = 0
     for (const fxState of fxStates) {
-      //dis.changeFx(st, ix, wassert(fxState.fxName))
-      dis.addFx(stageIx, wassert(fxState.fxName))
+      changeFxLow(getStage(stageIx), ix, wassert(fxState.fxName)) //+ miondenhol getStage!
+      //dis.addFx(stageIx, wassert(fxState.fxName))
       stage.fxArr[ix++].restoreFullState(fxState)
     }
   }
   
   dis.rebuildStage = stageIx => { //: re ui regen click
     const state = saveStageState(stageIx)
+    decomposeStage(0)
+    loadStageState(0, state)
+    composeStage(0)
+    console.log(JSON.stringify(state))
+    /*
     const {fxArr} = stages[stageIx]
     for (const fx of fxArr) {
       fx.activate(false) //: vagy ideiglenesen blankra cserelni
@@ -276,7 +303,7 @@ const createPlayground = root => {
     stages[stageIx] = stage
     ui.resetStage(stageIx)
     loadStageState(stageIx, state)
-    compose()
+    compose()*/
   }
   
   dis.activateStage = (st, on) => {
@@ -290,12 +317,12 @@ const createPlayground = root => {
   
   dis.soloStage = st => {
     decompose()
-    for (const stage of stages) {
+    iterateStages(stage => {
       const {stEndRatio, vis, ix, fpo} = stage //+ tulzas ez ketszzer
       stEndRatio.activate(st === ix)
         ui.refreshFxPanelActiveState(fpo)
       vis.setActive(st === ix)
-    }
+    })
     compose()
   }
   
@@ -304,7 +331,8 @@ const createPlayground = root => {
   //8#c78 --------- Entry point / init --------- 
   
   const init = _ => {
-    dis.changePrimarySource(mediaElement)
+    console.log(BeeFX(waCtx).fxHash)
+    dis.changePrimarySource(mediaElement) //+ ha van! youtubeon lehet nincs! de a source is nezheti
     //input.disconnect()
     //input.connect(output)
     output.connect(waCtx.destination)
@@ -327,7 +355,7 @@ const createPlayground = root => {
   //8#ca0 ---------BPM detect / adjust  --------- 
   
   dis.recalcBpm = async (calcSec = 15) => {
-    dis.bpmAuditor = dis.bpmAuditor || createBPMAuditor(waCtx)
+    dis.bpmAuditor = dis.bpmAuditor || BPM.createBPMAuditor(waCtx)
     dis.bpmAuditor.start(dis.source)
     
     for (let elapsed = 0; elapsed < calcSec; elapsed++) { 
@@ -346,7 +374,7 @@ const createPlayground = root => {
   }
   
   dis.bpmDelays = _ => {
-    for (const {fxArr} of stages) {
+    for (const {fxArr} of stages) { //+ BAD! stage can be undefined
       for (const fx of fxArr) {
         if (fx.getName().includes('Pong')) {
           fx.setValue('delayLeft', 240000 / dis.bpm)
@@ -373,75 +401,45 @@ const createPlayground = root => {
   return dis
 }
 
-export const runPlayground = root => {
+export const runPlayground = async root => {
   const {ui, waCtx} = root
   const playground = createPlayground(root)
   ui.start(playground) //+ debug: miert nem lehet az initbe rakni
-  const sx = str => str.split(',').map(a => ({
-    g: 'gain', 
-    a: 'amp',
-    ax: 'ampext',
-    b: 'blank', 
-    bi: 'biquad',
-    cheb: 'chebyshevIIR'
-  }[a]) || a)
   
-  const setupPresetA = [
-    sx('g,b') ,
-    sx('g,b'),
-    sx('g,a'),
-    sx('g,ax')
-  ]
-  const setupPreset4x4 = [
-    s_a('gain,blank,blank,blank') ,
-    s_a('gain,blank,blank,blank'),
-    s_a('gain,blank,blank,blank'),
-    s_a('gain,blank,blank,blank')
-  ]
-  const setupPresetZero = [
-    s_a('blank') ,
-    s_a('blank'),
-    s_a('blank'),
-    s_a('blank')
-  ]
-  const setupPresetDebug = [
-    s_a('') ,
-    s_a('amp'),
-    s_a('biquad'),
-    s_a('compressor')
-  ]
-  const setupPresetBigBlank = [
-    s_a('gain,biquad,blank,blank,blank,blank') ,
-    s_a('gain,biquad,blank,blank,blank,blank'),
-    s_a('gain,biquad,blank,blank,blank,blank'),
-    s_a('gain,biquad,blank,blank,blank,blank')
-  ]
-  const setupPresetFull = [
-    s_a('gain,biquad,vibrato,blank,blank') ,
-    s_a('gain,biquad,pitchShifter,blank,blank'),
-    s_a('gain,biquad,biquad,blank,blank'),
-    s_a('gain,biquad,moog2,blank,blank')
-  ]
-  const setupYoutube = [
-    s_a('gain,biquad,blank,blank,blank'),
-    s_a('gain,biquad,blank,blank,blank'),
-    s_a('gain,biquad,blank,blank,blank'),
-    s_a('gain,biquad,blank,blank,blank')
-  ]
-  const setupTest = [
-    sx('g,bi,b'),
-    sx('g,bi,b'),
-    sx('g,a,b'),
-    sx('g,ax,b')
-  ]
-  const setup = root.onYoutube ? setupPresetZero : setupPresetA
-  playground.setGraphMode('parallel')
+  const setupName = root.onYoutube 
+    ? root.killEmAll
+      ? 'youtubeFull'
+      : 'youtubeMinimal'
+    : 'last' // 'scopeChain' //Golem // setupPresetDebug
   
-  for (const arr of setup) {
-    const st = playground.addStage()
-    for (const fx of arr) {
-      playground.addFx(st, 'fx_' + fx)
-    }
-  }
-  ui.finalize()
+  const parent$ = document.body 
+  
+  StateManager.getActualPreset({name: setupName, parent$})
+    .then(setup => {
+      playground.setGraphMode('parallel')
+      
+      for (const key in setup) {
+        const arr = setup[key]
+        const st = playground.addStage(key)
+        for (const fx of arr) {
+          fx && playground.addFx(st, 'fx_' + fx)
+        }
+      }
+      ui.finalize()
+      if (setupName === 'scopeChain') {
+        const DELAY = .368
+        for (let i = 0; i < 12; i++) {
+          const fx = playground.stages[i].fxArr[1]
+          if (fx) {
+            fx.setValue('delayTime', (11 - i) * DELAY)
+          }
+          const gx = playground.stages[i].fxArr[2]
+          if (gx) {
+            gx.setValue('fullZoom', 'fire')
+          }
+          console.log(fx.zholger)
+        }
+        void playground.stages[3]?.stEndRatio.setValue('gain', 1)
+      }
+    })
 }

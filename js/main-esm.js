@@ -4,7 +4,7 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, WaapiWrap, Playground, createUI} from './improxy-esm.js'
+import {Corelib, DOMplusUltra, onWaapiReady, Playground, createUI} from './improxy-esm.js'
 
 //const {adelay} = Corelib.Tardis
 const {$, div$, leaf$, set$} = DOMplusUltra            //: from jQuery
@@ -12,8 +12,6 @@ const {runPlayground} = Playground
 const {MediaElementPlayer} = window //: from MediaElementJs
 
 const onDomReady = new Promise(resolve => $(resolve))
-
-const onWaapiReady = new Promise(resolve => WaapiWrap.onRun(resolve))
 
 const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 
@@ -34,9 +32,26 @@ const mp3s = [
   ['/au/devendra.mp3', 'Devendra Barnhardt - Angelica (audio)'], 
   ['/au/telstar.mp3', 'Tornadoes - Telstar (audio)'], 
   ['/au/chachacha.mp3', 'Bob Azzam - Happy Birthday Cha Cha Cha (audio)'], 
+  ['/au/guitar.mp3', 'I Feel Good / guitar (audio)'], 
   ['/au/iggy.mp3', 'Iggy Pop - Do Not Go Gentle Into That Good Night (audio)'], 
-  ['//youtube.com/watch?v=_8SBdkru4IY', 'Future Sound Of London - Essential Mix (youtube)']
-]
+  ['//youtube.com/watch?v=_8SBdkru4IY', 'Future Sound Of London - Essential Mix (youtube)'],
+  `Claude VonStroke - Who's Afraid of Detroit`,
+  `Fire (Dirty Doering Remix)`,
+  `Incredible Bongo Band - Apache`,
+  `Josh Wink vs. Public Enemy - Higher State Of Bring Da Noise.wmv`,
+  `Latmun - Everybody's Dancin'`,
+  `Milk & Sugar - Let The Sun Shine 2012 (Tocadisco Remix)`,
+  `Premiere Ryan Murgatroyd - Is That You (Cioz Remix) [Swoon Recordings]`,
+  `Riva Starr feat. Gavin Holligan - If I Could Only Be Sure (Danny Krivit Edit)`,
+  `Shizumu (Extended Mix)`,
+  `Whilk & Misky - Clap Your Hands ( Solomun Remix) [Island Records]`,
+  `For Those I Love - I Have a Love (Overmono Remix)`,
+  `For Those I Love - I Have a Love`,
+  `ОКЕАН ЕЛЬЗИ - Я ТАК ХОЧУ (TAPOLSKY & SUNCHASE REMIX) Vj mix LeoMicron`,
+  `Green Velvet - La la land`,
+  `Undercatt - Futura (Original Mix)`,
+  `The Light 3000`
+  ].map(a => a.map ? a : [`/au/${a}.mp3`, a])
 
 void (async _ => {
   await onDomReady
