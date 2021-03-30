@@ -5,7 +5,7 @@
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
 const {undef} = Corelib
-const {$, div$} = DOMplusUltra
+const {div$, onDomReady} = DOMplusUltra
 const {AudioContext} = window
 
 const debug = {
@@ -14,7 +14,7 @@ const debug = {
 }
 
 const ilog = (...args) => debug.verboseLogInit && console.log(...args)
-const log = (...args) => debug.logInit && console.log(...args)
+//const log = (...args) => debug.logInit && console.log(...args)
 const wlog = (...args) => console.warn(...args)
 const elog = (...args) => console.error(...args)
 
@@ -22,7 +22,7 @@ const onError = err => {
   wau.ctxError = err
   elog(`Error, AudioContext:`, err, window.AudioContext)
   const {body} = document
-  $(_ => body.setAttribute('error', (body.getAttribute('error') || '') + err))
+  onDomReady(_ => body.setAttribute('error', (body.getAttribute('error') || '') + err))
 }
 
 export const wau = {
@@ -36,36 +36,35 @@ export const wau = {
 
 export const onReady = new Promise(resolve => wau.resolve = resolve)
 
-export const onRun = cb => { 
-  const currState = wau.waCtx?.state
-  log(`🔈 🔉 🔊 callback is set, immed callback if ${currState} === running`)
-  currState === 'running' ? cb(wau.waCtx) : wau.callbacksOnStart.push(cb)
-}
+export const onRun = cb => wau.waCtx?.state === 'running' 
+  ? cb(wau.waCtx)
+  : wau.callbacksOnStart.push(cb)
 
-AudioContext
-  ? wau.waCtx = new AudioContext({sampleRate: 44100})
-  : onError('Web Audio API is not supported by current browser.')
+void (_ => {
+  AudioContext
+    ? wau.waCtx = new AudioContext({sampleRate: 44100})
+    : onError('Web Audio API is not supported by current browser.')
 
-if (wau.waCtx && typeof wau.waCtx.currentTime === 'number') {
-  wau.createTime = wau.waCtx.currentTime
-  wau.ctxOk = true
-  ilog(`🔈 🔉 🔊 waCtx created as early as possible, state:`, wau.waCtx.state, wau.waCtx)
-  
-  if (wau.waCtx.state !== 'running') {
-    wau.clicker$ = div$(document.body, {class: 'clicker'/*, click: _ => letsGo()*/})
-  }
-  wau.onReady = wau.waCtx.resume()
-  
-  wau.onReady.then(_ => {
-    wau.resolve(wau.waCtx)
+  if (wau.waCtx && typeof wau.waCtx.currentTime === 'number') {
+    wau.createTime = wau.waCtx.currentTime
+    wau.ctxOk = true
+    ilog(`🔈 🔉 🔊 waCtx created as early as possible, state:`, wau.waCtx.state, wau.waCtx)
     
-    console.log('WAU IS RESUMED')
-    void wau.clicker$?.remove()
-    wau.clicker$ = null
-    for (const cb of wau.callbacksOnStart) {
-      cb(wau.waCtx)
+    if (wau.waCtx.state !== 'running') {
+      wau.clicker$ = div$(document.body, {class: 'clicker', click: _ => wau.waCtx.resume()})
     }
-  })
-} else {
-  wlog(`🔈 🔉 🔊 couldn't get a valid AudioContext!`)
-}        
+    wau.onReady = wau.waCtx.resume()
+    
+    wau.onReady.then(_ => {
+      wau.resolve(wau.waCtx)
+
+      void wau.clicker$?.remove()
+      wau.clicker$ = null
+      for (const cb of wau.callbacksOnStart) {
+        cb(wau.waCtx)
+      }
+    })
+  } else {
+    wlog(`🔈 🔉 🔊 couldn't get a valid AudioContext!`)
+  }        
+})()

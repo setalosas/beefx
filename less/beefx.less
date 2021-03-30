@@ -37,7 +37,8 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 @previewWidth: 500px;
 .preset-menu { .fixRB(0, 0); z-index: 9999; max-width: @previewWidth; .txtCent(); 
   .bg(hsla(0,0%,40%,.6)); transition: transform .1s 0s; border-radius: 8px 0 0 0;
-  &::before {.absRB(0, 100%); .cb(@B, @W); content: 'Change preset';}
+  &::before {.absRB(0, 100%); .cb(@B, @W75); padding: 4px; .boraTB(6px, 0); 
+    content: 'Change preset';}
   &.hidden:not(:hover) {transform: translateY(calc(~"100% - 8px")); 
     transition: transform .5s 4s;}
   .preset-item { .mitemBase(); .hand(); .bg(hsla(0,0%,50%,.6));

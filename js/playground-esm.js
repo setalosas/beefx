@@ -4,7 +4,7 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, Visualizer, BPM, Players, Sources, StateManager} from './improxy-esm.js'
+import {Corelib, BeeFX, Visualizer, BPM, Players, Sources, StateManager, createUI} from './improxy-esm.js'
 
 const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
 const {wassert, weject} = Corelib.Debug
@@ -231,7 +231,8 @@ const createPlayground = root => {
       console.warn(`❗️❗️❗️ Overload in stage ${nuIx}, turning off. ❗️❗️❗️`)
     }
     const stAnalyzer = waCtx.createAnalyser()
-    const vis = createSpectrumVisualizer(stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
+    const vis = root.disableEndSpectrum
+     ? undef : createSpectrumVisualizer(stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
     const stEndRatio = newFx('fx_ratio')
     const stInput = waCtx.createGain()
     const stSource = 0
@@ -311,7 +312,7 @@ const createPlayground = root => {
     decompose()
     stEndRatio.activate(on)
     ui.refreshFxPanelActiveState(fpo)
-    vis.setActive(on)
+    void vis?.setActive(on)
     compose()
   }
   
@@ -321,7 +322,7 @@ const createPlayground = root => {
       const {stEndRatio, vis, ix, fpo} = stage //+ tulzas ez ketszzer
       stEndRatio.activate(st === ix)
         ui.refreshFxPanelActiveState(fpo)
-      vis.setActive(st === ix)
+      void vis?.setActive(st === ix)
     })
     compose()
   }
@@ -338,6 +339,11 @@ const createPlayground = root => {
     output.connect(waCtx.destination)
     players.init()
     players.initRadioListeners()
+  }
+  
+  dis.changeDestination = newDestination => {
+    output.disconnect()
+    output.connect(newDestination)
   }
   
   dis.insertBpmManipulator = _ => {
@@ -399,6 +405,24 @@ const createPlayground = root => {
   init()
   
   return dis
+}
+
+export const runPlaygroundWithin = (waCtx, options) => {
+  const config = {
+    //platform: 'standalone', // extension
+    //mediaType: 'audioboth', // video
+    //useVideo: true,
+    //useAudio: false
+  }
+  const root = {
+    mp3s: [],
+    waCtx,
+    mediaElement: null,
+    ...options
+  }
+  root.ui = createUI(config, root)
+  const playground = createPlayground(root)
+  return {root, playground}
 }
 
 export const runPlayground = async root => {

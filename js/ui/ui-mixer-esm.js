@@ -202,27 +202,25 @@ export const extendUi = ui => {
     
   //8#b79 Mixer / player / fader DOM, nothing to do with stages etc
   
-  const createInputDispatchers = _ => {
-    for (const stageIx in ui.stageArr) {
-      if (stageIx < 100) {
-        const stageObj = ui.stageArr[stageIx]
-        //console.log('found a stage to dispatch to', stageIx, stageObj)
-        const chg = sourceIx => _ => ui.pg.changeStageSourceIndex(stageIx, sourceIx)
-        stageObj.inputCmd$ = []
-        set$(stageObj.inputSelector$, {class: 'blue'}, [
-          div$({class: 'input-label', text: 'Input:'}),
-          stageObj.inputCmd$[0] = div$({class: 'input-cmd act', text: 'Primary', click: chg(0)}),
-          stageObj.inputCmd$[1] = div$({class: 'input-cmd', text: 'Input 1', click: chg(1)}),
-          stageObj.inputCmd$[2] = div$({class: 'input-cmd', text: 'Input 2', click: chg(2)}),
-          stageObj.inputCmd$[3] = div$({class: 'input-cmd', text: 'Input 3', click: chg(3)}),
-          stageObj.inputCmd$[4] = div$({class: 'input-cmd', text: 'Input 4', click: chg(4)})
-        ])
-      }
+  const createInputDispatchers = _ => ui.iterateStages(stageObj => {
+    const {stageIx, isStandardStage} = stageObj
+    if (isStandardStage) {
+      //console.log('found a stage to dispatch to', stageIx, stageObj)
+      const chg = sourceIx => _ => ui.pg.changeStageSourceIndex(stageIx, sourceIx)
+      stageObj.inputCmd$ = []
+      set$(stageObj.inputSelector$, {class: 'blue'}, [
+        div$({class: 'input-label', text: 'Input:'}),
+        stageObj.inputCmd$[0] = div$({class: 'input-cmd act', text: 'Primary', click: chg(0)}),
+        stageObj.inputCmd$[1] = div$({class: 'input-cmd', text: 'Input 1', click: chg(1)}),
+        stageObj.inputCmd$[2] = div$({class: 'input-cmd', text: 'Input 2', click: chg(2)}),
+        stageObj.inputCmd$[3] = div$({class: 'input-cmd', text: 'Input 3', click: chg(3)}),
+        stageObj.inputCmd$[4] = div$({class: 'input-cmd', text: 'Input 4', click: chg(4)})
+      ])
     }
-  }
+  })
   
   ui.setStageInputState = (stageIx, sourceIx) => {
-    const stageObj = ui.stageArr[stageIx]
+    const stageObj = ui.getStageObj(stageIx)
     if (stageObj?.inputCmd$?.length) {
       for (let ix = 0; ix < stageObj.inputCmd$.length; ix++) {
         setClass$(stageObj.inputCmd$[ix], sourceIx === ix, 'act')
@@ -378,7 +376,7 @@ export const extendUi = ui => {
   ui.finalizeMixer = _ => {
     const localFx = ui.pg.bpmTransformer
     const remoteFx = ui.pg.bpmTransformer
-    const ratio4Fx = ui.stageArr.slice(-1)[0].fxPanelObjArr[-1].fx
+    const ratio4Fx = ui.getStageObj(0)?.fxPanelObjArr[-1].fx //: stage 0 is the master ATM!!
     wassert(ratio4Fx)
     
     mixer.localPlayer = rebuildMixerPlayer(mixer.localStageIx, ui.playerLeft$, true, localFx)

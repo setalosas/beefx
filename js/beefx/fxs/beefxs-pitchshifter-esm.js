@@ -14,6 +14,90 @@ const {max, pow, round, tanh, abs, min, sign, sqrt} = Math
 onWaapiReady.then(waCtx => {
   const {registerFxType, newFx, connectArr, dB2Gain, gainToDb} = BeeFX(waCtx)
   
+  const tlPitchShifter = {//8#095 ----- Jungle (original from Chris Wilson) -----
+    def: {
+      delayTime: {defVal: .1, min: 0, max: 1, readOnly: true},
+      pitch: {defVal: 0, min: -1, max: 1, readOnly: true},
+      log: {defVal: '-', type: 'info'}
+    },
+    name: 'Jungle',
+    graphs: {}
+  }
+  
+  tlPitchShifter.setValue = (fx, key, value, {int, atm} = fx) => ({
+    delayTime: _ => fx.setDelay(value),
+    pitch: _ => fx.setPitchOffset(value),
+    log: nop
+  }[key])
+  
+  tlPitchShifter.construct = (fx, {initial}, {int, atm} = fx) => {
+    int.frequency = 0
+    int.delayA = waCtx.createDelay(1)
+    int.delayB = waCtx.createDelay(1)
+    //+ a tone.,jsajat LFO-ja tok mas!
+    int.lfoA = newFx('fx_LFO') // min 0 max .1 sawtooth
+    int.lfoB = newFx('fx_LFO') // min 0 max .1 sawtooth phase 180
+    int.lfoA.connect(int.delayA.delayTime)
+    int.lfoB.connect(int.delayB.delayTime)
+    int.crossfade = newFx('fx_xFade')
+    int.lfoCrossFade = newFx('fx_LFO') // min 0 max 1 triangle phase 90
+    int.lfoCrossFade.connect(int.crossFade.int.fade) // crossfade.fade!!!
+    int.feedbackDelay = waCtx.createDelay(1)
+    int.delayTime = int.feedbackDelay.delayTime // readonly
+    // init:
+    int.delayTime = 0
+    int.pitch = 0
+    int.windowSize = 0.1
+    int.feedback = 0
+    
+    int.delayA.connect(int.crossFade.a)
+    int.delayB.connect(int.crossFade.b)
+    int.frequency.connect(int.lfoA.frequency)
+    int.frequency.connect(int.lfoB.frequency)
+    int.frequency.connect(int.lfoCrossFade.frequency)
+    
+    //int.effectSend.connect(int.feedbackDelay -> effectReturn)
+    fx.start.connect(int.delayA)
+    fx.start.connect(int.delayB)
+    connectArr(int.crossFade, int.feedbackDelay, fx.output)
+    
+    const at = waCtx.currentTime + .01
+    int.lfoA.start(at)  
+    int.lfoB.start(at)
+    int.lfoCrossfade.start(at)
+    
+    fx.setDelay = delayTime => {
+      int.modGain1.gain.setTargetAtTime(0.5 * delayTime, 0, 0.010)
+      int.modGain2.gain.setTargetAtTime(0.5 * delayTime, 0, 0.010)
+    }
+    fx.setPitchOffset = mult => {
+      if (mult > 0) { // pitch up
+        int.lfoA.min = 0
+        int.lfoA.max = int.windowSize
+        int.lfoB.min = 0
+        int.lfoB.max = int.windowSize
+        //int.factor = intervaltofrequencyratio(mult - 1) + 1
+      } else { // pitch down
+        int.lfoA.min = int.windowSize
+        int.lfoA.max = 0
+        int.lfoB.min = int.windowSize
+        int.lfoB.max = 0
+        //int.factor = intervaltofrequencyratio(mult) - 1
+      }
+      int.frequency.value = int.factor * (1.2 / int.windowSize)
+    }
+    fx.setDelay(atm.delayTime)
+    atm.pitch = 0
+
+    fx.updateLog = _ => {
+      fx.setValue('log', [
+        `outputGain(Db): ${atm.outputGain} outputGain(Gain): ${int.outputGainGain}`,
+        `outputGainMod: ${int.outputGainMod} outputGainReal: ${int.outputGainReal.toFixed(3)}`
+      ].join('<br>'))
+    }
+  }
+  //: not yet registerFxType('fx_tlPitchShifter', tlPitchShifter)
+  
   // Copyright 2012, Google Inc.
   // All rights reserved.
   //
@@ -96,7 +180,7 @@ onWaapiReady.then(waCtx => {
     name: 'Jungle',
     graphs: {}
   }
-  jungleFx.graphs.sigmoidGraph = {
+  jungleFx.graphs.sigmoidGraph = { //+ ez mi?
     graphType: 'sigmoid',
     genCurveColor: '#fc6'
   }

@@ -151,11 +151,11 @@ onWaapiReady.then(waCtx => {
     }
     if (cc) {
       //const profile = startProfile()
-      if (int.drawCnt++ % 2) {
+      //if (int.drawCnt++ % 2) {
         drawGrid()
         drawXAxis()
         drawWaveform()
-      }
+      //}
       //profile.stop(fx, 'draw')
     }
     int.isRAFOn && window.requestAnimationFrame(_ => drawFrame(fx))

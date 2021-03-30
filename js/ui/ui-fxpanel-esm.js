@@ -70,9 +70,17 @@ export const extendUi = ui => {
     isFixed: false,      //: flag for fx selector and close icon
     ...par
   })
+  
+  const iterateAllFxPanelObjs = callback => {
+    ui.iterateStages(stageObj => {
+      for (const fxPanelObj of stageObj.fxPanelObjArr) {
+        fxPanelObj && callback(fxPanelObj)
+      }
+    })
+  }
 
   const getFxPanelObj = (stageIx, ix, par) => {
-    const stageObj = ui.stageArr[stageIx]
+    const stageObj = wassert(ui.getStageObj(stageIx))
     return stageObj.fxPanelObjArr[ix] = 
       stageObj.fxPanelObjArr[ix] || createFxPanelObj(stageObj, ix, par)
   }
@@ -262,6 +270,7 @@ export const extendUi = ui => {
     const isRemoveable = !isFixed && !isBlank
     const isAlterable = !isFixed
     const isFoldable = isRemoveable //: for now, but it can differ
+    fxPanelObj.capture({isBlank, isGain, isRemoveable, isAlterable, isFoldable})
 
     const truePropsToArr = obj => obj.propertiesToArr().filter(key => obj[key])
 
@@ -271,7 +280,14 @@ export const extendUi = ui => {
       addListSelector({}, 'selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stageIx, ix, nfx))
       
     const foldIcon$ = isFoldable &&
-      div$({class: 'bfx-foldicon', click: _ => toggleClass$(fxrama$, 'folded')})
+      div$({class: 'bfx-foldicon', click: event => {
+        const isFolded = toggleClass$(fxrama$, 'folded')
+        if (event.altKey) { //: do the same with all fxpanels of the same type
+          iterateAllFxPanelObjs(fpo => (event.ctrlKey || fpo.fxname === fxname) && 
+            fpo.isRemoveable && setClass$(fpo.fxrama$, isFolded, 'folded', console.log(fpo)))
+          //: maybe this should be filtered to normal stages and not fixed fxs
+        }
+      }})
       
     const remove$ = isRemoveable && 
       div$({class: 'bfx-delete', click: _ => pg.changeFx(stageIx, ix, 'fx_blank')})

@@ -21,7 +21,7 @@ export const extendWithSources = (playground, root) => {
   const logSources = false
   
   const slog = (...args) => logSources && console.log(...args)
-  //const wlog = (...args) => logSources && console.warn(...args)
+  const wlog = (...args) => logSources && console.warn(...args)
   const tlog = (...args) => logSources && console.table(...args)
   
   const dbgLog = (main, msg, crumb, ixObj, node) => {
@@ -58,7 +58,7 @@ export const extendWithSources = (playground, root) => {
     }
   }
   
-  const maxSources = 5 //: 0 = main, 1 2 3 4 = aux elements
+  const maxSources = 33 //: 0 = main, 1 2 3 4 .. 32 = aux elements
   
   const source_interface = {
     sourceIx: 0,
@@ -86,24 +86,37 @@ export const extendWithSources = (playground, root) => {
   
   //8#c39 In the beginning, there was Jack, and Jack had a source.
   
-  const createSource = (sourceIx, mediaElement, destStageIxArr) => {
-    const mediaSourceNode = waCtx.createMediaElementSource(mediaElement)
-    const sourceNode = waCtx.createGain()
-    mediaSourceNode.connect(mutedNode)
-    mediaSourceNode.connect(sourceNode)
-
-    return sourceArr[sourceIx] = {
-      mediaElement,
-      mediaSourceNode, //: not needed any more, just for debug
-      sourceIx,
-      sourceNode,
-      destStageIxArr   //: saved from previous source in this slot
+  const createSource = (sourceIx, externalSource, destStageIxArr) => {
+    const newSource = {
+      isMediaElement: false,
+      mediaElement: undef,
+      externalSourceNode: undef,  //: not needed any more, just for debug
+      sourceNode: waCtx.createGain(),
+      destStageIxArr,   //: saved from previous source in this slot
+      sourceIx
     }
+    if (externalSource.filterType === 'volume') { //: it's a gain!
+      newSource.externalSourceNode = externalSource
+    } else if (externalSource.tagName === 'AUDIO' || externalSource.tagName === 'VIDEO') {
+      newSource.isMediaElement = true
+      newSource.mediaElement = externalSource
+      newSource.externalSourceNode = waCtx.createMediaElementSource(newSource.mediaElement)
+    } else {
+      console.error(`Invalid external source`)
+    }
+    
+    newSource.isMediaElement && newSource.externalSourceNode.connect(mutedNode)
+    newSource.externalSourceNode.connect(newSource.sourceNode)
+
+    return sourceArr[sourceIx] = newSource
   }
   
   //:8#856 --------------- playground extension methods ---------------
   
-  playground.changeSource = (sourceIx, mediaElement) => {
+  playground.changeSource = (sourceIx, sourceIn) => {
+    if (!sourceIn) {
+      return wlog(`changeSource: no source/mediaElement to connect [${sourceIx}]!`)
+    }
     wassert(sourceIx >= 0 && sourceIx < maxSources) //: valid sources are 0 1 2 3 4
     let destStageIxArr = []
     
@@ -115,17 +128,18 @@ export const extendWithSources = (playground, root) => {
       destStageIxArr = currSource.destStageIxArr
       delete sourceArr[sourceIx]
     }
-    const newSource = createSource(sourceIx, mediaElement, destStageIxArr)
+    const newSource = createSource(sourceIx, sourceIn, destStageIxArr)
     
-    if (!sourceIx) { //: local main media, we will listen its state changes
-      slog('sources calling initlocalmedialisteners')
-      playground.players.initLocalMediaListeners(mediaElement)
+    if (newSource.isMediaElement) {
+      if (!sourceIx) { //: local main media, we will listen its state changes
+        slog('sources calling initlocalmedialisteners')
+        playground.players.initLocalMediaListeners(newSource.mediaElement)
+      }
+      if (destStageIxArr.length) {
+        autoPlayMedia(sourceIx) //: ellenorizni ott a tuiloldalon, h mediaelement e
+      }
     }
     dbgMarkNode(newSource, {sourceIx}, `chgSrc (re)created`)
-
-    if (destStageIxArr.length) {
-      autoPlayMedia(sourceIx)
-    }
     for (const stageIx of destStageIxArr) {
       const stage = getStage(stageIx)
       newSource.sourceNode.connect(stage.stInput)
@@ -189,8 +203,11 @@ export const extendWithSources = (playground, root) => {
   }
   
   sources.refreshUiAfterChange = _ => {//post(_ => {
-    sourceArr.map(({destStageIxArr}, sourceIx) => sourceIx && 
-      ui.setVideoTargetInfo(sourceIx, destStageIxArr.map(a => 'ABCD'[a]).join(', ') || 'Mute'))
+    //+ jaj de csunya ez
+    sourceArr.map(({destStageIxArr}, sourceIx) => sourceIx && sourceArr[sourceIx].isMediaElement &&
+    ////+ reverse ascii kell
+    //+ vagy egy stagearr.maptoch()
+      ui.setVideoTargetInfo(sourceIx, destStageIxArr.map(a => 'ABCDEFGHIJKL'[a]).join(', ') || 'Mute'))
     iterateStages(stage => { 
       slog(`setting input selectors: stage[${stage.ix}] = ${stage.stSource}`)
       ui.setStageInputState(stage.ix, stage.stSource)

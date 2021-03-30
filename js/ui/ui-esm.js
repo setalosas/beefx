@@ -16,10 +16,10 @@ const {round} = Math
 export const createUI = (config, root) => {
   const {body} = document
   
-  const stageArr = []
+  const stageHash = {} //: hash instead of an array ([0 1 2 3 5 6 101 102] are possible)
   const ui = {
     root,
-    stageArr,
+    stageHash,
     videoStripHolderArr$: [],
     videoStripMockArr$: []
   }
@@ -27,6 +27,14 @@ export const createUI = (config, root) => {
   //8#79c Utilities, primitives, konfig
   
   ui.konfigNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
+  
+  ui.iterateStages = callback => {
+    for (const stageIx in stageHash) {
+      const stageObj = stageHash[stageIx]
+      stageObj && callback(stageObj)
+    }
+  }
+  ui.getStageObj = stageIx => stageHash[stageIx] || console.warn(`Invalid stage index: ${stageIx}`)
   
   ui.setHost = host => (key, params) => {
     const node$ = host[key + '$']
@@ -156,25 +164,27 @@ export const createUI = (config, root) => {
       div$({class: 'mitem rt', text: 'Autoplay', click: _ => ui.toggleAutoplay()}))
     set$(ui.mixermenu$, {}, mItems) 
   }
-  //8#c7f Stages. - stageObj (in stageArr) creation.
+  //8#c7f Stages. - stageObj (in stageHash) creation.
     
   ui.addStage = (stageIx, parent$ = ui.mid$, pars = {}) => {
+    const isStandardStage = stageIx < 100
     const stageObj = {
       stageIx,             //: stage index
+      isStandardStage,
       fxPanelObjArr: [],    //:fx panel objects in the stage
       ...pars
     }        
     set$(parent$, {}, 
       stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stageIx + 1)}, [
-        stageObj.inputSelector$ = stageIx < 100 && div$({class: 'input-selector huerot'}),
+        stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector huerot'}),
         stageObj.ramas$ = div$({class: 'bfx-ramas'}),
         stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
-          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
+          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'})/*,
           stageObj.spectrama$ = div$({class: 'st-spectrum huerot'},
-            stageObj.spectcanv$ = canvas$())
+            stageObj.spectcanv$ = canvas$()) */
         ])   
       ]))
-    return stageArr[stageIx] = stageObj //eslint-disable-line no-return-assign
+    return stageHash[stageIx] = stageObj //eslint-disable-line no-return-assign
   }
   
   ui.resetStage = stageIx => { //:nothing to do? NOT USED

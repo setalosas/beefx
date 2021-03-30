@@ -129,7 +129,10 @@ onWaapiReady.then(waCtx => {
       maxDb: 40,
       diynamic: .5,
       curveColor: ({fx}) => fx.int.isPreviewStable ? '#de0' : '#f90',
-      postRender: ({ccext}) => ccext.drawText('Preview', 'yellow', 'right', '28px', -50, -14)
+      postRender: ({fx, ccext}) => {
+        ccext.drawText('Preview', 'yellow', 'left', '28px', 70, -14)
+        fx.int.isPreviewStable || ccext.drawText('Unstable!', 'orange', 'left', '28px', 70, -54)
+      }
     }
     IIR.graphs.liveGraph = {
       graphType: 'freq',
@@ -138,7 +141,7 @@ onWaapiReady.then(waCtx => {
       maxDb: 40,
       diynamic: .5,
       curveColor: ({fx}) => fx.int.isLiveStable ? '#4e4' : fx.int.isLiveDead ? '#f44' : '#d80',
-      postRender: ({ccext}) => ccext.drawText('Live', 'orange', 'right', '28px', -50, -14)
+      postRender: ({ccext}) => ccext.drawText('Live', '#9e4', 'left', '28px', 70, -14)
     }
 
     IIR.setValue = (fx, key, value, {int} = fx) => ({
