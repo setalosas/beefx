@@ -37,7 +37,8 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
 @previewWidth: 500px;
 .preset-menu { .fixRB(0, 0); z-index: 9999; max-width: @previewWidth; .txtCent(); 
   .bg(hsla(0,0%,40%,.6)); transition: transform .1s 0s; border-radius: 8px 0 0 0;
-  &::before {.absRB(0, 100%); .cb(@B, @W75); padding: 4px; .boraTB(6px, 0); 
+  &::before {.absRB(0, 100%); padding: 4px; .boraTB(6px, 0); 
+    color: @B; background: linear-gradient(to bottom, @W75, @G7, fade(@G4, 60%));
     content: 'Change preset';}
   &.hidden:not(:hover) {transform: translateY(calc(~"100% - 8px")); 
     transition: transform .5s 4s;}
@@ -47,6 +48,7 @@ body::after {.absRB(10px, 10px); .font(24px, 700); .ita(); color: #fbb; content:
     &:hover .preset-preview {.blk();}
   }
 }
+canvas.videograb {.fixRT(0,0); .wihi(160px, 90px); z-index: 9999999; .bg(@B5);}
 .beeBg(){ @y1: hsl(45, 100%, 40%); @y2: hsl(60, 100%, 40%);
   background-blend-mode: color-burn;
   background: 
@@ -183,7 +185,7 @@ a#thumbnail.emulated {.relLT(0,0);.wihi(120px, 66px); .inBlk(); border: 1px soli
 //8#70f ---- Stage fx panels (general bfx-rama, in any stage) -------  
 .bfx-rama {.relLT(0,0); margin: 3px 1px; padding: 2px; color: @W; .font(14px,400);.bora(8px);
   box-shadow: inset 1px 1px 1px 0 @W5;
-  &:hover::before {.fixRB(4px, 4px); .font(16px, 700); content: attr(pepper); color: @W5;}
+  &:hover::before {.fixLB(4px, 4px); .font(16px, 700); content: attr(pepper); color: @W75;}
   
   //.bfx-rama.isRemoveable
   .bfx-foldicon {.absRT(20px, 2px); .hand(); .font(12px, 400);}

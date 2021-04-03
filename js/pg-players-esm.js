@@ -76,8 +76,7 @@ export const extendWithPlayers = (playground, root) => {
   However, as Google changes the inner structure of the Youtube DOM quite regularly,
   it's not worth it to make bigger efforts here - these infos are not _that_ important.
   This method works now (03/2021) but there's no guarantee that it will work in the future.
-  */
-  
+  */  
   const scrapingYoutubeForVideoInfo = _ => {
     const real = {}
     const h1Big = q$('h1 .ytd-video-primary-info-renderer')?.textContent
@@ -133,6 +132,13 @@ export const extendWithPlayers = (playground, root) => {
         //dis.remoteState = state
         ui.refreshPlayerControl(0, state)
         //console.log(`local state updated`, state)
+      }
+      if (root.onYoutube) {
+        const canvas = ui.videoGrabCanvas$
+        const ctx = canvas.getContext('2d')
+        const video = mediaElement
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
       }
       return state
     } else {

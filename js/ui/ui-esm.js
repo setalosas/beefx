@@ -7,13 +7,15 @@
 import {Corelib, DOMplusUltra, FxUi, MixerUi} from '../improxy-esm.js'
 
 const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib
-const {wassert, brexru} = Corelib.Debug
+const {wassert, weject, brexru} = Corelib.Debug
 const {post, startEndThrottle} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, leaf$, set$, toggleClass$, setClass$, q$$, canvas$, haltEvent} = DOMplusUltra
 const {round} = Math
   
-export const createUI = (config, root) => {
+export const createUI = (root, exroot) => {
+  weject(exroot)
+  
   const {body} = document
   
   const stageHash = {} //: hash instead of an array ([0 1 2 3 5 6 101 102] are possible)
@@ -24,9 +26,9 @@ export const createUI = (config, root) => {
     videoStripMockArr$: []
   }
   
-  //8#79c Utilities, primitives, konfig
+  //8#79c Utilities, primitives, config
   
-  ui.konfigNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
+  ui.configNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
   
   ui.iterateStages = callback => {
     for (const stageIx in stageHash) {
@@ -110,6 +112,7 @@ export const createUI = (config, root) => {
         ui.mid$ = div$({class: 'bfx-mid'})
       ])
     ])
+    ui.videoGrabCanvas$ = canvas$(body, {class: 'videograb'})
     FxUi.extendUi(ui)
     MixerUi.extendUi(ui)
   }
@@ -179,9 +182,9 @@ export const createUI = (config, root) => {
         stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector huerot'}),
         stageObj.ramas$ = div$({class: 'bfx-ramas'}),
         stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
-          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'})/*,
-          stageObj.spectrama$ = div$({class: 'st-spectrum huerot'},
-            stageObj.spectcanv$ = canvas$()) */
+          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
+          stageObj.spectrama$ = root.config.showEndSpectrums && div$({class: 'st-spectrum huerot'},
+            stageObj.spectcanv$ = canvas$())
         ])   
       ]))
     return stageHash[stageIx] = stageObj //eslint-disable-line no-return-assign

@@ -26,7 +26,7 @@ const shortenProps = {
 const fxNames = []
 
 const createBeeFX = waCtx => {
-  const konfig = {
+  const config = {
     useSetTargetForDelayTime: true //: this is not evident
   }
   const fxHash = {}
@@ -37,8 +37,7 @@ const createBeeFX = waCtx => {
     },
     logConnects: false,
     logDisconnects: false,
-    logSetValue: false,
-    logSetValueAlt: false
+    logSetValue: false
   }
     
   const pepper = 'zholger'
@@ -95,7 +94,7 @@ const createBeeFX = waCtx => {
     fx.setAt = (node, key, value) =>
       fx.int[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
     
-    fx.setDelayTime = (node, sec) => konfig.useSetTargetForDelayTime
+    fx.setDelayTime = (node, sec) => config.useSetTargetForDelayTime
       ? fx.setAt(node, 'delayTime', sec)
       : fx.int[node].delayTime.value = sec
       
@@ -142,23 +141,6 @@ const createBeeFX = waCtx => {
     }
     fx.setValueIf = (key, value) => fx.atm[key] !== value && fx.setValue(key, value)
 
-    fx.setValueAlt = (key, value) => {
-      beeFx.logSetValueAlt &&
-        console.log('⇨fx.setaltvalue', {key, value})
-
-      fx.past[key] = fx.atm[key]
-      fx.atm[key] = value
-
-      const fun = fx.exo.setValueAlt && fx.exo.setValueAlt(fx, key, value)
-      if (fun) {
-        fun()
-        fx.valueChanged(key, value)
-      } else {
-        console.error(`setValueAlt: ${fx.exo.name}: bad pars`, {key, value})
-        debugger
-      }
-    }
-    
     fx.getValue = key => fx.atm[key]
     
     //8#c88------- Linear-exponential conversion (set/get) --------

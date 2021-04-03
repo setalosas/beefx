@@ -95,8 +95,10 @@ body::after {
   position: absolute;
   right: 0;
   bottom: 100%;
+  padding: 4px;
+  border-radius: 6px 6px 0 0;
   color: #000000;
-  background-color: #ffffff;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.75), #b3b3b3, rgba(102, 102, 102, 0.6));
   content: 'Change preset';
 }
 .preset-menu.hidden:not(:hover) {
@@ -140,6 +142,15 @@ body::after {
 }
 .preset-menu .preset-item:hover .preset-preview {
   display: block;
+}
+canvas.videograb {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 160px;
+  height: 90px;
+  z-index: 9999999;
+  background: rgba(0, 0, 0, 0.5);
 }
 .beebody {
   position: fixed;
@@ -784,12 +795,12 @@ a#thumbnail.emulated {
 }
 .bfx-rama:hover::before {
   position: fixed;
-  right: 4px;
+  left: 4px;
   bottom: 4px;
   font-size: 16px;
   font-weight: 700;
   content: attr(pepper);
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.75);
 }
 .bfx-rama .bfx-foldicon {
   position: absolute;
@@ -839,6 +850,9 @@ a#thumbnail.emulated {
 }
 .bfx-rama.bypass .bfxact.led-fx {
   --ledhue: 200;
+}
+.bfx-rama.bypass::before {
+  content: none;
 }
 .bfx-rama.isBlank {
   height: 18px;

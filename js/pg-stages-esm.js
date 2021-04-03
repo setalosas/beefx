@@ -12,13 +12,15 @@ const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {createSpectrumVisualizer} = Visualizer
 const {BroadcastChannel} = window
 
-const createPlayground = root => {
+const createStageManager = root => {
   const {waCtx, mediaElement, ui} = root
   const {newFx, namesDb, connectArr} = BeeFX(waCtx)
   ui.configNames(namesDb)
   
   const dummyFx = waCtx.createGain()
   const output = waCtx.createGain()
+  const stages = []
+  
   const stages = []
   
   const iterateStages = callback => {
@@ -33,7 +35,7 @@ const createPlayground = root => {
   
   const getStage = stageIx => stages[stageIx] || console.warn(`No stage[${stageIx}]`) || undef
 
-  const dis = {
+  const stageMan = {
     iterateStages, 
     getStage,
     graphMode: 'parallel', //sequential or parallel (default)
@@ -55,6 +57,104 @@ const createPlayground = root => {
   const {radio} = players
   
   const getEndRatios = _ => getStageArr().map(stage => stage.stEndRatio)
+  
+  //8#76e Stage constructor stages
+  
+  //8#c84 Stage is a sequential chain of Fxs + 
+  //8#c84   + scaffolding (start, input, source, end, ratio, vis, mayday)
+  //8#900 must be used in playground, in patashnik for tracks, in playground mixer, etc
+  //8#da6 stage metods:
+  //8#dca - create + init  
+  //8#cb9 - scaffolding  
+  //8#ba8 --- mayday
+  
+  
+  //: CROMBEE
+  
+  stageMan.createStage = (params) => {
+    const params_interface = {
+      hasEndSpectrum: true,
+      hasEndRatio: true
+      hasEndRatio
+      
+      has
+      
+      
+    }
+    
+    const stage = {
+      stInput: undef,
+      stEndRatio: undef,
+      stAnalyser: undef,
+      vis: undef,
+    }
+    
+    stage.mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
+      stage.inactivate()
+      for (const fx of stages[nuIx].fxArr) {
+        fx.mayday && fx.mayday(data)
+      }
+      console.warn(`❗️❗️❗️ Overload in stage ${nuIx}, turning off. ❗️❗️❗️`)
+    }
+    
+    stage.activate = (on = true) => {
+    }
+    
+    stage.inactivate = _ => stage.activate(false)
+    
+    
+    stage.init = (nuIx, uiStage) => { //: stage & ui exists, endRatio & others will be created
+      const {spectcanv$, levelMeter$} = uiStage //+ nem igy kene osszekotni
+      //+nuIxet mindenhonnan kiirtani
+      
+      stage.stAnalyzer = waCtx.createAnalyser()
+      stage.vis = params.hasEndSpectrum &&
+        createSpectrumVisualizer(stage.stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
+        
+      const stEndRatio = newFx('fx_ratio')
+      const stInput = waCtx.createGain()
+      const stSource = 0 //+ sourceIx? ami sources modulban referal?
+      const fxArr = []
+      const fpo = ui.rebuildStageEndPanel(nuIx, stEndRatio)
+      stages[nuIx] = {uiStage, fxArr, stEndRatio, stAnalyzer, vis, ix: nuIx, stInput, stSource, fpo}
+      changeFxLow(stages[nuIx], 0, 'fx_gain')
+      stEndRatio.chain(...getEndRatios())
+      dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) //: 
+      initStageSender(nuIx)
+      return stages[nuIx]
+      
+      const mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
+        dis.activateStage(nuIx, false)
+        for (const fx of stages[nuIx].fxArr) {
+          fx.mayday && fx.mayday(data)
+        }
+        console.warn(`❗️❗️❗️ Overload in stage ${nuIx}, turning off. ❗️❗️❗️`)
+      }
+      const stAnalyzer = waCtx.createAnalyser()
+      const vis = root.config.showEndSpectrums &&
+        createSpectrumVisualizer(stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
+      const stEndRatio = newFx('fx_ratio')
+      const stInput = waCtx.createGain()
+      const stSource = 0
+      const fxArr = []
+      const fpo = ui.rebuildStageEndPanel(nuIx, stEndRatio)
+      stages[nuIx] = {uiStage, fxArr, stEndRatio, stAnalyzer, vis, ix: nuIx, stInput, stSource, fpo}
+      changeFxLow(stages[nuIx], 0, 'fx_gain')
+      stEndRatio.chain(...getEndRatios())
+      dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) //: 
+      initStageSender(nuIx)
+      return stages[nuIx]
+    }
+    
+    dis.addStage = ch => {
+      decompose()
+      const nuIx = ascii(ch) - ascii('A')
+      const uiStage = ui.addStage(nuIx)//:only once, restore will call ui.resetState()
+      const stage = initStage(nuIx, uiStage)
+      compose()
+      return nuIx
+    }
+  }
   
   //8#a6c Compose & decompose - they won't touch sources, starting from stInput of stages
   
@@ -409,7 +509,7 @@ const createPlayground = root => {
 
 export const runPlaygroundWithin = (waCtx, options) => {
   const config = {
-    ...options
+    showEndSpectrums: !options.disabledEndSpectrums
     //platform: 'standalone', // extension
     //mediaType: 'audioboth', // video
     //useVideo: true,

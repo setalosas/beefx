@@ -19,7 +19,7 @@ export const extendUi = ui => {
   const graphBase = createGraphBase(ui.root.waCtx)
   const CANVAS_SIZE = 300
     
-  //8#79c Utilities, primitives, konfig
+  //8#79c Utilities, primitives, config
   
   const addRange = (parO, name, callback, value, min, max, step = .001) => 
     parO.control$ = div$({class: 'beectrl ranger', attr: {name}}, 

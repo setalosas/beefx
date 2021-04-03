@@ -9,36 +9,31 @@ import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 const {nop, no, yes, isArr, getRnd, getRndFloat} = Corelib
 const {wassert} = Corelib.Debug
 const {post} = Corelib.Tardis
-const {round} = Math
+const {round, max} = Math
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr} = BeeFX(waCtx)
-  
-  const ratioFx = { //8#666 ------- ratio -------
-    def: {
-      gain: {defVal: .25, min: 0.01, max: 1, name: 'Stage ratio'}
-    }
-  }
-  
-  ratioFx.setValue = (fx, key, value) => ({
-    gain: _ => {
-      fx.setAt('gain', 'gain', value)
-      //post(_ => fx.distributeGain())
-      fx.distributeGain()
-    }
-  }[key])
-  
-  ratioFx.setValueAlt = (fx, key, value) => ({
-    gain: _ => fx.setAt('gain', 'gain', value < .04 ? 0 : value)
-  }[key])
-
-  const getAggregatedGain = arr => arr.reduce((acc, fx) => acc + fx.atm.gain, 0)
+  const {registerFxType, connectArr} = BeeFX(waCtx)
   
   const logRatio = false
   const rlog = (...args) => logRatio && console.log(...args)
   const slog = (...args) => logRatio && console.warn(...args)
   const glog = (...args) => logRatio && console.group(...args)
   const hlog = _ => logRatio && console.groupEnd()
+  
+  const ratioFx = { //8#666 ------- ratio -------
+    def: {
+      gain: {defVal: .25, min: 0.00001, max: 1.00001, name: 'Stage ratio'}
+    }
+  }
+  
+  ratioFx.setValue = (fx, key, value, {int} = fx) => ({
+    gain: _ => {
+      fx.setAt('gain', 'gain', value)
+      fx.distributeGain()
+    }
+  }[key])
+  
+  const getAggregatedGain = arr => arr.reduce((acc, fx) => acc + fx.atm.gain, 0)
   
   const dumpChain = (fx, msg, {int} = fx) => {
     if (yes) {
@@ -55,33 +50,28 @@ onWaapiReady.then(waCtx => {
     }
   }
   
-  ratioFx.construct = (fx, pars) => {
-    const {int, exo} = fx
-    /* int.capture({
-      gain: waCtx.createGain(),
-      chainArr: [],
-      activeChainArr: [],
-      chainLen: 0,
-      activeChainLen: 0
-    }) */
+  ratioFx.construct = (fx, pars, {int, atm} = fx) => {
+    const {min: minGain, max: maxGain} = ratioFx.def.gain
     int.gain = waCtx.createGain()
     connectArr(fx.start, int.gain, fx.output)
+    
+    fx.modifyGain = factor => fx.setValue('gain', max(atm.gain * factor, minGain))
 
     fx.chain = (...arr) => { //: rewrites all shareds created previously, but others not!
       arr = isArr(arr[0]) ? arr[0] : arr
       const chainArr = [fx, ...arr.filter(f => f !== fx)] //: no duplicates!
       const chainLen = chainArr.length
-      const sumGain = exo.def.gain.max + exo.def.gain.min * (chainLen - 1)
+      const sumGain = maxGain + minGain * (chainLen - 1)
       const resetGain = sumGain / chainLen
+      int.shared = {chainArr, chainLen, sumGain, resetGain, isWarModeOn: true}
       
-      int.shared = {chainArr, chainLen, sumGain, resetGain}
-      rlog(`🔗🔗fx.chain() calling setValueAlt(gain) loop now:`)
+      rlog(`🔗🔗fx.chain() calling setValue(gain) loop now:`)
       for (const chainedFx of chainArr) {
-        chainedFx.setValueAlt('gain', resetGain)
         chainedFx.int.shared = int.shared
+        chainedFx.setValue('gain', resetGain)
       }
-      rlog(`🔗🔗fx.chain() calling setValue(gain) now:`, {shared: int.shared, int, fx})
-      fx.setValue('gain', fx.atm.gain)
+      int.shared.isWarModeOn = false
+      //rlog(`🔗🔗fx.chain() calling setValue(gain) now:`, {shared: int.shared, int, fx})
       dumpChain(fx, '🔗🔗fx.chain() finished')
       fx.onActivated()
     }
@@ -93,42 +83,44 @@ onWaapiReady.then(waCtx => {
       }
       glog(`🔗%cfx.onActivated(${fx.zholger}) start`, 'background: #fc9')
       dumpChain(fx, '🔗')
-      
       shared.activeChainArr = shared.chainArr.filter(fx => fx.isActive)
       shared.activeChainLen = shared.activeChainArr.length
       rlog(`🔗%cratio.onActivated ACTIVE CHAIN RECALCED`, 'font-size:20px', shared.activeChainArr)
       
-      fx.distributeGain(fx.isActive ? fx.atm.gain : 0)
+      fx.distributeGain(fx.isActive ? atm.gain : minGain)
       dumpChain(fx, `🔗fx.onActivated(${fx.zholger}) end`)
       hlog()
     }
 
-    fx.distributeGain = (fixedGain = fx.atm.gain) => {
+    fx.distributeGain = (fixedGain = atm.gain) => {
       const {shared} = int
       if (!shared) {
         slog(`Too early post() brought us here (after state restore?), skip!`, fx)
         return
       }
+      if (shared.isWarModeOn) {
+        return
+      }
+      shared.isWarModeOn = true
       glog(`🔗📊 %cdistributeGain(${fx.zholger}) fixedGain=${fixedGain}`, 'background: #ff8')
-      slog('callers')
+      //slog('callers')
       dumpChain(fx, '🔗📊 ')
       if (shared.activeChainLen > 1) {
         const othersAggregated = getAggregatedGain(shared.activeChainArr.filter(f => f !== fx))
         const remaining = shared.sumGain - fixedGain // 3.5
         const factor = remaining / othersAggregated
         
-        wassert(othersAggregated * 1.0001 >= exo.def.gain.min * (shared.activeChainLen - 1))
-        rlog('🔗📊 dist tmp', {othersAggregated, remaining, factor})
+        wassert(othersAggregated * 1.0001 >= minGain * (shared.activeChainLen - 1))
+        rlog('🔗📊 dist tmp', {othersAggregated, remaining, factor, sumGain: shared.sumGain})
         
         shared.lastFixedFx = fx
         glog(`🔗📊 (BEFORE LOOP FOR NOT FIXED FXS) lastfixed set to ${fx.zholger}`, shared)
         for (const chainFx of shared.activeChainArr) {
-          fx !== chainFx &&
-            chainFx.setValueAlt('gain', Math.max(chainFx.atm.gain * factor, exo.def.gain.min))
+          fx !== chainFx && chainFx.modifyGain(factor)
         }
-        hlog()
       }
       hlog()
+      shared.isWarModeOn = false
     }
   }
   ratioFx.onActivated = fx => fx.onActivated()

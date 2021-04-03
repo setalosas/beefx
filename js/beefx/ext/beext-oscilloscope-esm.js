@@ -12,6 +12,8 @@ const {wassert} = Corelib.Debug
 onWaapiReady.then(waCtx => {
   const {connectArr, registerFxType, newFx} = BeeFX(waCtx)
   
+  const logOscPerf = false
+  
   const findZeroCrossing = (data, width, sensitivity) => {
     const min = (sensitivity - 0) / 100 * 128 + 128
     let i = 0
@@ -88,34 +90,26 @@ onWaapiReady.then(waCtx => {
       cc.beginPath()
       cc.moveTo(0, centerY - (128 - freqData[frameIxFromZero]) * scale)
       
+      // 7 12 17 22 27 32
+      let version = parseInt(fx.zholger)
+      if (version < 15) {
+        version = '1.6'
+      } else if (version < 30) {
+        version = '1.2'
+      } else {
+        version = '.8'
+      }
+      const step = parseFloat(version)
+        
       let j = 0 //: for test/debug
       let frameIx = frameIxFromZero
       let prevj = -1
       
-      // 7 12 17 22 27 32
-      let version = parseInt(fx.zholger)
-      if (version === 99) {
-        for (; frameIx < flen && j < width; frameIx++, j += zoom) {
+      for (; frameIx < flen && j < width; frameIx++, j += zoom) {
+        if (j - prevj > step) {
           const magnitude = (128 - freqData[frameIx]) * scale
           cc.lineTo(j, centerY - magnitude)
-        }
-      } else if (version > 30) {
-        version = '1.6'
-        for (; frameIx < flen && j < width; frameIx++, j += zoom) {
-          if (j - prevj > 1.6) {
-            const magnitude = (128 - freqData[frameIx]) * scale
-            cc.lineTo(j, centerY - magnitude)
-            prevj = j
-          }
-        }
-      } else {
-        version = '.8'
-        for (; frameIx < flen && j < width; frameIx++, j += zoom) {
-          if (j - prevj > .8) {
-            const magnitude = (128 - freqData[frameIx]) * scale
-            cc.lineTo(j, centerY - magnitude)
-            prevj = j
-          }
+          prevj = j
         }
       }
       timer.mark('calc')
@@ -133,18 +127,21 @@ onWaapiReady.then(waCtx => {
         ccext.setTextStyle('hsl(180, 100%, 75%)', 'right')
         cc.fillText('FFT window too short!', txtx, height - 20)
       }
+      
       timer.mark('stroke&text')
       const sum = timer.sum()
-      int.prof.push(sum.dur.sum)
-      if (version) {
-        if (int.prof.length % 110 === 105) {
-          const last = int.prof.slice(-100).map(a => parseFloat(a))
-          let agg = 0
-          for (let i = 0; i < 100; i++) {
-            agg += last[i]
+      if (logOscPerf) {
+        int.prof.push(sum.dur.sum)
+        if (version) {
+          if (int.prof.length % 410 === 405) {
+            const last = int.prof.slice(-400).map(a => parseFloat(a))
+            let agg = 0
+            for (let i = 0; i < 400; i++) {
+              agg += last[i]
+            }
+            agg = Math.round(agg * 2.5)
+            console.log(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
           }
-          agg = Math.round(agg * 10)
-          console.log(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
         }
       }
       //parseInt(fx.zholger) === 7 && console.log(timer.summary())
@@ -203,7 +200,7 @@ onWaapiReady.then(waCtx => {
         int.fftSize = fftSize
         int.osc.fftSize = fftSize
         int.freqData = new Uint8Array(int.osc.frequencyBinCount) //: fftSize / 2
-        console.log(`FFT array resized with fftsize`, fftSize)
+        console.log(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
       }
     }
     
@@ -222,7 +219,7 @@ onWaapiReady.then(waCtx => {
           break
         }
       }
-      console.log({zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
+      console.log(`Scope.resizeFFT: actual fft reqs recalculated:`, {zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
       regenFFTArray(found)
     }
     

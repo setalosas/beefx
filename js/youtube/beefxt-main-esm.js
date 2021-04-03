@@ -6,13 +6,7 @@
    
 import {Corelib, DOMplusUltra, onWaapiReady, Playground, createUI} from '../improxy-esm.js'
 
-const {onReadyState: onDomReady, div$, leaf$, set$} = DOMplusUltra 
-const {runPlayground} = Playground
-const {MediaElementPlayer} = window //: from MediaElementJs
-
-//const onDomReady = new Promise(resolve => $(resolve))
-
-//const onWaapiReady = new Promise(resolve => onWaapiReady.then(resolve))
+const {onDomReady, div$, leaf$, set$} = DOMplusUltra 
 
 const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 
@@ -23,16 +17,16 @@ const config = {
   useAudio: false
 }
 
-void (async _ => {
-  console.log('maiiiin')
-  await onDomReady
-  await adelay(1000)// = await onBeeFxExtReady()
+onDomReady(async _ => {
+  console.log('beeFx/youtube main started')
   
   const root = {
+    config,
     waCtx: await onWaapiReady,
     mediaElement: null,
     onYoutube: true
   }
+  await adelay(10) //: it basically skips the loop so all Fx extensions can register
   
   window.addEventListener('transitionend', _ => _) //+ csekk!
   
@@ -45,13 +39,13 @@ void (async _ => {
       set$(trigger$, {class: 'hasvideo', click: event => {
         root.mediaElement = video
         root.killEmAll = event.shiftKey
-        root.ui = createUI(config, root)
-        runPlayground(root)
+        root.ui = createUI(root)
+        Playground.runPlayground(root)
       }})
     } else {
       setTimeout(tick, 1000)
-      console.log('ticked')
+      console.log('video not found, will retry in 1s')
     }
   }
   tick()
-})()
+})

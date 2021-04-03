@@ -18,6 +18,7 @@ const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 const config = {
   platform: 'standalone', // extension
   mediaType: 'audioboth', // video
+  showEndSpectrums: true,
   useVideo: true,
   useAudio: false
 }
@@ -58,11 +59,12 @@ void (async _ => {
   await adelay(1000)// = await onBeeFxExtReady()
   
   const root = {
+    config,
     mp3s,
     waCtx: await onWaapiReady,
     mediaElement: null
   }
-  root.ui = createUI(config, root)
+  root.ui = createUI(root)
   
   if (config.platform === 'standalone') {
     root.mmenu$ = div$(root.ui.top$, {class: 'mediamenu'}, [
