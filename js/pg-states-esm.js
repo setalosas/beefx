@@ -51,6 +51,7 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
     return ret
   }
   const setups = { //: I know these compressed defs are ugly, but we can overview them on 1 page
+    preset2xb: {AB: 'b'},
     presetA: {
       A: 'g,comp,b',
       B: 'g,bi,b',

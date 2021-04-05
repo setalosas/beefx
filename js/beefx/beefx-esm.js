@@ -198,6 +198,9 @@ const createBeeFX = waCtx => {
     
     fx.getPepper = _ => fx[pepper]
     
+    fx.getPepperDebug = _ => 
+      fx[pepper] + ` ${fx.input.__resource_id__}->${fx.output.__resource_id__}`
+    
     //8#a72------- Fx initialization --------    
     
     fx.initPars = pars => {

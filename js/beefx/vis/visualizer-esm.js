@@ -87,7 +87,7 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix,
       return
     }
     if (vis.isActive) {
-      return
+      //return
     }
     vis.analyser.getByteFrequencyData(vis.freqs)
     if (mayday) {

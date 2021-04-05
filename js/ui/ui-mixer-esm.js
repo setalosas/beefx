@@ -345,6 +345,17 @@ export const extendUi = ui => {
     }
   }
   
+  const importedFromPlayground = {
+    localStageIx: 100,
+    localStageLetter: 'LOC',
+    localStage: undef,
+    remoteStageIx: 101,
+    remoteStageLetter: 'REM',
+    remoteStage: undef,
+    faderStageIx: 102,
+    faderStageLetter: 'FAD',
+    faderStage: undef
+  }
   const players = []
   
   const mixer = ui.mixer = {
@@ -353,35 +364,35 @@ export const extendUi = ui => {
     localPlayer: undef,
     remotePlayer: undef,
     fader: undef,
-    localStageIx: 100,
-    remoteStageIx: 101,
-    faderStageIx: 102,
     players
   }
   
-  const rebuildMixerFader = (stageIx, parent$, fx) => {
+  const rebuildMixerFader = (stage, parent$, fx) => {
+    const {stageIx} = stage
     const fader = createFader(parent$)
-    ui.addStage(stageIx, fader.stageFrame$, {hasNoBottom: true}) 
+    ui.addStage(stage, fader.stageFrame$, {hasNoBottom: true}) 
     fader.fxPanelObj = ui.rebuildStageFxPanel(stageIx, 0, fx, {isFixed: true, isOnOff: false})
     return fader
   }
-  const rebuildMixerPlayer = (stageIx, parent$, isLocal, fx) => {
+  const rebuildMixerPlayer = (stage, parent$, isLocal, fx) => {
+    const {stageIx} = stage
     const player = createPlayer(parent$, {isLocal})
-    ui.addStage(stageIx, player.stageFrame$, {hasNoBottom: true}) 
+    ui.addStage(stage, player.stageFrame$, {hasNoBottom: true}) 
     player.fxPanelObj = ui.rebuildStageFxPanel(stageIx, 0, fx, {isFixed: true, isOnOff: false})
     return player
   }
   ui.startMixer = _ => {
   }
   ui.finalizeMixer = _ => {
+    ui.pg.initMixerStages()
     const localFx = ui.pg.bpmTransformer
     const remoteFx = ui.pg.bpmTransformer
     const ratio4Fx = ui.getStageObj(0)?.fxPanelObjArr[-1].fx //: stage 0 is the master ATM!!
     wassert(ratio4Fx)
     
-    mixer.localPlayer = rebuildMixerPlayer(mixer.localStageIx, ui.playerLeft$, true, localFx)
-    mixer.remotePlayer = rebuildMixerPlayer(mixer.remoteStageIx, ui.playerRight$, false, remoteFx)
-    mixer.fader = rebuildMixerFader(mixer.faderStageIx, ui.fader$, ratio4Fx)
+    mixer.localPlayer = rebuildMixerPlayer(ui.pg.localStage, ui.playerLeft$, true, localFx)
+    mixer.remotePlayer = rebuildMixerPlayer(ui.pg.remoteStage, ui.playerRight$, false, remoteFx)
+    mixer.fader = rebuildMixerFader(ui.pg.faderStage, ui.fader$, ratio4Fx)
     players.push(mixer.localPlayer, mixer.remotePlayer) //+ ez nem kell semmire
     ui.refreshPlayerControl(0, {})
     ui.refreshPlayerControl(1, {})

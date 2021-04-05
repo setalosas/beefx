@@ -1,51 +1,49 @@
-/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, valid-typeof, 
-   object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
-   handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
-   no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
-   
+/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, space-unary-ops, valid-typeof,
+   object-curly-spacing, object-curly-newline, object-property-newline, no-floating-decimal,
+   handle-callback-err, quotes, yoda, no-void, import/first, standard/no-callback-literal */
+
 import {Corelib, DOMplusUltra, onWaapiReady, Playground, createUI} from '../improxy-esm.js'
 
-const {onDomReady, div$, leaf$, set$} = DOMplusUltra 
+const {onDomReady, div$, q$, set$} = DOMplusUltra
+const {adelay} = Corelib.Tardis
 
-const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
-
-const config = {
-  platform: 'standalone', // extension
-  mediaType: 'audioboth', // video
-  useVideo: true,
-  useAudio: false
-}
+//const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 
 onDomReady(async _ => {
-  console.log('beeFx/youtube main started')
-  
+  console.log('CromBee beeFx/Youtube main started.')
+
+  const config = {
+    platform: 'standalone', // extension
+    useVideo: true,
+    useAudio: false
+  }
   const root = {
     config,
     waCtx: await onWaapiReady,
     mediaElement: null,
-    onYoutube: true
+    onYoutube: true,
+    killEmAll: false
   }
-  await adelay(10) //: it basically skips the loop so all Fx extensions can register
-  
+  await adelay(10) //: it basically skips a few frames so all beeFx extensions can register
+
   window.addEventListener('transitionend', _ => _) //+ csekk!
-  
+
   const trigger$ = div$(document.body, {class: 'beetrigger', text: 'BeeeFX!'})
 
-  const tick = _ => {
-    const video = document.getElementsByTagName('video')[0]
-    console.log('found video', video)
+  const videoTagWaitingTick = _ => {
+    const video = q$('video')
     if (video) {
       set$(trigger$, {class: 'hasvideo', click: event => {
         root.mediaElement = video
-        root.killEmAll = event.shiftKey
+        root.killEmAll = event.shiftKey //: we'll remove most of Youtube if shift was pressed
         root.ui = createUI(root)
         Playground.runPlayground(root)
       }})
+      console.log('CromBee found video tag:', video)
     } else {
-      setTimeout(tick, 1000)
-      console.log('video not found, will retry in 1s')
+      adelay(1000).then(videoTagWaitingTick)
+      console.log(`CromBee didn't found video tag, will retry in 1s`)
     }
   }
-  tick()
+  videoTagWaitingTick()
 })

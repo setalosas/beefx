@@ -81,9 +81,9 @@ onWaapiReady.then(waCtx => {
       }
     }
     if (cc) {
-      if (int.drawCnt++ % 2) {
+      //if (int.drawCnt++ % 2) {
         drawSpectrum()
-      }
+      //}
     }
     int.rAF = window.requestAnimationFrame(_ => drawFrame(fx))
   }

@@ -4,7 +4,9 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, Visualizer, BPM, Players, Sources, StateManager, createUI} from './improxy-esm.js'
+import * as pgIm from './improxy-esm.js'
+
+const {Corelib, Visualizer} = pgIm
 
 const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
 const {wassert, weject} = Corelib.Debug
@@ -12,35 +14,26 @@ const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {createSpectrumVisualizer} = Visualizer
 const {BroadcastChannel} = window
 
+const {BeeFX, BPM, Players, Sources, StateManager, StageManager, createUI} = pgIm
+
 const createPlayground = root => {
-  const {waCtx, mediaElement, ui} = root
+  const {waCtx, ui} = root
   const {newFx, namesDb, connectArr} = BeeFX(waCtx)
   ui.configNames(namesDb)
   
   const dummyFx = waCtx.createGain()
   const output = waCtx.createGain()
-  const stages = []
   
-  const iterateStages = callback => {
-    for (const stage of stages) {
-      stage && callback(stage)
-    }
-  }
+  const stageMan = StageManager.createStageManager(root)
   
-  const getStageArr = _ => stages.filter(stage => stage)
-  
-  const getFilteredStages = filter => getStageArr().filter(stage => filter(stage))
-  
-  const getStage = stageIx => stages[stageIx] || console.warn(`No stage[${stageIx}]`) || undef
+  const {getEndRatios, iterateStages, getFilteredStages, getStage} = stageMan
 
   const dis = {
-    iterateStages, 
-    getStage,
+    stageMan, //+ PFUJ de sourcesnek kell es fxpaneluinak is
     graphMode: 'parallel', //sequential or parallel (default)
     bpmAuditor: undef,
     bpmTransformer: newFx('fx_bpmTransformer'),
     bpm: 0,
-    stages,
     lastSentAt: 0,
     lastReceivedAt: 0,
     senderStage: -1,
@@ -54,11 +47,9 @@ const createPlayground = root => {
   const players = dis.players = Players.extendWithPlayers(dis, root)
   const {radio} = players
   
-  const getEndRatios = _ => getStageArr().map(stage => stage.stEndRatio)
-  
   //8#a6c Compose & decompose - they won't touch sources, starting from stInput of stages
   
-  const decompose = _ => {
+  /* const decompose = _ => {
     iterateStages(({fxArr, stInput, stEndRatio}) => {
       stInput.disconnect()
       for (const fx of fxArr) {
@@ -97,251 +88,123 @@ const createPlayground = root => {
     })
     wassert(unconnected || dis.graphMode === 'parallel')
     void unconnected?.connect(output)
-  }
-  const decomposeStage = stageIx => {
-    const {fxArr, stInput, stEndRatio} = stages[stageIx]
-    stInput.disconnect()
-    for (const fx of fxArr) {
-      fx.disconnect()
-    }
-    stEndRatio.disconnect()
-  }
-  const composeStage = stageIx => {
-    const {fxArr, stInput, stEndRatio, stAnalyzer} = stages[stageIx]
-    stInput.connect(fxArr[0])
-    connectArrayDest(fxArr, stEndRatio)
-    stEndRatio.connect(stAnalyzer)
-    stEndRatio.connect(output)
-  }
-  
+  } */
+
   //8#a66 ----------- Change core playground Fxs -----------
-  
-  const changeFxLow = (stage, ix, name) => {
-    weject(isNum(stage))
-    //console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${name})`)
-    const {fxArr} = stage
-    wassert(ix <= fxArr.length) //: the array can't have a gap
-    void fxArr[ix]?.deactivate(false)
-    fxArr[ix] = newFx(name)
     
-    if (fxArr[ix]) {
-      const isFixed = name === 'fx_gain' && !ix //: the first fx in every stage is a fix gain
-      ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], {isFixed, hasStageMark: isFixed})
-    } else {
-      console.error(`Bad Fx type:`, name)
-    }
-  }
-    
-  dis.changeFx = (stageIx, ix, name) => {
-    decomposeStage(stageIx)
-    changeFxLow(stages[stageIx], ix, name)
-    composeStage(stageIx)
-  }
+  dis.changeFx = (stageId, ix, name) => stageMan.changeFx({stageId, ix, name})
+  //+ ezt csak az uibol hivja a selektorfx ugye?
   
   //8#46f ------------- Sync control: Master/slave stage settings -------------
   
-  const activateMaster = stageIx => {
-    dis.senderStage = stageIx
+  const activateMaster = stageId => {
+    dis.senderStage = getStage(stageId)
     dis.isMaster = true
-    const stage = stages[dis.senderStage]
-    stage.fpo.panel.set('send', {class: 'active'}) 
+    dis.senderStage.fpo.panel.set('send', {class: 'active'}) 
   }
-  const activateSlave = stageIx => {
-    dis.listenerStage = stageIx
+  const activateSlave = stageId => {
+    dis.listenerStage = getStage(stageId)
     dis.isSlave = true
-    const stage = stages[dis.listenerStage]
-    stage.fpo.panel.set('listen', {class: 'active'}) 
+    dis.listenerStage.fpo.panel.set('listen', {class: 'active'}) 
   }
   const inactivateMaster = _ => {
-    const oldStage = stages[dis.senderStage]
-    oldStage.fpo.panel.set('send', {declass: 'active'}) 
-    dis.senderStage = -1
+    void dis.senderStage?.fpo.panel.set('send', {declass: 'active'}) 
+    delete dis.senderStage
     dis.isMaster = false
   }
   const inactivateSlave = _ => {
-    const oldStage = stages[dis.listenerStage]
-    oldStage.fpo.panel.set('listen', {declass: 'active'}) 
-    dis.listenerStage = -1
+    void dis.listenerStage?.fpo.panel.set('listen', {declass: 'active'}) 
+    delete dis.listenerStage
     dis.isSlave = false
   }
-  
   const clearSendersListeners = _ => {
-    if (dis.senderStage > -1) {
-      inactivateMaster()
-    }
-    if (dis.listenerStage > -1) {
-      inactivateSlave()
-    }
+    inactivateMaster()
+    inactivateSlave()
   }
-  dis.setSenderStage = (stageIx = stages.length - 1) => {
-    const oldSenderStage = dis.senderStage
+  dis.setSenderStage = (stageId = -1) => {
+    stageId === -1 && (stageId = 0) //: or getStageGroup's last Index
+    const newSenderStage = getStage(stageId)
     clearSendersListeners()
-    if (stageIx !== oldSenderStage) {
-      activateMaster(stageIx)
-    }
+    activateMaster(newSenderStage)
   }
-  dis.setListenerStage = stageIx => {
-    const oldListenerStage = dis.listenerStage
+  dis.setListenerStage = stageId => {
+    const newListenerStage = getStage(stageId)
     clearSendersListeners()
-    if (stageIx !== oldListenerStage) {
-      activateSlave(stageIx)
-      dis.soloStage(stageIx)
-    }
-  }
-    
-  const initStageSender = stage => {//+ ez atlog a playersbe (amit at kene nevezni)
+    activateSlave(newListenerStage)
+  } 
+  const initStageSender = stageId => {//+ ez atlog a playersbe (amit at kene nevezni)
     const lazySend = startEndThrottle(stobj => {
       radio.postMessage(stobj)
       dis.lastSentAt = NoW()
       console.log('🏹sent', stobj)
     }, 50)
     
-    const {stEndRatio} = stages[stage]
+    const stage = getStage(stageId)
+    const {endRatio} = stage
     
-    stEndRatio.onValueChange('gain', _ => {
-      if (!stEndRatio.int.shared.lastFixedFx) {
-        return //console.warn('no lastFixedFx', stEndRatio, stEndRatio.int.shared)
+    void endRatio?.onValueChange('gain', _ => {
+      if (!endRatio.int.shared.lastFixedFx) {
+        return //console.warn('no lastFixedFx', endRatio, endRatio.int.shared)
       }
-      const isThisLastFixed = true // stEndRatio.int.shared.lastFixedFx === stEndRatio
-      if (stage === dis.senderStage && stEndRatio.isActive && isThisLastFixed) {
-        lazySend({cmd: 'ratio', data: {gain: stEndRatio.getValue('gain')}, fp: dis.fingerPrint})
+      const isThisLastFixed = endRatio.int.shared.lastFixedFx === endRatio //+ was true
+      if (stage === dis.senderStage && endRatio.isActive && isThisLastFixed) {
+        lazySend({cmd: 'ratio', data: {gain: endRatio.getValue('gain')}, fp: dis.fingerPrint})
       }
     })
     // on bpm speed change
   }
   
-  dis.incomingRatio = gain => {
-    const {stEndRatio} = wassert(stages[dis.listenerStage])
-    if (stEndRatio.isActive) {
+  dis.incomingRatio = gain => { //: called from pg-players
+    const endRatio = dis.listenerStage?.endRatio 
+    if (endRatio?.isActive) {
       console.log('🎯received', {gain, willgain: 1 - gain})
-      stEndRatio.setValue('gain', 1 - gain)
+      endRatio.setValue('gain', 1 - gain)
     }
   }
   
   //8#59c  ---------------- Stage init / change ----------------
   
-  const initStage = (nuIx, uiStage) => { //: stage & ui exists, endRatio & others will be created
-    const {spectcanv$, levelMeter$} = uiStage
-    
-    const mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
-      dis.activateStage(nuIx, false)
-      for (const fx of stages[nuIx].fxArr) {
-        fx.mayday && fx.mayday(data)
-      }
-      console.warn(`❗️❗️❗️ Overload in stage ${nuIx}, turning off. ❗️❗️❗️`)
-    }
-    const stAnalyzer = waCtx.createAnalyser()
-    const vis = root.config.showEndSpectrums &&
-      createSpectrumVisualizer(stAnalyzer, spectcanv$, levelMeter$, nuIx, mayday)
-    const stEndRatio = newFx('fx_ratio')
-    const stInput = waCtx.createGain()
-    const stSource = 0
-    const fxArr = []
-    const fpo = ui.rebuildStageEndPanel(nuIx, stEndRatio)
-    stages[nuIx] = {uiStage, fxArr, stEndRatio, stAnalyzer, vis, ix: nuIx, stInput, stSource, fpo}
-    changeFxLow(stages[nuIx], 0, 'fx_gain')
-    stEndRatio.chain(...getEndRatios())
+  dis.addStage = letter => {
+    const nuIx = ascii(letter) - ascii('A')
+    const stage = stageMan.createStage({letter, nuIx}, {hasEndSpectrum: true, hasEndRatio: true})
+    const uiStage = ui.addStage(stage)//:only once, restore will call ui.resetState()
+    stage.assignUi({uiStage})
+    stage.changeFx({name: 'fx_gain'})
+    stage.output.connect(output)
     dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) //: 
-    initStageSender(nuIx)
-    return stages[nuIx]
-  }
-  
-  dis.addStage = ch => {
-    decompose()
-    const nuIx = ascii(ch) - ascii('A')
-    const uiStage = ui.addStage(nuIx)//:only once, restore will call ui.resetState()
-    const stage = initStage(nuIx, uiStage)
-    compose()
+    //initStageSender(nuIx)
     return nuIx
   }
   
-  //+ ezek itt teljesen rosszak :-(
-  
-  const saveStageState = stageIx => {
-    const {fxArr, stEndRatio} = stages[stageIx]
-    const state = {
-      fxStates: []
-      //stEndRatioState: stEndRatio.getFullState() //: dont save stInput, it's not real, no state
-    }
-    for (const fx of fxArr) {
-      state.fxStates.push(fx.getFullState())
-    }
-      
-    console.log(state)
-    return state
-    // van setallpars es livebol lehet kivenni
-  }
-  
-  const loadStageState = (stageIx, state) => {
-    //: delete first
-    //: check for state vs actual stage length mismatch
-    const stage = stages[stageIx]
-    const {fxStates, stEndRatioState} = state
-    //stage.stEndRatio = newFx('fx_ratio')
-    //stage.stEndRatio.restoreFullState(stEndRatioState)
-    let ix = 0
-    for (const fxState of fxStates) {
-      changeFxLow(getStage(stageIx), ix, wassert(fxState.fxName)) //+ miondenhol getStage!
-      //dis.addFx(stageIx, wassert(fxState.fxName))
-      stage.fxArr[ix++].restoreFullState(fxState)
-    }
-  }
-  
-  dis.rebuildStage = stageIx => { //: re ui regen click
-    const state = saveStageState(stageIx)
-    decomposeStage(0)
-    loadStageState(0, state)
-    composeStage(0)
-    console.log(JSON.stringify(state))
-    /*
-    const {fxArr} = stages[stageIx]
-    for (const fx of fxArr) {
-      fx.activate(false) //: vagy ideiglenesen blankra cserelni
-    }
-    const {stEndRatio, uiStage, vis} = stages[stageIx]
-    decompose()
-    const stage = initStage(stageIx, uiStage) //+ ez teljesen rossz
-    stages[stageIx] = stage
-    ui.resetStage(stageIx)
-    loadStageState(stageIx, state)
-    compose()*/
-  }
-  
-  dis.activateStage = (st, on) => {
-    const {stEndRatio, vis, fpo} = stages[st]
-    decompose()
-    stEndRatio.activate(on)
-    ui.refreshFxPanelActiveState(fpo)
-    void vis?.setActive(on)
-    compose()
-  }
-  
-  dis.soloStage = st => {
-    decompose()
-    iterateStages(stage => {
-      const {stEndRatio, vis, ix, fpo} = stage //+ tulzas ez ketszzer
-      stEndRatio.activate(st === ix)
-        ui.refreshFxPanelActiveState(fpo)
-      void vis?.setActive(st === ix)
-    })
-    compose()
-  }
-  
-  dis.equalRatios = _ => void stages[0]?.stEndRatio.chain(...getEndRatios())
+  dis.rebuildStage = stageId => getStage(stageId)?.rebuild() //: re ui regen click
+
+  dis.activateStage = (stageId, on) => getStage(stageId)?.activate(on)
   
   //8#c78 --------- Entry point / init --------- 
   
   const init = _ => {
     console.log(BeeFX(waCtx).fxHash)
-    dis.changePrimarySource(mediaElement) //+ ha van! youtubeon lehet nincs! de a source is nezheti
-    //input.disconnect()
-    //input.connect(output)
     output.connect(waCtx.destination)
     players.init()
     players.initRadioListeners()
   }
   
-  dis.changeDestination = newDestination => {
+  dis.initMixerStages = _ => {
+    dis.localStage = stageMan.createStage({letter: dis.localStageLetter = 'LOC',
+    nuIx: 100}) //+SZAR
+    dis.localStageIx = dis.localStage.stageIx
+    dis.remoteStage = stageMan.createStage({letter: dis.remoteStageLetter = 'REM', nuIx: 101})
+    dis.remoteStageIx = dis.remoteStage.stageIx
+    dis.faderStage = stageMan.createStage({letter: dis.faderStageLetter = 'FAD', nuIx: 102})
+    dis.faderStageIx = dis.faderStage.stageIx
+    
+    /* stage.assignUi({uiStage})
+    stage.changeFx({name: 'fx_gain'})
+    stage.output.connect(output)
+    dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) // */
+  }
+  
+  dis.changeDestination = newDestination => { //: not used
     output.disconnect()
     output.connect(newDestination)
   }
@@ -359,7 +222,7 @@ const createPlayground = root => {
   }
   
   //8#ca0 ---------BPM detect / adjust  --------- 
-  
+  /* 
   dis.recalcBpm = async (calcSec = 15) => {
     dis.bpmAuditor = dis.bpmAuditor || BPM.createBPMAuditor(waCtx)
     dis.bpmAuditor.start(dis.source)
@@ -388,27 +251,24 @@ const createPlayground = root => {
         }
       }
     }
-  }
+  } */
   
   dis.setGraphMode = val => {
-    decompose()
+    //+decompose()
     dis.graphMode = val
-    compose()
+    //+compose()
   }
   
-  dis.addFx = (stageIx, name) => {
-    const {fxArr} = stages[stageIx]
-    dis.changeFx(stageIx, fxArr.length, name)
-  }
-  dis.getFx = (stageIx, ix) => stages[stageIx].fxArr[ix]
+  dis.addFx = (stageId, name) => stageMan.addFx(stageId, name)
   
   init()
   
   return dis
 }
 
-export const runPlaygroundWithin = (waCtx, options) => {
+export const runPlaygroundWithin = (waCtx, options) => { //: no mediaElement, ABSNs will be added
   const config = {
+    sourceListDisplayOn: true,
     ...options
     //platform: 'standalone', // extension
     //mediaType: 'audioboth', // video
@@ -427,9 +287,11 @@ export const runPlaygroundWithin = (waCtx, options) => {
   return {root, playground}
 }
 
-export const runPlayground = async root => {
+export const runPlayground = async root => { //: we may have a mediaElement in root
   const {ui, waCtx} = root
   const playground = createPlayground(root)
+  root.mediaElement && playground.changePrimarySource(root.mediaElement)
+  
   ui.start(playground) //+ debug: miert nem lehet az initbe rakni
   
   const setupName = root.onYoutube 
@@ -438,7 +300,7 @@ export const runPlayground = async root => {
       : 'youtubeMinimal'
     : 'last' // 'scopeChain' //Golem // setupPresetDebug
   
-  const parent$ = document.body 
+  const parent$ = root.config.presetDisplayOn ? document.body : undef
   
   StateManager.getActualPreset({name: setupName, parent$})
     .then(setup => {
@@ -446,9 +308,9 @@ export const runPlayground = async root => {
       
       for (const key in setup) {
         const arr = setup[key]
-        const st = playground.addStage(key)
+        playground.addStage(key)
         for (const fx of arr) {
-          fx && playground.addFx(st, 'fx_' + fx)
+          fx && playground.addFx(key, 'fx_' + fx)
         }
       }
       ui.finalize()

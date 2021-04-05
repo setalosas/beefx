@@ -8,7 +8,7 @@ import {Corelib, DOMplusUltra, FxUi, MixerUi} from '../improxy-esm.js'
 
 const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
-const {post, startEndThrottle} = Corelib.Tardis
+const {post, startEndThrottle, schedule} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, leaf$, set$, toggleClass$, setClass$, q$$, canvas$, haltEvent} = DOMplusUltra
 const {round} = Math
@@ -169,16 +169,18 @@ export const createUI = (root, exroot) => {
   }
   //8#c7f Stages. - stageObj (in stageHash) creation.
     
-  ui.addStage = (stageIx, parent$ = ui.mid$, pars = {}) => {
-    const isStandardStage = stageIx < 100
+  ui.addStage = (stage, parent$ = ui.mid$, pars = {}) => {
+    const {stageIx} = stage
+    const isStandardStage = stage.letter.length === 1 && 'ABCDEFGHIJKLMNOP'.split('').includes(stage.letter) //+ PFUJ
     const stageObj = {
+      stage,
       stageIx,             //: stage index
       isStandardStage,
       fxPanelObjArr: [],    //:fx panel objects in the stage
       ...pars
     }        
     set$(parent$, {}, 
-      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stageIx + 1)}, [
+      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stageIx + 1)}, [ //+ mi ez a plusz 1????
         stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector huerot'}),
         stageObj.ramas$ = div$({class: 'bfx-ramas'}),
         stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
@@ -192,6 +194,17 @@ export const createUI = (root, exroot) => {
   
   ui.resetStage = stageIx => { //:nothing to do? NOT USED
     // endratioba az ujat kell befuzni, pl volume? led!
+  }
+  
+  ui.createSourcesList = _ => {
+    const frame$ = div$(body, {class: 'sourcelist-frame'})
+    
+    const refresh = sourceArr => {
+      set$(frame$, {declass: 'hidden'})
+      set$(frame$, {html: ''}, sourceArr.map(source => div$({class: 'source-item', html: source})))
+      schedule('2s').then(_ => set$(frame$, {class: 'hidden'}))
+    }
+    return {frame$, refresh}
   }
   
   init()

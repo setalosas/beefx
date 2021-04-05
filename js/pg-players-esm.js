@@ -12,13 +12,12 @@ const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {q$} = DOMplusUltra
 const {BroadcastChannel} = window
 
-export const createRadio = _ => {
-  const broadcastChannel = new BroadcastChannel('beeFx')
+const createRadio = _ => {
   const radio = {
-    broadcastChannel
+    broadcastChannel: new BroadcastChannel('beeFx')
   }
-  radio.postMessage = data => broadcastChannel.postMessage(data)
-  radio.listenMessage = listener => broadcastChannel.addEventListener('message', listener)
+  radio.postMessage = data => radio.broadcastChannel.postMessage(data)
+  radio.listenMessage = listener => radio.broadcastChannel.addEventListener('message', listener)
   return radio
 }
 
@@ -45,20 +44,12 @@ export const extendWithPlayers = (playground, root) => {
   //8#a48 ------------ Communication primitives ------------
       
   const sendGeneral = (cmd, data = {}) => ((playground.isSlave && cmd === 'state') ||
-    playground.isMaster > -1) && radio.postMessage({cmd, data})
+    playground.isMaster) && radio.postMessage({cmd, data})
   
   const sendToSlave = (cmd, data = {}) => playground.isMaster 
     ? radio.postMessage({cmd, data})
     : console.warn(`Must be master!`, {cmd, data})
    
-  const sendState = _ => {
-    const state = {//+ ez disben kene legyen
-      title: 'asdsadasd',
-      bpm: 133
-    }
-    sendGeneral('state', state)
-  }  
-  
   //8#49cScraping the youtube DOM for video data
   /* 
   Oddly it's not trivial to find out the currently played video id and title on Youtube.
@@ -103,7 +94,7 @@ export const extendWithPlayers = (playground, root) => {
     return real
   }
 
-  //8#497 ------------ Listening ot local player ------------
+  //8#497 ------------ Listening to local player ------------
   
   const getLocalMediaElementState = _ => {
     const {mediaElement} = localPlayer

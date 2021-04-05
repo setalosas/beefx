@@ -92,7 +92,7 @@ onWaapiReady.then(waCtx => {
       hlog()
     }
 
-    fx.distributeGain = (fixedGain = atm.gain) => {
+    fx.distributeGain = (masterGain = atm.gain) => {
       const {shared} = int
       if (!shared) {
         slog(`Too early post() brought us here (after state restore?), skip!`, fx)
@@ -102,12 +102,12 @@ onWaapiReady.then(waCtx => {
         return
       }
       shared.isWarModeOn = true
-      glog(`🔗📊 %cdistributeGain(${fx.zholger}) fixedGain=${fixedGain}`, 'background: #ff8')
+      glog(`🔗📊 %cdistributeGain(${fx.zholger}) masterGain=${masterGain}`, 'background: #ff8')
       //slog('callers')
       dumpChain(fx, '🔗📊 ')
       if (shared.activeChainLen > 1) {
         const othersAggregated = getAggregatedGain(shared.activeChainArr.filter(f => f !== fx))
-        const remaining = shared.sumGain - fixedGain // 3.5
+        const remaining = shared.sumGain - masterGain // 3.5
         const factor = remaining / othersAggregated
         
         wassert(othersAggregated * 1.0001 >= minGain * (shared.activeChainLen - 1))
@@ -118,6 +118,7 @@ onWaapiReady.then(waCtx => {
         for (const chainFx of shared.activeChainArr) {
           fx !== chainFx && chainFx.modifyGain(factor)
         }
+        hlog() //: groupEnd
       }
       hlog()
       shared.isWarModeOn = false

@@ -88,7 +88,7 @@ export const extendUi = ui => {
   const reassignFxPanelObjFx = (fxPanelObj, nuFx) => {
     fxPanelObj.fx = nuFx   //: the assignment of the CURRENT fx to the STATIC fxPanelObj
     fxPanelObj.fxname = nuFx.getName()
-    set$(fxPanelObj.fxrama$, {attr: {pepper: nuFx.getPepper()}}) //: internal fx id display
+    set$(fxPanelObj.fxrama$, {attr: {pepper: nuFx.getPepperDebug()}}) //: internal fx id display
   }
   
   //8#2aa Parameter-specific helpers
@@ -264,6 +264,7 @@ export const extendUi = ui => {
     rebuildFxPanel(fxPanelObj)            //: puts panel into fxPanelObj
     const {fxname, panel} = fxPanelObj     //:fxname is in the 'Blank' format (not fx_blank!)
     const {pg} = ui
+    const stage = pg.stageMan.getStage(stageIx) //+ can be undef?
     
     const isBlank = fxname === 'Blank'
     const isGain = fxname === 'Gain'
@@ -295,8 +296,8 @@ export const extendUi = ui => {
     const bypassLed$ = isOnOff && 
       div$({class: 'led-fx bfxact fix-on', click: _ => ui.toggleFxPanelActiveState(fxPanelObj, pg)})
     
-    const topmenu$ = isEndRatio ? div$({class: 'bfx-topmenu'}, [
-      div$({class: 'bfx-mitem', text: 'Solo', click: _ => pg.soloStage(stageIx)}),
+    const topmenu$ = isEndRatio && div$({class: 'bfx-topmenu'}, [
+      div$({class: 'bfx-mitem', text: 'Solo', click: _ => stage.setSolo()}),
       div$({class: 'bfx-mitem', text: 'Regen', click: _ => pg.rebuildStage(stageIx)}),
       div$({class: 'bfx-mitem', text: '===', click: pg.equalRatios}),
       div$({class: 'bfx-mitem', text: 'Save', click: nop}),
@@ -304,7 +305,7 @@ export const extendUi = ui => {
         class: 'bfx-mitem wled send', text: 'Master'}, div$({class: 'led-fx fix-on'})),
       panel.listen$ = div$({class: 'bfx-mitem wled listen', text: 'Slave', 
         click: _ => pg.setListenerStage(stageIx)}, div$({class: 'led-fx fix-on'}))
-    ]) : null
+    ])
     
     fxrama$.className = 'bfx-rama'
     
@@ -320,6 +321,6 @@ export const extendUi = ui => {
     return fxPanelObj
   }
   
-  ui.rebuildStageEndPanel = (stageIx, ratioFx) => 
-    ui.rebuildStageFxPanel(stageIx, -1, ratioFx, {isFixed: true})
+  ui.rebuildStageEndPanel = (stage, ratioFx) => 
+    ui.rebuildStageFxPanel(stage.stageIx, -1, ratioFx, {isFixed: true})
 }

@@ -20,7 +20,9 @@ const config = {
   mediaType: 'audioboth', // video
   showEndSpectrums: true,
   useVideo: true,
-  useAudio: false
+  useAudio: false,
+  sourceListDisplayOn: true,
+  presetDisplayOn: true
 }
 
 const mp3s = [

@@ -10,17 +10,19 @@ import '../res/esm/ui/fx/led-fx-esm.js'
 
 import { BeeFX, BPM, onWaapiReady, Visualizer, createGraphBase } from './beefx/beeproxy-esm.js'
 
-import * as Sources from './pg-sources-esm.js'
-import * as Players from './pg-players-esm.js'
-import * as StateManager from './pg-states-esm.js'
-import * as Playground from './playground-esm.js'
-
 import * as FxUi from './ui/ui-fxpanel-esm.js'
 import * as MixerUi from './ui/ui-mixer-esm.js'
 import { createUI } from './ui/ui-esm.js'
 
+import * as Sources from './pg-sources-esm.js'
+import * as Players from './pg-players-esm.js'
+import * as StateManager from './pg-states-esm.js'
+import * as StageManager from './pg-stages-esm.js'
+import * as Playground from './playground-esm.js'
+
 export {
   Corelib, Logre, createStore, Vomitter, DOMplusUltra, DragWithDOM,
-  onWaapiReady, BeeFX, BPM, Visualizer, createGraphBase, Sources, Players, StateManager, Playground,
+  onWaapiReady, BeeFX, BPM, Visualizer, createGraphBase,
+  Sources, Players, StateManager, StageManager, Playground,
   FxUi, MixerUi, createUI
 }
