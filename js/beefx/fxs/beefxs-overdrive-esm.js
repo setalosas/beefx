@@ -290,7 +290,7 @@ onWaapiReady.then(waCtx => {
     postDrive: nop,
     confuse: _ => fx.rerunAlgorithm(),
     drive: _ => {
-      fx.setAt('inputDrive', 'gain', value)  //+ not used in Tuna
+      fx.setAt('inputDrive', 'gain', value)  //+ not used in Tuna++++++++++++++++++++
       fx.updateOutputGain()
     },
     outputGain: _ => fx.updateOutputGain(),
@@ -304,7 +304,7 @@ onWaapiReady.then(waCtx => {
   }[key])
   
   overdriveFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    int.nSamples = 1024 // 8192
+    int.nSamples = 1024 //+ez miert, allithato? 8192
     int.wsCurve = new Float32Array(int.nSamples)
     int.nSamplesGraph = 512
     int.wsCurveGraph = new Float32Array(int.nSamplesGraph)
@@ -350,10 +350,10 @@ onWaapiReady.then(waCtx => {
       preBand: {defVal: .5, min: 0, max: 1},
       color: {defVal: 800, min: 10, max: 22050, subType: 'exp'},
       postCut: {defVal: 3000, min: 10, max: 22050, subType: 'exp'},
+      freqGraph: {type: 'graph'},
       curveAmount: {defVal: .5, min: 0, max: 1},
       algorithm: {defVal: 0, type: 'strings', subType: algNameDb},
       oversampling4x: {defVal: false, type: 'boolean', uiLabel: '4x oversampl'},
-      freqGraph: {type: 'graph'},
       sigmoidGraph: {type: 'graph'}
     },
     name: 'OverdriveWAC',
@@ -392,7 +392,7 @@ onWaapiReady.then(waCtx => {
     algorithm: _ => {
       int.algorithm = overdriveAlgorithms(parseInt(value)) // overdriveFx.algorithms(value)
       wassert(int.algorithm)
-      console.log('algchg', int.algorithm, value)
+      //console.log('algchg', int.algorithm, value)
       fx.rerunAlgorithm()
     },
     oversampling4x: _ => int.waveshaper.oversampling = value ? '4x' : 'none'

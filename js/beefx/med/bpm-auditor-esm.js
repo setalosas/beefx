@@ -4,35 +4,20 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
 
-import {Corelib, detectBPMa, detectBPMj} from '../beeproxy-esm.js'
+import {Corelib, BeeFX, detectBPMa, detectBPMj} from '../beeproxy-esm.js'
 
 const {Ø, no, yes, undef, isFun, isArr, getRnd, nop, s_a} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {post, createPerfTimer} = Corelib.Tardis
 
 export const createBPMAuditor = waCtx => { //: allegro
-  //
-  const concatenateAudioBuffers = (buf1, buf2) => { // concat AudioBuffers
-    if (!buf1 && buf2) {
-      return buf2
-    }
-    wassert(buf2)
-  
-    const tmp = waCtx.createBuffer(buf1.numberOfChannels, buf1.length + buf2.length, buf1.sampleRate)
-  
-    for (let i = 0; i < tmp.numberOfChannels; i++) {
-      const data = tmp.getChannelData(i)
-      data.set(buf1.getChannelData(i))
-      data.set(buf2.getChannelData(i), buf1.length)
-    }
-    return tmp
-  }
+  const {concatAudioBuffers} = BeeFX(waCtx)
 
   const auditor = {}
     
   const options = {
     element: null,
-    //scriptNode: {bufferSize: 4096, numberOfInputChannels: 1, numberOfOutputChannels: 1},
+    // bufferSize: 4096, numberOfInputChannels: 1, numberOfOutputChannels: 1
     scriptNodeArgs: [8192, 1, 1]
   }
   const dis = {
@@ -51,7 +36,7 @@ export const createBPMAuditor = waCtx => { //: allegro
     dis.scriptNode.onaudioprocess = ({inputBuffer}) => {
       if (dis.isAnalysing) {
         const timer = createPerfTimer()
-        dis.audioBuffer = concatenateAudioBuffers(dis.audioBuffer, inputBuffer)
+        dis.audioBuffer = concatAudioBuffers(dis.audioBuffer, inputBuffer)
 
         const {sum} = timer.sum().dur
         sum > 9 && console.log(`bpm onaudioproc(${inputBuffer.length}) ${sum}ms`, dis.audioBuffer)

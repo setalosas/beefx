@@ -22,6 +22,7 @@ onWaapiReady.then(waCtx => {
         vol: {defVal: 0, min: -24, max: 6, unit: 'dB'},
         multiGraph: {type: 'graph', subType: 'multi'}
       },
+      midi: {pars: ['hi,lo', 'hiCutOffFreq,loCutOffFreq', 'pan,vol']},
       name,
       graphs: {}
     }

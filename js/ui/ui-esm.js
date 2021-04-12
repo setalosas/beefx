@@ -4,40 +4,38 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, FxUi, MixerUi} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, StagesUi, FxUi, SourcesUi, MixerUi} from '../improxy-esm.js'
 
 const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {post, startEndThrottle, schedule} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, toggleClass$, setClass$, q$$, canvas$, haltEvent} = DOMplusUltra
+const {div$, leaf$, set$, q$, toggleClass$, setClass$, q$$, canvas$, haltEvent} = DOMplusUltra
 const {round} = Math
   
 export const createUI = (root, exroot) => {
-  weject(exroot)
-  
   const {body} = document
   
-  const stageHash = {} //: hash instead of an array ([0 1 2 3 5 6 101 102] are possible)
+  const earlyCall = doStop => _ => console.warn('Too early call to ui.', doStop && brexru())
+  
   const ui = {
     root,
-    stageHash,
-    videoStripHolderArr$: [],
-    videoStripMockArr$: []
+    flags: {
+      isGrabOn: false,
+      isListActive: false,
+      isAutoplayOn: false,
+      isAutostopOn: false,
+      isMixerOn: false,
+      isSyncOn: false
+    },
+    refreshPlayerControl: earlyCall(false),
+    refreshSourcesUi: earlyCall(false)
   }
   
   //8#79c Utilities, primitives, config
   
   ui.configNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
-  
-  ui.iterateStages = callback => {
-    for (const stageIx in stageHash) {
-      const stageObj = stageHash[stageIx]
-      stageObj && callback(stageObj)
-    }
-  }
-  ui.getStageObj = stageIx => stageHash[stageIx] || console.warn(`Invalid stage index: ${stageIx}`)
-  
+
   ui.setHost = host => (key, params) => {
     const node$ = host[key + '$']
     wassert(node$ && node$.nodeType)
@@ -76,7 +74,7 @@ export const createUI = (root, exroot) => {
     return ui.player$
   }
   
-  //8#393 DOM framework building
+  //8#393 DOM framework building (cold init)
   
   const init = _ => {  
     if (root.killEmAll) {
@@ -84,18 +82,14 @@ export const createUI = (root, exroot) => {
       for (const node of [...q$$('script[nonce]'), ...q$$('dom-module')]) {
         node.remove()
       }
+      //: more things could be eliminated from head
     }
     const extracc = (root.onYoutube ? ' u2' : '') + (root.killEmAll ? ' nu2' : '')
     ui.frame$ = div$(body, {class: 'beebody' + extracc}, [
       ui.top$ = div$({class: 'bfx-top'}),
       ui.bigmid$ = div$({class: 'bfx-bigmid off'}, [
         ui.mainmenu$ = div$({class: 'bfx-horbar bfx-mainmenu'}),
-        ui.videoStrip$ = div$({class: 'bfx-horbar video-strip off'}, 
-          ui.videoStripArr$ = '1234'.split('').map(numch => parseInt(numch)).map(num => 
-            div$({class: 'video-in-strip vid' + num}, [ 
-              ui.videoStripHolderArr$[num - 1] = div$({class: 'media-holder'}),
-              ui.videoStripMockArr$[num - 1] = !root.onYoutube && div$({class: 'mock-holder'})
-            ]))),
+        ui.sourceStrip$ = div$(), //: for SourcesUi
         ui.mixermenu$ = div$({class: 'bfx-horbar bfx-mixermenu off'}),
         ui.auxmenu$ = no && div$({class: 'bfx-horbar mixer-frame'}, [
           ui.bpmbar$ = div$({class: 'bfx-bpmbar mbar'}),
@@ -113,24 +107,29 @@ export const createUI = (root, exroot) => {
       ])
     ])
     ui.videoGrabCanvas$ = canvas$(body, {class: 'videograb'})
-    FxUi.extendUi(ui)
-    MixerUi.extendUi(ui)
   }
-  /* mainmenu 
-  A videostrip
-  A mixerbar
-  sycnframe */
+  
+  //8#37c Warm init: we have playground now
   
   ui.start = playground => {
     ui.pg = playground
     populateMainMenu()
     populateMixerMenu()
+    
+    StagesUi.extendUi(ui)
+    FxUi.extendUi(ui)
+    SourcesUi.extendUi(ui)
+    MixerUi.extendUi(ui)
     //ui.startMixer()
+    initCommandHandlers()
+    ui.toggleAutoplay()
+    ui.toggleAutostop()
   }
   
   ui.finalize = _ => {
     wassert(ui.pg)
     ui.finalizeMixer()
+    ui.finalizeSources() //: stages - de ezt az ui-sources hivja meg
   }
   
   const populateMainMenu = _ => {
@@ -149,64 +148,54 @@ export const createUI = (root, exroot) => {
       click: _ => toggleClass$(ui.bpmbar$, 'off')}))
     mItems.push(div$({class: 'mitem rt', text: 'Sync...', 
       click: _ => toggleClass$(ui.syncbar$, 'off')}))      */
+    mItems.push(ui.grabCmd$ = div$({class: 'mitem rt', text: 'Grab!', click: _ => ui.toggleGrab()}))
+    mItems.push(ui.listCmd$ = 
+      div$({class: 'mitem rt', text: 'Select sources...', click: _ => ui.toggleList()}))
     mItems.push(ui.mixerCmd$ = 
       div$({class: 'mitem rt', text: 'Mixer...', click: _ => ui.toggleMixer()}))
     mItems.push(ui.syncCmd$ = 
       div$({class: 'mitem rt', text: 'Sync...', click: _ => ui.toggleSync()}))
+    mItems.push(ui.autoplayCmd$ = 
+      div$({class: 'mitem rt', text: 'Autoplay', click: _ => ui.toggleAutoplay()}))
+    mItems.push(ui.autostopCmd$ = 
+      div$({class: 'mitem rt', text: 'Autostop', click: _ => ui.toggleAutostop()}))
 
     set$(ui.bigmid$, {declass: 'off'})
     set$(ui.mainmenu$, {}, mItems) 
   }
+  
   const populateMixerMenu = _ => {
     const {pg} = ui
     const mItems = []
     mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
-    mItems.push(ui.grabCmd$ = div$({class: 'mitem rt', text: 'Grab!', click: _ => ui.toggleGrab()}))
-    mItems.push(ui.listCmd$ = div$({class: 'mitem rt', text: 'List', click: _ => ui.toggleList()}))
-    mItems.push(ui.autoplayCmd$ = 
-      div$({class: 'mitem rt', text: 'Autoplay', click: _ => ui.toggleAutoplay()}))
     set$(ui.mixermenu$, {}, mItems) 
   }
-  //8#c7f Stages. - stageObj (in stageHash) creation.
-    
-  ui.addStage = (stage, parent$ = ui.mid$, pars = {}) => {
-    const {stageIx} = stage
-    const isStandardStage = stage.letter.length === 1 && 'ABCDEFGHIJKLMNOP'.split('').includes(stage.letter) //+ PFUJ
-    const stageObj = {
-      stage,
-      stageIx,             //: stage index
-      isStandardStage,
-      fxPanelObjArr: [],    //:fx panel objects in the stage
-      ...pars
-    }        
-    set$(parent$, {}, 
-      stageObj.frame$ = div$({class: 'bfx-stage bfx-st' + (stageIx + 1)}, [ //+ mi ez a plusz 1????
-        stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector huerot'}),
-        stageObj.ramas$ = div$({class: 'bfx-ramas'}),
-        stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
-          stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
-          stageObj.spectrama$ = root.config.showEndSpectrums && div$({class: 'st-spectrum huerot'},
-            stageObj.spectcanv$ = canvas$())
-        ])   
-      ]))
-    return stageHash[stageIx] = stageObj //eslint-disable-line no-return-assign
-  }
   
-  ui.resetStage = stageIx => { //:nothing to do? NOT USED
-    // endratioba az ujat kell befuzni, pl volume? led!
-  }
+  //+ uistate kene mixer helyett v barmi
   
-  ui.createSourcesList = _ => {
-    const frame$ = div$(body, {class: 'sourcelist-frame'})
+  const initCommandHandlers = _ => {
+    ui.toggleAutoplay = ui.toggleCmd(ui.flags, ui.autoplayCmd$, 'isAutoplayOn')
+    ui.toggleAutostop = ui.toggleCmd(ui.flags, ui.autostopCmd$, 'isAutostopOn')
+    ui.toggleList = ui.toggleCmd(ui.flags, ui.listCmd$, 'isListActive', ui.onVideoListToggled)
+    ui.toggleGrab = ui.toggleCmd(ui.flags, ui.grabCmd$, 'isGrabOn', ui.onGrabToggled)
+    ui.toggleMixer = ui.toggleCmd(ui.flags, ui.mixerCmd$, 'isMixerOn', on => {
+      setClass$(ui.mixermenu$, !on, 'off')
+    })
+    ui.toggleSync = ui.toggleCmd(ui.flags, ui.syncCmd$, 'isSyncOn', 
+      on => setClass$(ui.syncFrame$, !on, 'off'))
+  }
+
+  ui.createSideList = cclass => {
+    const frame$ = div$(body, {class: 'side-frame ' + cclass})
     
-    const refresh = sourceArr => {
+    const refresh = itemArr => {
       set$(frame$, {declass: 'hidden'})
-      set$(frame$, {html: ''}, sourceArr.map(source => div$({class: 'source-item', html: source})))
+      set$(frame$, {html: ''}, itemArr.map(html => div$({class: 'item', html})))
       schedule('2s').then(_ => set$(frame$, {class: 'hidden'}))
     }
     return {frame$, refresh}
   }
-  
+
   init()
   
   return ui

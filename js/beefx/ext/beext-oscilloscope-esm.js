@@ -164,7 +164,7 @@ onWaapiReady.then(waCtx => {
       zoom: {defVal: 1, min: .025, max: 2, subType: 'exp'},
       fullZoom: {defVal: 'off', type: 'cmd'},
       halfZoom: {defVal: 'off', type: 'cmd'},
-      resetZoom: {defVal: 'off', type: 'cmd'},
+      resetZoom: {defVal: 'act', type: 'cmd'},
       freeze: {defVal: 'off', type: 'cmd'},
       scope: {type: 'graph'}
     },
@@ -200,7 +200,7 @@ onWaapiReady.then(waCtx => {
         int.fftSize = fftSize
         int.osc.fftSize = fftSize
         int.freqData = new Uint8Array(int.osc.frequencyBinCount) //: fftSize / 2
-        console.log(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
+        //console.log(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
       }
     }
     
@@ -219,7 +219,7 @@ onWaapiReady.then(waCtx => {
           break
         }
       }
-      console.log(`Scope.resizeFFT: actual fft reqs recalculated:`, {zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
+      //console.log(`Scope.resizeFFT: actual fft reqs recalculated:`, {zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
       regenFFTArray(found)
     }
     

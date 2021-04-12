@@ -39,6 +39,10 @@ const createBeeFX = waCtx => {
     logDisconnects: false,
     logSetValue: false
   }
+  
+  const debug = {
+    checkSetAt: true
+  }
     
   const pepper = 'zholger'
   let uid = 1
@@ -94,9 +98,19 @@ const createBeeFX = waCtx => {
     fx.setAt = (node, key, value) =>
       fx.int[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
     
+    if (debug.checkSetAt) {
+      fx.setAt = (node, key, value) => {
+        wassert(fx?.int?.[node]?.[key])
+        fx.int[node][key].setTargetAtTime(value, waCtx.currentTime, .01)
+      }
+    }
+      
     fx.setDelayTime = (node, sec) => config.useSetTargetForDelayTime
       ? fx.setAt(node, 'delayTime', sec)
       : fx.int[node].delayTime.value = sec
+      
+    fx.setDelayTime = (node, sec) =>   
+      fx.int[node].delayTime.linearRampToValueAtTime(sec, waCtx.currentTime + .2)  
       
     //8#34c------ Parameter change listeneres --------
     
@@ -259,7 +273,27 @@ const createBeeFX = waCtx => {
   
   //8#c69 -------- BeeFX interface --------
   
-  beeFx.getPresetPath = sub => '//beefx.mork.work/pres/' + sub // full url 'cause of youtube
+  beeFx.concatAudioBuffers = (buf1, buf2) => {
+    if (!buf1) {
+      return buf2 
+    }
+    wassert(buf2)
+    const {numberOfChannels} = buf1
+    const tmp = waCtx.createBuffer(numberOfChannels, buf1.length + buf2.length, buf1.sampleRate)
+  
+    for (let i = 0; i < numberOfChannels; i++) {
+      const data = tmp.getChannelData(i)
+      data.set(buf1.getChannelData(i))
+      data.set(buf2.getChannelData(i), buf1.length)
+    }
+    return tmp
+  }
+  
+  beeFx.getRootPath = _ => //: full url 'cause of youtube
+    window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '/'
+  
+  beeFx.getPresetPath = sub => beeFx.getRootPath() + 'pres/' + sub 
+  beeFx.getJsPath = sub => beeFx.getRootPath() + 'js/' + sub
   
   beeFx.dB2Gain = db => max(0, round(1000 * pow(2, db / 6)) / 1000)
   
@@ -466,7 +500,10 @@ beefxs-compressor
 beefxs-overdrive
   - overdrive  
   - overdriveWAC 
-tunx (mind OK)
+beefxs-ringmod
+  - bbcRingModulator
+  - simpleRingModulator  
+tunx (all OK)
   - FixGain
   - Blank
   - PitchShifter
@@ -478,8 +515,6 @@ tunx (mind OK)
   - PingPongDelayCW 
   - WahBass
   - MyPanner
-tuna (missing)
-  - MoogFilter  
 cw
   - Delay
   - Distortion
@@ -487,7 +522,6 @@ cw
   - LFO
   - Chorus (mono & stereo?)
   - Flanger (mono & stereo?)
-  - RingModulator
   - DelayChorus?
   - NoiseGate
   - Apollo

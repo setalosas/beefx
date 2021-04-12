@@ -15,23 +15,23 @@ onWaapiReady.then(waCtx => {
   const {registerFxType, newFx} = BeeFX(waCtx)
 
   const createOscFxTypes = _ => {
-    const moog2Fx = { //8#c6c ------- moog2 (Chris Wilson) -------
+    const moogFx = { //8#c6c ------- moog (Chris Wilson) -------
       def: {
         cutoff: {defVal: .065, min: 0.001, max: 1, subType: 'exp'},
         resonance: {defVal: 3.99, min: 0, max: 4}
       }
     }
-    moog2Fx.construct = (fx, {initial}) => {
+    moogFx.construct = (fx, {initial}) => {
       const {int} = fx
       
       const bufferSize = 16384 // 4096 // 16384
-      const moog2 = waCtx.createScriptProcessor(bufferSize, 1, 1)
+      const moog = waCtx.createScriptProcessor(bufferSize, 1, 1)
       let in1, in2, in3, in4, out1, out2, out3, out4
       in1 = in2 = in3 = in4 = out1 = out2 = out3 = out4 = 0.0
-      console.log('moog2 construct', int)
+      console.log('moog construct', int)
       int.cutoff = initial.cutoff // 0.065 // between 0.0 and 1.0
       int.resonance = initial.resonance // 3.99 // between 0.0 and 4.0
-      moog2.onaudioprocess = e => {
+      moog.onaudioprocess = e => {
         const input = e.inputBuffer.getChannelData(0)
         const output = e.outputBuffer.getChannelData(0)
         const f = int.cutoff * 1.16
@@ -50,17 +50,17 @@ onWaapiReady.then(waCtx => {
           output[i] = out4
         }
       }
-      int.moog2 = moog2
+      int.moog = moog
 
-      fx.start.connect(int.moog2)
-      int.moog2.connect(fx.output)
+      fx.start.connect(int.moog)
+      int.moog.connect(fx.output)
     }
-    moog2Fx.setValue = (fx, key, value) => ({
+    moogFx.setValue = (fx, key, value) => ({
       cutoff: _ => fx.int.cutoff = value,
       resonance: _ => fx.int.resonance = value
     }[key])
     
-    registerFxType('fx_moog2', moog2Fx)
+    registerFxType('fx_moog', moogFx)
 
     const vibratoFx = { //8#6b6 ------- vibrato (Chris Wilson?) -------
       def: {

@@ -38,7 +38,8 @@ onWaapiReady.then(waCtx => {
     }
   }
   delayWAFx.setValue = (fx, key, value) => ({
-    delayTime: _ => fx.setDelayTime('delay', value)
+    //delayTime: _ => fx.setDelayTime('delay', value)
+    delayTime: _ => fx.int.delay.delayTime.linearRampToValueAtTime(value, waCtx.currentTime, .05)
   }[key])
 
   delayWAFx.construct = (fx, pars, {int} = fx) => {
@@ -66,6 +67,7 @@ onWaapiReady.then(waCtx => {
       Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'},
       freqGraph: {type: 'graph'}
     },
+    midi: {pars: ['gain,frequency,Q']},
     name: 'BiquadFilter',
     graphs: {}
   }

@@ -27,6 +27,7 @@ onWaapiReady.then(waCtx => {
         }),
         multiGraph: {type: 'graph'}
       },
+      midi: {arrays: variant === 'classic' ? 'gain' : 'gain,detune,Q'},
       name,
       graphs: {}
     }

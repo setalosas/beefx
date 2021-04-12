@@ -20,9 +20,13 @@ const {schedule, adelay, startEndThrottle} = Corelib.Tardis
   Activating/deactivating a stage means deactivating all fxs in it (+ endRatio if there is one).
   Stages have indexes (auto or manual). 
   These cannot be freely mixed - no empty slots. (Allocating 0 3 1 2 is ok, but 0 3 2 is not.)
-  Stages have letters assigned to them.
+  !!!! Letters only!!!! Indexes are assigned internally as allocating slots in the array.
+  Stages have letters assigned to them. This is main identifier for a stage.
+  - A-P are normal (standard) stages (ABCD EFGH IJKL [MNOP]).
+  - S1..S8.. are player/source control stages for sources.
+  - LOC, REM, FAD, MIX are reserved for special stage types.
   Access is possible by both (indexes and letters).
-  Most methods can recognize both type of inputs (see stageId as param name).
+  Most methods can recognize both type of reference (see stageId as param name).
   */
 export const createStageManager = root => {
   const {waCtx} = root
@@ -37,7 +41,6 @@ export const createStageManager = root => {
   }
   
   //8#c84 -------- StageMan start --------
-  
   //8#c84   + scaffolding (start, input, source, end, ratio, vis, mayday)
   //8#900 must be used in playground, in patashnik for tracks, in playground mixer, etc
   //8#da6 stage metods:
@@ -55,6 +58,11 @@ export const createStageManager = root => {
       stage && callback(stage)
     }
   }
+  const iterateStandardStages = callback => {
+    for (const stage of stages) {
+      stage?.isStandardStage && callback(stage)
+    }
+  }
   const getStageArr = _ => stages.filter(stage => stage)
   
   const getFilteredStages = filter => getStageArr().filter(stage => filter(stage))
@@ -64,6 +72,8 @@ export const createStageManager = root => {
   const getStageByLetter = letter => wassert(stageLetterHash[letter])
   
   const getStageById = stageId => isStr(stageId) ? getStageByLetter(stageId) : getStageByIx(stageId)
+
+  const checkStageByLetter = letter => stageLetterHash[letter]
   
   const getStageGroup = _ => stages.filter(stage => stage.endRatio)
   
@@ -73,38 +83,33 @@ export const createStageManager = root => {
 
   const stageMan = {
     iterateStages, 
+    iterateStandardStages,
     getStage: getStageById,
+    checkStageByLetter,
     getStageGroup,
     getEndRatios,
     equalRatios,
     getFilteredStages,
-    graphMode: 'parallel', //sequential or parallel (default)
-    bpmAuditor: undef,
-    bpmTransformer: newFx('fx_bpmTransformer'),
-    bpm: 0,
     stages,
-    lastSentAt: 0,
-    lastReceivedAt: 0,
-    senderStage: -1,
-    listenerStage: -1,
-    meState: {},
-    meStateHash: '',
-    fingerPrint: getRnd(100000, 999999)
+    listUi: root.ui.createSideList('side-left stagelist-frame')
+  }
+  
+  stageMan.dump = _ => {
+    console.table(stages)
+    void stageMan.listUi?.refresh(stages.map((stage, ix) => `#${stage.stageIx} [${stage.letter}] fxs: ${stage.fxArr.length}`))
   }
 
-  stageMan.changeFx = ({stageId, ix, name}) => {
+  stageMan.changeFx = ({stageId, ix, type}) => {
     const stage = getStageById(stageId)
     if (stage) {
-      stage.changeFx({ix, name})
+      stage.changeFx({ix, type})
     } else {
-      console.warn(`stageMan.changeFx: no stage (${stage.stageIx})`, {ix, name, stages})
+      console.warn(`stageMan.changeFx: no stage (${stage.stageIx})`, {ix, type, stages})
       debugger
     }
   }
   
-  stageMan.addFx = (stageId, name) => getStageById(stageId).changeFx({name})
-
-  //stageMan.addFxByLetter = (letter, name) =>  getStageByLetter(letter).changeFx({name})
+  stageMan.addFx = (stageId, type) => getStageById(stageId).changeFx({type})
 
   stageMan.getFxById = (stageId, ix) => getStageById(stageId).fxArr[ix]
 
@@ -129,9 +134,10 @@ export const createStageManager = root => {
     
     const stage = {
       nuIx,
-      ix: nuIx,
+      ix: nuIx, //+killem all
       stageIx,
       letter,
+      isStandardStage: letter.length === 1, //: very rudimental
       input: waCtx.createGain(), //: this is fix
       endRatio,
       output,
@@ -139,12 +145,12 @@ export const createStageManager = root => {
       analyser: undef,
       vis: undef,
       fxArr,
-      uiStage: undef //+ ha van ui
+      uiStage: undef             //: If the stage has an ui, also it's a flag for this
     }
     
     if (stageParams.hasEndSpectrum) {
-      stage.analyzer = waCtx.createAnalyser()
-      stage.output.connect(stage.analyzer)
+      stage.analyser = waCtx.createAnalyser()
+      stage.output.connect(stage.analyser)
     }
         
     stages.push(stage)
@@ -154,10 +160,10 @@ export const createStageManager = root => {
     stage.assignUi = ({uiStage}) => {
       stage.uiStage = uiStage
       
-      if (stage.analyzer) {
+      if (stage.analyser) {
         const {spectcanv$, levelMeter$} = uiStage
-        stage.vis = Visualizer
-          .createSpectrumVisualizer(stage.analyzer, spectcanv$, levelMeter$, nuIx, stage.mayday)
+        stage.vis = spectcanv$ && Visualizer
+          .createSpectrumVisualizer(stage.analyser, spectcanv$, levelMeter$, nuIx, stage.mayday)
       }
       stage.fpo = root.ui.rebuildStageEndPanel(stage, endRatio) //+pfuj
     }
@@ -165,7 +171,7 @@ export const createStageManager = root => {
     stage.mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
       stage.deactivate()
       for (const fx of fxArr) {
-        fx.mayday && fx.mayday(data)
+        void fx.mayday?.(data)
       }
       console.warn(`❗️❗️❗️ Overload in stage ${stageIx}, turning off. ❗️❗️❗️`)
     }
@@ -176,7 +182,7 @@ export const createStageManager = root => {
       void stage.vis?.setActive(on)
       
       for (const fx of fxArr) {
-        fx.activate(on) //: ezeknek az uijat is kene basztatni
+        void fx?.activate(on) //: ezeknek az ui-jat is kene basztatni (activate nem csinalja??)
       }
     }
     
@@ -192,7 +198,7 @@ export const createStageManager = root => {
     stage.decompose = _ => { //+a nullas basz nem stage par, hanem fxarr[0], amit a playgrnd rak oda
       stage.input.disconnect()
       for (const fx of fxArr) {
-        fx.disconnect()
+        void fx?.disconnect()
       }
     }
     
@@ -203,20 +209,18 @@ export const createStageManager = root => {
       }
     }
     
-    stage.changeFx = ({ix = fxArr.length, name}) => {
-      //console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${name})`)
+    stage.changeFx = ({ix = fxArr.length, type, params = {}}) => {
+      //console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${type})`)
       wassert(ix <= fxArr.length) //: the array can't have a gap
       stage.decompose()
 
       void fxArr[ix]?.deactivate()
-      fxArr[ix] = newFx(name)
+      fxArr[ix] = newFx(type)
       
-      if (fxArr[ix]) {
-        const isFixed = name === 'fx_gain' && !ix //: the first fx in every stage is a fix gain
-        //+ fx build ?????
-        root.ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], {isFixed, hasStageMark: isFixed})
+      if (fxArr[ix]) { //: create ui for the fx if the stage has one
+        stage.uiStage && root.ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], params)
       } else {
-        console.error(`Bad Fx type:`, name)
+        console.error(`Bad Fx type:`, type)
       }
       stage.compose()
       return fxArr[ix]
@@ -224,35 +228,42 @@ export const createStageManager = root => {
     
     stage.saveState = _ => fxArr.map(fx => fx.getFullState())
     
-    stage.loadState = fxStates => {
-      //: delete first
-      //: check for state vs actual stage length mismatch
-      for (let ix = 0; ix < fxStates.length; ix++) {
-        const fxState = fxStates[ix]
-        void stage.changeFx({ix, name: wassert(fxState.fxName)})?.restoreFullState(fxState)
+    stage.reset = _ => {
+      for (let ix = 0; ix < fxArr.length; ix++) { //: delete all non fixed fxs
+        if (fxArr[ix] && !fxArr[ix].isFixed) {
+          stage.changeFx({ix, type: 'fx_blank'})
+          //fxArr[ix].deactivate()
+          //fxArr[ix] = undef
+        }
       }
-      //+ ki kell tolteni az ures helyet, ha van, ha hosszabb lett, az nem baj, csak ha rovidult
+      while (fxArr[fxArr.length - 1]?.getName() === 'Blank') {
+        const fx = fxArr.pop() //: we need a destroy ui fpo here
+        stage.uiStage && root.ui.destroyStageLastFxPanel(stage.uiStage, fx)
+      } 
+      //:ui.resetStage(stageIx)
     }
-    stage.rebuild = _ => {
-      const state = stage.saveState()
-      console.log(JSON.stringify(state))
+    
+    stage.loadState = fxStates => {
       stage.deactivate()
       stage.decompose()
       stage.reset()
-      //:ui.resetStage(stageIx)
-      stage.loadState(state)
-      stage.activate() //: nem kell ez, mert aktivan szuletnek a loadStateben
-      stage.compse()
+      for (let ix = 0; ix < fxStates.length; ix++) {
+        const fxState = fxStates[ix]
+        void stage.changeFx({type: wassert(fxState.fxName)})?.restoreFullState(fxState)
+      }
+      stage.compose()
+      stage.activate()
     }
     
-    /* 
-    //+ valahogy meg kene tudni adnia hogy E D A C B stage az amit most krealunk
-    stage.init = (letter, uiStage) => { //: stage & ui exists, endRatio & others will be created
-      const {spectcanv$, levelMeter$} = uiStage //+ nem igy kene osszekotni
-      //+nuIxet mindenhonnan kiirtani */
-  
-  //8#a6c Compose & decompose - they won't touch sources, starting from stInput of stages
-
+    stage.rebuild = _ => {
+      const state = stage.saveState()
+      console.log(JSON.stringify(state))
+      getStageById('A').loadState(state) //:DEBUG!
+      stage.loadState(state)
+    }
+    
+    stageMan.dump()
+    
     return stage 
   }
   return stageMan

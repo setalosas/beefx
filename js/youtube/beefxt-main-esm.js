@@ -13,9 +13,8 @@ onDomReady(async _ => {
   console.log('CromBee beeFx/Youtube main started.')
 
   const config = {
-    platform: 'standalone', // extension
-    useVideo: true,
-    useAudio: false
+    showEndSpectrums: true, //+ youtube kiakad, ha ez itt nem true! check!
+    maxSources: 6
   }
   const root = {
     config,
@@ -25,8 +24,6 @@ onDomReady(async _ => {
     killEmAll: false
   }
   await adelay(10) //: it basically skips a few frames so all beeFx extensions can register
-
-  window.addEventListener('transitionend', _ => _) //+ csekk!
 
   const trigger$ = div$(document.body, {class: 'beetrigger', text: 'BeeeFX!'})
 

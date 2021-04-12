@@ -21,29 +21,26 @@ const createPlayground = root => {
   const {newFx, namesDb, connectArr} = BeeFX(waCtx)
   ui.configNames(namesDb)
   
-  const dummyFx = waCtx.createGain()
+  //const dummyFx = waCtx.createGain()
   const output = waCtx.createGain()
-  
   const stageMan = StageManager.createStageManager(root)
-  
   const {getEndRatios, iterateStages, getFilteredStages, getStage} = stageMan
 
   const dis = {
     stageMan, //+ PFUJ de sourcesnek kell es fxpaneluinak is
-    graphMode: 'parallel', //sequential or parallel (default)
     bpmAuditor: undef,
     bpmTransformer: newFx('fx_bpmTransformer'),
     bpm: 0,
     lastSentAt: 0,
     lastReceivedAt: 0,
-    senderStage: -1,
-    listenerStage: -1,
+    senderStage: undef,   //: the stage object
+    listenerStage: undef, //: the stage object
     meState: {},
     meStateHash: '',
     fingerPrint: getRnd(100000, 999999)
   }
   
-  const sources = dis.sources = Sources.extendWithSources(dis, root)
+  const sources = dis.sources = Sources.createSources(dis, root)
   const players = dis.players = Players.extendWithPlayers(dis, root)
   const {radio} = players
   
@@ -92,7 +89,7 @@ const createPlayground = root => {
 
   //8#a66 ----------- Change core playground Fxs -----------
     
-  dis.changeFx = (stageId, ix, name) => stageMan.changeFx({stageId, ix, name})
+  dis.changeFx = (stageId, ix, type) => stageMan.changeFx({stageId, ix, type})
   //+ ezt csak az uibol hivja a selektorfx ugye?
   
   //8#46f ------------- Sync control: Master/slave stage settings -------------
@@ -165,15 +162,16 @@ const createPlayground = root => {
   //8#59c  ---------------- Stage init / change ----------------
   
   dis.addStage = letter => {
-    const nuIx = ascii(letter) - ascii('A')
-    const stage = stageMan.createStage({letter, nuIx}, {hasEndSpectrum: true, hasEndRatio: true})
+    //const nuIx = ascii(letter) - ascii('A')
+    const stage = stageMan.createStage({letter}, {hasEndSpectrum: true, hasEndRatio: true})
+    const {stageIx} = stage
     const uiStage = ui.addStage(stage)//:only once, restore will call ui.resetState()
     stage.assignUi({uiStage})
-    stage.changeFx({name: 'fx_gain'})
+    stage.changeFx({ix: 0, type: 'fx_gain', params: {isFixed: true, hasStageMark: true}})
     stage.output.connect(output)
-    dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) //: 
+    //dis.sources.changeStageSourceIndex(stageIx, 1, {isFirst: true}) //: 
     //initStageSender(nuIx)
-    return nuIx
+    return stageIx
   }
   
   dis.rebuildStage = stageId => getStage(stageId)?.rebuild() //: re ui regen click
@@ -190,18 +188,17 @@ const createPlayground = root => {
   }
   
   dis.initMixerStages = _ => {
-    dis.localStage = stageMan.createStage({letter: dis.localStageLetter = 'LOC',
-    nuIx: 100}) //+SZAR
+    dis.localStage = stageMan.createStage({letter: dis.localStageLetter = 'LOC'})
     dis.localStageIx = dis.localStage.stageIx
-    dis.remoteStage = stageMan.createStage({letter: dis.remoteStageLetter = 'REM', nuIx: 101})
+    dis.remoteStage = stageMan.createStage({letter: dis.remoteStageLetter = 'REM'})
     dis.remoteStageIx = dis.remoteStage.stageIx
-    dis.faderStage = stageMan.createStage({letter: dis.faderStageLetter = 'FAD', nuIx: 102})
+    dis.faderStage = stageMan.createStage({letter: dis.faderStageLetter = 'FAD'})
     dis.faderStageIx = dis.faderStage.stageIx
     
     /* stage.assignUi({uiStage})
-    stage.changeFx({name: 'fx_gain'})
+    stage.changeFx({type: 'fx_gain'})
     stage.output.connect(output)
-    dis.changeStageSourceIndex(nuIx, 0, {isFirst: true}) // */
+    dis.sources.changeStageSourceIndex(nuIx, 0, {isFirst: true}) // */
   }
   
   dis.changeDestination = newDestination => { //: not used
@@ -253,12 +250,6 @@ const createPlayground = root => {
     }
   } */
   
-  dis.setGraphMode = val => {
-    //+decompose()
-    dis.graphMode = val
-    //+compose()
-  }
-  
   dis.addFx = (stageId, name) => stageMan.addFx(stageId, name)
   
   init()
@@ -269,15 +260,11 @@ const createPlayground = root => {
 export const runPlaygroundWithin = (waCtx, options) => { //: no mediaElement, ABSNs will be added
   const config = {
     sourceListDisplayOn: true,
+    maxSources: 8,
     ...options
-    //platform: 'standalone', // extension
-    //mediaType: 'audioboth', // video
-    //useVideo: true,
-    //useAudio: false
   }
   const root = {
     config,
-    mp3s: [],
     waCtx,
     mediaElement: null,
     ...options
@@ -290,10 +277,16 @@ export const runPlaygroundWithin = (waCtx, options) => { //: no mediaElement, AB
 export const runPlayground = async root => { //: we may have a mediaElement in root
   const {ui, waCtx} = root
   const playground = createPlayground(root)
-  root.mediaElement && playground.changePrimarySource(root.mediaElement)
+  ui.start(playground)
   
-  ui.start(playground) //+ debug: miert nem lehet az initbe rakni
-  
+  root.midi = pgIm.TestMidi?.createTestMidi(ui)
+
+  if (root.onYoutube) {
+    root.mediaElement && ui.changeVideoElementSource(1, root.mediaElement)
+  } else {
+    playground.sources.getValidSourcesCnt() || ui.toggleList() //: only if there are no sources
+  }
+
   const setupName = root.onYoutube 
     ? root.killEmAll
       ? 'youtubeFull'
@@ -304,17 +297,25 @@ export const runPlayground = async root => { //: we may have a mediaElement in r
   
   StateManager.getActualPreset({name: setupName, parent$})
     .then(setup => {
-      playground.setGraphMode('parallel')
+      const stageNames = []
       
       for (const key in setup) {
+        stageNames.includes(key) || stageNames.push(key)
+      }
+      stageNames.sort()
+      console.log({stageNames})
+      for (const stageName of stageNames) {
+        playground.addStage(stageName)
+      }      
+      for (const key in setup) {
         const arr = setup[key]
-        playground.addStage(key)
         for (const fx of arr) {
-          fx && playground.addFx(key, 'fx_' + fx)
+          fx && playground.addFx(key, fx[2] === '_' ? fx : ('fx_' + fx)) 
         }
       }
       ui.finalize()
-      if (setupName === 'scopeChain') {
+      
+      if (setupName === 'scopeChain') { //: special case -> save full stage instead
         const DELAY = .368
         for (let i = 0; i < 12; i++) {
           const fx = playground.stages[i].fxArr[1]

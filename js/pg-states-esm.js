@@ -4,14 +4,14 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, DOMplusUltra, createStore} from './improxy-esm.js'
+import {Corelib, BeeFX, DOMplusUltra, Store} from './improxy-esm.js'
 
 const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
 const {wassert, weject} = Corelib.Debug
 const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {div$, set$} = DOMplusUltra
 
-const store = createStore('beeFX')
+const store = Store.createStore('beeFX')
 
 //: name->ret, parent$->menu
 export const getActualPreset = async ({name, parent$}) => new Promise(resolve => {
@@ -32,6 +32,7 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
     convGen: 'convolverGen',
     phaser: 'phaserLFO',
     comp: 'compressor',
+    sampler: 'sampler',
     od: 'overdrive',
     odwac: 'overdriveWAC'
   }[a]) || a)
@@ -47,11 +48,20 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
     }
     const ret = {}
     pg.propertiesToArr().sort().map(stage => ret[stage] = pg[stage])
-    console.log(ret)
+    //console.log(ret)
     return ret
   }
-  const setups = { //: I know these compressed defs are ugly, but we can overview them on 1 page
+  const setups = { //: These compressed defs are ugly, but it's easier to overview
     preset2xb: {AB: 'b'},
+    preset2sampler: {AB: 'b,sampler,scope'},
+    preset3rec: {A: 'osc,sampler,scope', B: 'osc,recorder,scope', C: 'osc,sampler,scope'},
+    preset2xpitch: {AB: 'b,pitchShifterNote,scope'},
+    prTakeFive: {
+      A: 'g,comp,b',
+      B: 'g,bi,b',
+      E: 'g,ax,b',
+      F: 'g,od,b',
+      I: 'g,b,b'},
     presetA: {
       A: 'g,comp,b',
       B: 'g,bi,b',
@@ -62,7 +72,7 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
     presetDebug: {
       A: 'osc,scope,od,scope',
       B: 'osc,scope,odwac,scope',
-      C: 'delayWA',
+      C: 'delayWA,sampler,scope',
       D: 'delayExt,scope'},
     youtubeFull: {
       A: 'scope,bi,od,scope',
@@ -125,8 +135,9 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
         const setupObj = setupHash[presetName]
         const stages = setupObj.propertiesToArr()
         const html = stages.map(stage => stage + ': ' + setupObj[stage].join(' / ')).join('<br>')
-        return div$({class: 'preset-item', text: presetName, click: _ => {
+        return div$({class: 'preset-item', text: presetName, click: event => {
           store.save('actPreset', presetName)
+          set$(presets$, {css: {__reload: '" (reload needed!)"'}})
           resolve(setupObj)
         }}, div$({class: 'preset-preview', html}))
     }))

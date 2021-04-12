@@ -6,7 +6,7 @@
    
 import {Corelib, DOMplusUltra} from './improxy-esm.js'
 
-const {Ø, s_a, undef, clamp, nop, isNum, getRnd, hashOfString} = Corelib
+const {Ø, s_a, undef, clamp, nop, isNum, isFun, getRnd, hashOfString} = Corelib
 const {wassert} = Corelib.Debug
 const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
 const {q$} = DOMplusUltra
@@ -124,7 +124,7 @@ export const extendWithPlayers = (playground, root) => {
         ui.refreshPlayerControl(0, state)
         //console.log(`local state updated`, state)
       }
-      if (root.onYoutube) {
+      if (root.onYoutube) { //: cue pont!
         const canvas = ui.videoGrabCanvas$
         const ctx = canvas.getContext('2d')
         const video = mediaElement
@@ -138,9 +138,14 @@ export const extendWithPlayers = (playground, root) => {
   }
   const lazyGetLocalMediaElementState = startEndThrottle(getLocalMediaElementState, 1000)
   
-  window.addEventListener('transitionend', _ => lazyGetLocalMediaElementState())
+  /* window.addEventListener('transitionend', event => { this is stupid
+    if (event.target.id === 'progress') {
+      lazyGetLocalMediaElementState()
+    }
+  }) */
 
   const tick = _ => {
+    wassert(isFun(localPlayer.mediaElement.play)) //+ eszre kene venni ha megvaltozott
     lazyGetLocalMediaElementState()
     schedule(5000).then(tick)
   }
@@ -157,6 +162,7 @@ export const extendWithPlayers = (playground, root) => {
     mediaElement.addEventListener('seeked', event => getLocalMediaElementState(true))
     mediaElement.addEventListener('timeupdate', event => lazyGetLocalMediaElementState())
     //getLocalMediaElementState()
+    console.log(`players.initLocalMediaListeners started listening to `, mediaElement)
     tick()
   }
   

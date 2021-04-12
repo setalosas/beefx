@@ -6,7 +6,7 @@
    
 import {Corelib, DOMplusUltra, createGraphBase} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, clamp} = Corelib
+const {Ø, undef, isNum, isFun, nop, clamp, s_a} = Corelib
 const {wassert} = Corelib.Debug
 const {post, startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
@@ -15,11 +15,26 @@ const {round} = Math
   
 export const extendUi = ui => {
   const {body} = document
-  
+
   const graphBase = createGraphBase(ui.root.waCtx)
   const CANVAS_SIZE = 300
     
   //8#79c Utilities, primitives, config
+  
+  const addPiano = (parO, callback, val, {keepDown = true}) => {
+    const onClick = note => event => callback(note)
+    const whites = 'Ca-Dc-Ee-Ff-Gh-Aj-Bl-Cm-Do-Eq-Fr-Gt-Av-Bx-Cy'.split('-')
+    const blacks = 'Cb-Dd-..-Fg-Gi-Ak-..-Cn-Dp-..-Fs-Gu-Aw..'.split('-')
+    const attrOf = note => ({note, disp: note[0]})
+    
+    parO.control$ = div$({class: 'piano-kb'}, [
+      div$({class: 'whites'}, 
+        whites.map(note => div$({class: 'key', attr: attrOf(note), click: onClick(note)}))),
+      div$({class: 'blacks'}, 
+        blacks.map(note => div$({class: 'key', attr: attrOf(note), click: onClick(note)})))
+    ])
+    parO.keys$$ = [...parO.control$.children[0].children, ...parO.control$.children[1].children]
+  }
   
   const addRange = (parO, name, callback, value, min, max, step = .001) => 
     parO.control$ = div$({class: 'beectrl ranger', attr: {name}}, 
@@ -40,6 +55,10 @@ export const extendUi = ui => {
   const addCmd = (parO, name, callback) => 
     parO.control$ = div$({class: 'bee-cmd', text: name, click: event => callback('fire')})
                      
+  const addCmdWithLed = (parO, name, callback, color) => 
+    parO.control$ = div$({class: 'bee-cmd wled', text: name, click: event => callback('fire')},
+      div$({class: 'led-fx fix-on', css: {__ledhue: color}}))
+
   const num2str = (num, maxwi = 4) => {
     if (!maxwi) {
       return round(num) + ''
@@ -72,7 +91,7 @@ export const extendUi = ui => {
   })
   
   const iterateAllFxPanelObjs = callback => {
-    ui.iterateStages(stageObj => {
+    ui.iterateStageObjects(stageObj => {
       for (const fxPanelObj of stageObj.fxPanelObjArr) {
         fxPanelObj && callback(fxPanelObj)
       }
@@ -111,12 +130,24 @@ export const extendUi = ui => {
         //console.log('refreshDisplay', {key, dispVal, type: typeof dispVal})
         set$(parO.control$, {attr: {val: num2str(dispVal, isInt ? 0 : prec)}})
       },
+      piano: _ => {
+        for (const key$ of parO.keys$$) {
+          //setclass
+          set$(key$, key$.getAttribute('note') === dispVal ? {class: 'act'} : {declass: 'act'})
+        }
+        // dispValt actba kell rakni
+      },
       boolean: _ => {
         const checked = ''
         set$(parO.input$, dispVal ? {attr: {checked}} : {deattr: {checked}})//:no val at creating
         parO.input$.checked = dispVal
       },
-      cmd: _ => dispVal !== 'fire' && set$(parO.control$, {attr: {state: dispVal}}),
+      cmd: _ => {
+        if (dispVal !== 'fire') {
+          const [state, ledstate] = dispVal.split('.')
+          set$(parO.control$, {attr: {state, ledstate}})
+        }
+      },
       strings: _ => { 
         for (const child$ of parO.input$.children) {
           child$.selected = child$.value === dispVal
@@ -180,6 +211,7 @@ export const extendUi = ui => {
     const {exo} = fx
     
     const onValChanged = key => val => {
+      console.log('onchanged', {key, val})
       fx.setLinearValue(key, val)
     }
     
@@ -197,11 +229,16 @@ export const extendUi = ui => {
           addRange(parO, dispName, startEndThrottle(onValChanged(key), 30), val, min, max, step)
           unit && set$(parO.input$, {attr: {unit}})
         },
+        piano: _ => {
+          addPiano(parO, onValChanged(key), 0, {keepDown: true})
+        },
         boolean: _ => { //8#9c7 ------- boolean --> input checkbox -------
           addCheckbox(parO, short, onValChanged(key))
         },
         cmd: _ => {    //8#b8c7 ------- cmd --> non-input, plain div cmd -------
-          addCmd(parO, short, onValChanged(key))
+          subType === 'led'
+            ? addCmdWithLed(parO, short, onValChanged(key), parO.parDef.color)
+            : addCmd(parO, short, onValChanged(key))
         },
         strings: _ => { //8#ea7 ------- strings --> select box -------
           addListSelector(parO, short, '', subType, onValChanged(key))
@@ -229,6 +266,8 @@ export const extendUi = ui => {
       refreshDisplay(fxPanelObj, key) //: initial display
       fx.onValueChange(key, _ => refreshDisplay(fxPanelObj, key))
     }
+
+    ui.root.midi?.addFpo(fxPanelObj) //: testing only, can be deleted
   }
   
   const rebuildFxPanel = fxPanelObj => {
@@ -255,7 +294,11 @@ export const extendUi = ui => {
       : fxPanelObj.fx.activate(fxPanelObj.isActive)
     ui.refreshFxPanelActiveState(fxPanelObj)  
   }
-  
+  ui.destroyStageLastFxPanel = (stageObj, fx) => {
+    const lastFpo = stageObj.fxPanelObjArr.pop()
+    wassert(lastFpo.fx === fx)
+    void lastFpo.fxrama$?.remove()
+  }  
   ui.rebuildStageFxPanel = (stageIx, ix, fx, par = {}) => {
     //: creates fxPanelObj on 1st callonly -> reuse on later calls (like changeFx())
     const fxPanelObj = getFxPanelObj(stageIx, ix, par)
@@ -317,7 +360,7 @@ export const extendUi = ui => {
       remove$,
       panel.parsFrame$
     ])
-      
+    
     return fxPanelObj
   }
   

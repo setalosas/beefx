@@ -100,7 +100,7 @@ onWaapiReady.then(waCtx => {
           impDecay: {defVal: 2., min: 1, max: 3},
           impReverse: {defVal: false, type: 'boolean'}
         } : { 
-          buffer: {defVal: convPresets[0][0], type: 'strings', size: 6,subType: convPresets}
+          buffer: {defVal: convPresets[0][0], type: 'strings', size: 6, subType: convPresets}
         }),
         sampleGraph: {type: 'graph'}  ,
         highCut: {defVal: 22050, min: 20, max: 22050, subType: 'exp'},
