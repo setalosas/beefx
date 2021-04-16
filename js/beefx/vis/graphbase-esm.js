@@ -16,6 +16,9 @@ export const createGraphBase = waCtx => {
   graphBase.createGraph = (graphDesc, panelGraph) => { //: class, instance
     const graph = {}
     
+    const logOn = false
+    const clog = (...args) => logOn && console.log(...args)
+    
     const {canvas$, width, height, fx} = panelGraph
     const halfWidth = width / 2
     const halfHeight = height / 2
@@ -285,11 +288,12 @@ export const createGraphBase = waCtx => {
           drawLine(halfWidth / 2, 0, halfWidth / 2, height)        
         }
         if (renderSet.doGraph) {
-          const size = fx.int.nSamplesGraph
-          const data = fx.int.wsCurveGraph
+          const size = fx.int.nSamples
+          const data = fx.int.wsCurve
+          const step = fx.int.graphDiv
           setLineStyle(genCurveColor, 4)
           cc.beginPath()
-          for (let ix = 0; ix < size; ix++) {
+          for (let ix = 0; ix < size; ix += step) {
             const x = ix * width / size
             const y = halfHeight - halfHeight * data[ix]
             x ? cc.lineTo(x, y) : cc.moveTo(x, y)
@@ -310,7 +314,7 @@ export const createGraphBase = waCtx => {
         msdbLine(0, minDb, 0, maxDb)
         msdbLine(1000, minDb, 1000, maxDb)
         msdbLine(2000, minDb, 2000, maxDb)
-        setLineStyle(dbGridColorLo, 1)
+        setLineStyle(dbGridColorLo, 2)
         msdbLine(500, minDb, 500, maxDb)
         msdbLine(1500, minDb, 1500, maxDb)
         msdbLine(2500, minDb, 2500, maxDb)
@@ -392,7 +396,7 @@ export const createGraphBase = waCtx => {
       const render = _ => {
         const buffer = bufferHost.buffer
         if (!buffer) {
-          return console.warn('no sample buffer')
+          return clog('no sample buffer')
         }
         const timer = createPerfTimer()
         const length = buffer.length
@@ -456,7 +460,7 @@ export const createGraphBase = waCtx => {
         const pixPerSec = width / sec * xScale
         timer.mark('minmaxavg')
         
-        console.log('End', {maxPlus, minMinus, maxAbs, lastOver01, xScale, yScale})
+        clog('End', {pixPerSec, maxPlus, minMinus, maxAbs, lastOver01, xScale, yScale})
         const tab = []
         for (let i = 0, j = 0; i < width; i += 30, j++) {
           tab[j] = {
@@ -471,8 +475,8 @@ export const createGraphBase = waCtx => {
         cc.font = '32px roboto condensed'
         
         if (pixPerSec > 10) {
-          if (pixPerSec > 50) {
-            setLineStyle(dbGridColorLo, 3)
+          if (pixPerSec > 200) {
+            setLineStyle(dbGridColor, 3)
             for (let x = 0; x < width; x += pixPerSec / 10) {
               drawLine(x, 0, x, height)
             }
@@ -483,14 +487,17 @@ export const createGraphBase = waCtx => {
           }
         }
         
-        const audioBufferTextColor = 'hsl(0, 0%, 90%)'
+        const audioBufferTextColor = 'hsl(50, 30%, 50%)'
+        const ms = isMono ? 'Mono' : 'Stereo'
+        const viewSec = round(sec / xScale * 1000) / 1000
+        const fullSec = round(sec * 1000) / 1000
         
         setTextStyle(audioBufferTextColor, 'right')
         const txtx = width - 12
         cc.fillText(`zoomX: ${xScale.toFixed(1)}`, txtx, 40)
         cc.fillText(`zoomY: ${yScaleFactor}`, txtx, 80)
         cc.fillText(`overSampling: ${OVERSAMPLING}x`, txtx, height - 60)
-        cc.fillText(`${round(sec * 1000) / 1000}s ${isMono ? 'Mono' : 'Stereo'}`, txtx, height - 20)
+        cc.fillText(`${viewSec}s of ${fullSec}s ${ms}`, txtx, height - 20)
         
         const audioBufferMaxColor = `hsl(100, 70%, 70%, .66)`
         const audioBufferAvgColor = `hsl(100, 99%, 90%, .99)`
@@ -517,7 +524,7 @@ export const createGraphBase = waCtx => {
         }
         cc.stroke()
         timer.mark('avgdraw')  
-        console.log(`sampleDraw`, timer.summary())
+        clog(`sampleDraw`, timer.summary())
       }
       return {render}    
     }
