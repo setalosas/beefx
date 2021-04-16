@@ -146,6 +146,7 @@
 }
 .bfx-rama.isFixed.isGain {
   height: 24px;
+  margin-top: 2px;
 }
 .fxr-pars {
   text-align: center;
@@ -193,36 +194,91 @@
 .fxr-pars .graph-canvas.gr-scope {
   background: #000f1f;
 }
-.fxt-cmd .bee-cmd[state="on"] {
+.bee-cmd {
+  position: relative;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  user-select: none;
+  margin: 2px .5px;
+  padding: 1px 2px 0;
+}
+.bee-cmd:hover {
+  color: #fc4;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.bee-cmd.act {
+  color: #ffb;
+}
+.bee-cmd[state="on"] {
   color: #eee;
   background-color: rgba(0, 0, 0, 0.75);
   text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
 }
-.fxt-cmd .bee-cmd[state="active"] {
+.bee-cmd[state="active"] {
   color: #ffa;
   background-color: rgba(0, 0, 0, 0.75);
   text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
 }
-.fxt-cmd .bee-cmd[state="alert"] {
+.bee-cmd[state="alert"] {
   color: #faa;
   background-color: rgba(0, 0, 0, 0.75);
   text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
 }
-.fxt-cmd .bee-cmd.wled .led-fx {
+.bee-cmd.wled .led-fx {
   position: absolute;
   right: 0px;
   top: -1px;
   left: unset;
   --ledhue: 100;
 }
-.fxt-cmd .bee-cmd.wled .led-fx::before {
+.bee-cmd.wled .led-fx::before {
   box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3);
 }
-.fxt-cmd .bee-cmd.wled[ledstate="ledon"] .led-fx {
+.bee-cmd.wled[ledstate="ledon"] .led-fx {
   filter: none;
 }
-.fxt-cmd .bee-cmd.wled:not([ledstate="ledon"]) .led-fx {
+.bee-cmd.wled:not([ledstate="ledon"]) .led-fx {
   filter: saturate(0) opacity(0.5);
+}
+.bee-cmd.active {
+  color: #eee;
+  background-color: #555;
+  background: red;
+}
+.bee-cmd.wled {
+  padding-right: 16px;
+}
+.bee-cmd.wled.send .led-fx {
+  --ledhue: 50;
+}
+.bee-cmd.wled.listen .led-fx {
+  --ledhue: 0;
+}
+.bee-cmd.wled:not(.active) .led-fx {
+  filter: saturate(0) opacity(0.5);
+}
+.bee-cmd.wled:not(.active) .led-fx::after {
+  animation: none;
+  will-change: auto;
+}
+.bee-cmd.wled .led-fx {
+  position: absolute;
+  right: 0px;
+  top: -1px;
+  left: unset;
+  --pulseperiod: .5s;
+}
+.bee-cmd.wled .led-fx::before {
+  box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3);
 }
 .bfx-mid .bfx-rama {
   width: 248px;
@@ -305,80 +361,6 @@
   text-align: right;
   padding-right: 2px;
   margin-left: 18px;
-}
-.bfx-mitem,
-.bee-cmd {
-  position: relative;
-  display: inline-block;
-  padding: 1px 2px;
-  margin: 2px;
-  border-radius: 4px;
-  vertical-align: top;
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  margin: 2px .5px;
-  padding: 1px 2px 0;
-}
-.bfx-mitem:hover,
-.bee-cmd:hover {
-  color: #fc4;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-.bfx-mitem.act,
-.bee-cmd.act {
-  color: #ffb;
-}
-.bfx-mitem.active,
-.bee-cmd.active {
-  color: #eee;
-  background-color: #555;
-}
-.bfx-mitem.wled,
-.bee-cmd.wled {
-  padding-right: 16px;
-}
-.bfx-mitem.wled.send .led-fx,
-.bee-cmd.wled.send .led-fx {
-  --ledhue: 50;
-}
-.bfx-mitem.wled.listen .led-fx,
-.bee-cmd.wled.listen .led-fx {
-  --ledhue: 0;
-}
-.bfx-mitem.wled:not(.active) .led-fx,
-.bee-cmd.wled:not(.active) .led-fx {
-  filter: saturate(0) opacity(0.5);
-}
-.bfx-mitem.wled:not(.active) .led-fx::after,
-.bee-cmd.wled:not(.active) .led-fx::after {
-  animation: none;
-  will-change: auto;
-}
-.bfx-mitem.wled .led-fx,
-.bee-cmd.wled .led-fx {
-  position: absolute;
-  right: 0px;
-  top: -1px;
-  left: unset;
-  --pulseperiod: .5s;
-}
-.bfx-mitem.wled .led-fx::before,
-.bee-cmd.wled .led-fx::before {
-  box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.3);
-}
-.bee-cmd[state='active'] {
-  color: #ffa;
-  background-color: rgba(0, 0, 0, 0.75);
-  text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
-}
-.bee-cmd[state='alert'] {
-  color: #faa;
-  background-color: rgba(0, 0, 0, 0.75);
-  text-shadow: 0 0 1px currentColor, 0 0 3px currentColor, 0 0 6px currentColor;
 }
 .beectrl {
   position: relative;
@@ -503,7 +485,7 @@ input[type=range]::before {
 input[type=range]::after {
   position: absolute;
   left: 1px;
-  top: -4px;
+  top: -3px;
   color: #ffc;
   text-shadow: 0 0 1px #fcc, 0 0 3px #fcc, 0 0 6px #fcc;
   content: attr(midified);

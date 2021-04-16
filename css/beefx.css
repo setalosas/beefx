@@ -145,6 +145,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
   background: rgba(128, 128, 128, 0.6);
 }
 .preset-menu .preset-item:hover {
@@ -319,6 +320,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
   font-size: 13px;
   font-weight: 400;
 }
@@ -476,6 +478,7 @@ body::after {
   padding: 6px;
   box-sizing: border-box;
   margin: 1px;
+  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
   font-size: 13px;
   font-weight: 400;
   line-height: 1;
@@ -524,6 +527,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
 }
 .audiomenu .mm-source:hover {
   color: #fc4;
@@ -659,6 +663,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
 }
 .source-strip .source-frame .src-ctrl .ctrl-cmd:hover {
   color: #fc4;
@@ -694,8 +699,138 @@ audio {
 audio {
   width: 240px;
   height: 28px;
-  filter: invert(1) contrast(0.6);
 }
+audio::-webkit-media-controls-panel {
+  color: black;
+  background: #fc9;
+}
+/*
+audio::-webkit-media-controls {color: #0e0; background: #b22;}
+audio::-webkit-media-controls-mute-button {}
+audio::-webkit-media-controls-play-button {}
+audio::-webkit-media-controls-timeline-container {color: cyan; background: purple;}
+audio::-webkit-media-controls-current-time-display {}
+audio::-webkit-media-controls-time-remaining-display {}
+audio::-webkit-media-controls-timeline {}//color: red; background: yellow;} 
+audio::-internal-track-segment-background {background:#6e6;}
+audio::-webkit-internal-track-segment-background {background:#6e6;}
+input[type="range"]::-webkit-media-slider-container  {.cb(green, yellow);}
+input[pseudo="-webkit-media-controls-timeline" i]::-internal-media-controls-segmented-track {
+input[pseudo="-webkit-media-controls-timeline"]::-internal-media-controls-segmented-track {background: white;}
+audio input[type=range]::-webkit-slider-thumb {background: yellow;}
+audio::-webkit-slider-runnable-track {background: pink !important;}
+audio::-internal-track-segment-highlight-before {background:#66c;}
+audio::-internal-track-segment-highlight-after {background:#ff8;}
+audio::-webkit-media-controls-timeline {background: @T;}
+audio::-webkit-media-controls-volume-slider-container {color: brown; background: pink;}
+audio::-webkit-media-controls-volume-slider {}
+audio::-webkit-media-controls-seek-back-button {}
+audio::-webkit-media-controls-seek-forward-button {}
+audio::-webkit-media-controls-fullscreen-button {}
+audio::-webkit-media-controls-rewind-button {}
+audio::-webkit-media-controls-return-to-realtime-button {}
+audio::-webkit-media-controls-toggle-closed-captions-button {}
+  
+.reaudio {
+  button {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      outline: none;
+      width: 40px;
+      height: 40px;
+      float: left;
+  }
+  #audio-player-container {
+    --seek-before-width: 0%;
+      --volume-before-width: 100%;
+      --buffered-width: 0%;
+      position: relative;
+      margin: 100px 2.5% auto 2.5%;
+      width: 95%;
+      max-width: 500px;
+      height: 132px;
+      background: #fff;
+  }
+  #audio-player-container::before {
+      position: absolute;
+      content: '';
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      left: -2px;
+      top: -2px;
+      background: linear-gradient(to left, #007db5, #ff8a00);
+      z-index: -1;
+  }
+  #play-icon {margin: 20px 2.5% 10px 2.5%;}
+  path { stroke: #007db5;}
+  .time {
+      display: inline-block;
+      width: 37px;
+      text-align: center;
+      font-size: 20px;
+      margin: 28.5px 0 18.5px 0;
+      float: left;
+  }
+  output {
+      display: inline-block;
+      width: 32px;
+      text-align: center;
+      font-size: 20px;
+      margin: 10px 2.5% 0 5%;
+      float: left;
+      clear: left;
+  }
+  #volume-slider {margin: 10px 2.5%; width: 58%; }
+  #volume-slider::-webkit-slider-runnable-track { background: rgba(0, 125, 181, 0.6);}
+  #volume-slider::before { width: var(--volume-before-width);}
+  #mute-icon { margin: 0 2.5%;}
+  input[type="range"] {
+      position: relative;
+      -webkit-appearance: none;
+      width: 48%;
+      margin: 0;
+      padding: 0;
+      height: 19px;
+      margin: 30px 2.5% 20px 2.5%;
+      float: left;
+      outline: none;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 3px;
+      cursor: pointer;
+      background: linear-gradient(to right, rgba(0, 125, 181, 0.6) var(--buffered-width), rgba(0, 125, 181, 0.2) var(--buffered-width));
+  }
+  input[type="range"]::before {
+      position: absolute;
+      content: "";
+      top: 8px;
+      left: 0;
+      width: var(--seek-before-width);
+      height: 3px;
+      background-color: #007db5;
+      cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+      position: relative;
+      -webkit-appearance: none;
+      box-sizing: content-box;
+      border: 1px solid #007db5;
+      height: 15px;
+      width: 15px;
+      border-radius: 50%;
+      background-color: #fff;
+      cursor: pointer;
+      margin: -7px 0 0 0;
+  }
+  input[type="range"]:active::-webkit-slider-thumb {
+      transform: scale(1.2);
+      background: #007db5;
+  }
+}
+*/
 .relinblk {
   position: relative;
   display: inline-block;
@@ -757,6 +892,7 @@ audio {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
   display: block;
 }
 .bfx-syncbar .player-frame .bpm-buttons .mitem:hover {
@@ -832,6 +968,7 @@ audio {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
   color: #ffffff;
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(1px);
@@ -912,6 +1049,7 @@ audio {
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
   cursor: pointer;
+  user-select: none;
   color: #ffffff;
   background-color: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(1px);
@@ -948,32 +1086,20 @@ audio {
   color: #ccc;
   padding: 3px 4px 0 0;
 }
-.input-selector .input-cmd {
-  position: relative;
-  display: inline-block;
-  padding: 1px 2px;
-  margin: 2px;
-  border-radius: 4px;
-  vertical-align: top;
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  margin: 1px 1px 2px;
-  color: #ccc;
+.input-selector .input-cmd.bee-cmd {
+  /* margin: 1px 1px 2px; */
 }
-.input-selector .input-cmd:hover {
-  color: #fc4;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-.input-selector .input-cmd.act {
-  color: #ffb;
-}
-.input-selector .input-cmd.act {
+.input-selector .input-cmd.bee-cmd[state="active"] {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+.input-selector .input-cmd.bee-cmd[state="on"] {
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+.input-selector .input-cmd.bee-cmd[state="off"] {
+  pointer-events: none;
+  user-select: none;
 }
 .mixer-frame.off ~ .bfx-mid .input-selector {
   display: none;
