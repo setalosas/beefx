@@ -2,16 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, StagesUi, FxUi, SourcesUi, MixerUi} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, StagesUi, FxUi, PlayersUi, SourcesUi, MixerUi} from '../improxy-esm.js'
 
-const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib
-const {wassert, weject, brexru} = Corelib.Debug
-const {post, startEndThrottle, schedule} = Corelib.Tardis
-const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, q$, toggleClass$, setClass$, q$$, canvas$, haltEvent} = DOMplusUltra
-const {round} = Math
+const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib // eslint-disable-line
+const {wassert, brexru} = Corelib.Debug
+const {schedule} = Corelib.Tardis
+const {div$, leaf$, set$, setClass$, q$$, canvas$} = DOMplusUltra
   
 export const createUI = (root, exroot) => {
   const {body} = document
@@ -118,6 +116,7 @@ export const createUI = (root, exroot) => {
     
     StagesUi.extendUi(ui)
     FxUi.extendUi(ui)
+    PlayersUi.extendUi(ui)
     SourcesUi.extendUi(ui)
     MixerUi.extendUi(ui)
     //ui.startMixer()
@@ -135,13 +134,13 @@ export const createUI = (root, exroot) => {
   const populateMainMenu = _ => {
     const {pg} = ui
     const mItems = []
-    mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Sample', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Random', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Save to video', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Sample', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Random', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Save to video', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
+    //mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
     mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
     /*
     mItems.push(div$({class: 'mitem rt', text: 'BPM/Speed...', 
