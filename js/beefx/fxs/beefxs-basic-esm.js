@@ -12,15 +12,15 @@ onWaapiReady.then(waCtx => {
   const blankFx = { //8#bbb ------- blank -------
     def: {}
   }
-  blankFx.construct = (fx, pars) => {
-    fx.start.connect(fx.output)
-  }
+  blankFx.construct = fx => fx.start.connect(fx.output)
+
   registerFxType('fx_blank', blankFx)
   
   const gainFx = { //8#a00 ------- gain -------
     def: {
       gain: {defVal: 1, min: 0, max: 4, name: 'gain'}
-    }
+    },
+    midi: {pars: ['gain']}
   }
   gainFx.setValue = (fx, key, value) => ({
     gain: _ => fx.setAt('gain', 'gain', value)
@@ -35,7 +35,8 @@ onWaapiReady.then(waCtx => {
   const delayWAFx = { //8#a0a ------- delay WA-------
     def: {
       delayTime: {defVal: 0, min: 0, max: 2, unit: 's'}
-    }
+    },
+    midi: {pars: ['delayTime']}
   }
   delayWAFx.setValue = (fx, key, value) => ({
     //delayTime: _ => fx.setDelayTime('delay', value)
@@ -67,7 +68,7 @@ onWaapiReady.then(waCtx => {
       Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'},
       freqGraph: {type: 'graph'}
     },
-    midi: {pars: ['gain,frequency,Q']},
+    midi: {pars: ['gain,Q', 'frequency,detune']},
     name: 'BiquadFilter',
     graphs: {}
   }

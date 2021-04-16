@@ -18,13 +18,14 @@ onWaapiReady.then(waCtx => {
     def: {
       threshold: {defVal: -20, min: -60, max: 0, unit: 'dB'},
       knee: {defVal: 5, min: 0, max: 40, unit: 'dB'},
+      ratio: {defVal: 4, min: 1, max: 20, subType: 'exp'},
       attack: {defVal: 10, min: 0, max: 1000, unit: 'ms'},
       release: {defVal: 250, min: 10, max: 1000, unit: 'ms'},
-      ratio: {defVal: 4, min: 1, max: 20, subType: 'exp'},
       autoMakeup: {defVal: true, type: 'boolean'},
       makeupGain: {defVal: 1, min: 1, max: 10, unit: 'dB'},
       compressorGraph: {type: 'graph'}
     },
+    midi: {pars: ['threshold,knee,ratio', 'attack,release,makeupGain']},
     graphs: {
       compressorGraph: {
         graphType: 'compressor',

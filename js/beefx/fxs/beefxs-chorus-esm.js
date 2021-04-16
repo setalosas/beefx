@@ -15,10 +15,11 @@ onWaapiReady.then(waCtx => {
     const chorusLFOFx = { //8#a6e ---------- chorusLFO (Tuna) ----------
       def: {
         feedback: {defVal: .4, min: 0, max: .95},
-        delay: {defVal: 4.5, min: 0, max: 1000, subType: 'exp', unit: 'ms'}, // 1000
+        delay: {defVal: 4.5, min: 0.01, max: 1000, subType: 'exp', unit: 'ms'}, // 1000
         depth: {defVal: .7, min: 0, max: 1},
         rate: {defVal: 1.5, min: 0, max: 8}
       },
+      midi: {pars: ['feedback,delay,depth', 'rate']},
       name: 'Chorus (LFO)'
     }
     
@@ -66,12 +67,12 @@ onWaapiReady.then(waCtx => {
       int.lfoL = newFx('fx_LFO', {initial: {
         masterFx: fx,
         target: int.delayL.delayTime,
-        callback: (par, val) => par.value = val
+        callback: (par, val) => par.value = val || 0 //: protects against NaNs
       }})
       int.lfoR = newFx('fx_LFO', {initial: {
         masterFx: fx,
         target: int.delayR.delayTime,
-        callback: (par, val) => par.value = val
+        callback: (par, val) => par.value = val || 0
       }})
 
       int.attenuator.connect(fx.output)

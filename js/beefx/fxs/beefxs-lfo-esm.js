@@ -20,7 +20,7 @@ onWaapiReady.then(waCtx => {
     const LFOFx = { //8#04c ------- LFO (Tuna) -------
       def: {
         frequency: {defVal: 1, min: 0.1, max: 20, subType: 'exp'},
-        offset: {defVal: .85, min: 0, max: 22049, subType: 'exp'},
+        offset: {defVal: .85, min: 0.1, max: 22049, subType: 'exp'},
         oscillation: {defVal: .3, min: -22050, max: 22050},
         phase: {defVal: 0, min: 0, max: PI2},
         masterFx: {defVal: {}},
@@ -95,6 +95,7 @@ onWaapiReady.then(waCtx => {
         stereoPhase: {defVal: 0, min: 0, max: 180},
         rate: {defVal: 5, min: 0.1, max: 11}
       },
+      midi: {pars: ['intensity,stereoPhase,rate']},
       name: 'Tremolo (LFO)'
     }
     
@@ -157,9 +158,10 @@ onWaapiReady.then(waCtx => {
         rate: {defVal: .1, min: 0, max: 8},
         depth: {defVal: .6, min: 0, max: 1},
         feedback: {defVal: .6, min: 0, max: 1},
-        baseModulationFrequency: {defVal: 700, min: 500, max: 1500},
+        baseModulationFrequency: {defVal: 700, min: 500, max: 1500, unit: 'Hz'},
         stereoPhase: {defVal: 40, min: 0, max: 180}
       },
+      midi: {pars: ['rate,depth,feedback', 'baseModulationFrequency,stereoPhase']},
       name: 'Phaser (LFO)'
     }
     

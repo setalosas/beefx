@@ -73,11 +73,12 @@ onWaapiReady.then(waCtx => {
   const bbcRingModulatorFx = {//8#77d ------- BBC Ring Modulator -------
     def: {
       distortion: {defVal: 1, min: .2, max: 50, subType: 'exp'},
-      speed: {defVal: 30, min: 0, max: 2000, subType: 'exp'},
+      speed: {defVal: 30, min: 0.01, max: 2000, subType: 'exp'},
       threshold: {defVal: -12, min: -24, max: -3},
       ratio: {defVal: 12, min: 6, max: 18},
       gain: {defVal: 2, min: 2, max: 4}
     },
+    midi: {pars: ['distortion,gain', 'speed,threshold,ratio']},
     name: 'BBC Ring Modulator'
   }
 

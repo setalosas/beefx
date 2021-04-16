@@ -22,6 +22,7 @@ onWaapiReady.then(waCtx => {
       dryLevel: {defVal: 1, min: 0, max: 1},
       freqGraph: {type: 'graph'}
     },
+    midi: {pars: ['delayTime,feedback,cutOff', 'wetLevel,dryLevel']},
     name: 'Delay (extended)',
     graphs: {}
   }
@@ -62,6 +63,7 @@ onWaapiReady.then(waCtx => {
       feedbackLeft: {defVal: .5, min: .01, max: 1.0},
       feedbackRight: {defVal: .5, min: .01, max: 1.0}
     },
+    midi: {pars: ['delayLeft,feedbackLeft', 'delayRight,feedbackRight']},
     name: 'Ping Pong Delay A'
   }
   pingPongDelayAFx.setValue = (fx, key, value) => ({
@@ -92,11 +94,12 @@ onWaapiReady.then(waCtx => {
   
   const pingPongDelayBFx = { //8#0b8 -------pingPongDelayB (Tuna) -------
     def: {
-      delayLeft: {defVal: 200, min: 0, max: 4000},
-      delayRight: {defVal: 400, min: 0, max: 4000},
+      delayLeft: {defVal: 200, min: 0, max: 4000, unit: 'ms'},
+      delayRight: {defVal: 400, min: 0, max: 4000, unit: 'ms'},
       feedback: {defVal: .5, min: .01, max: 1.0},
       wetLevel: {defVal: .5, min: .01, max: 1.0}
     },
+    midi: {pars: ['delayLeft,feedback', 'delayRight,wetLevel']},
     name: 'Ping Pong Delay B'
   }
   
