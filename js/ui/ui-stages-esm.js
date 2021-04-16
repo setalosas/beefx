@@ -76,8 +76,8 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
       set$(stageObj.inputSelector$, {class: 'blue'}, [
         div$({class: 'input-label', text: 'Input:'}),
         ...sourceIxArr.map((sourceIx, ix) => 
-          stageObj.inputCmd$[ix] = div$({class: 'input-cmd', text: 'In ' + sourceIx,
-            attr: {sourceIx}, click: chg(sourceIx)}))
+          stageObj.inputCmd$[ix] = div$({class: 'input-cmd bee-cmd', text: 'In ' + sourceIx,
+            attr: {sourceIx, state: 'off'}, click: chg(sourceIx)}))
       ])
     }
   })
@@ -86,14 +86,14 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     const stageObj = ui.getStageObj(stageIx)
     if (stageObj?.inputCmd$?.length) {
       for (const inCmd$ of stageObj.inputCmd$) {
-        setClass$(inCmd$, sourceIx === iAttr(inCmd$, 'sourceIx'), 'act')
+        const inputSourceIx = iAttr(inCmd$, 'sourceIx')
+        if (sources.getSource(inputSourceIx)) {
+          set$(inCmd$, {attr: {state: sourceIx === inputSourceIx ? 'active' : 'on'}})
+        } else {
+          weject(sourceIx === inputSourceIx)
+          set$(inCmd$,{attr: {type: 'off'}})
+        }
       }
-      /*
-      for (let ix = 0; ix < stageObj.inputCmd$.length; ix++) {
-        const inputSourceIx = stageOb
-        setClass$(stageObj.inputCmd$[ix], sourceIx === ix, 'act')
-      }
-      */
     } else {
       //console.warn(`ui.setStageInputState called too early`)
     }
