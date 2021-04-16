@@ -35,6 +35,7 @@ const createBeeFX = waCtx => {
     namesDb: {
       fxNames
     },
+    readyPromises: [],
     logConnects: false,
     logDisconnects: false,
     logSetValue: false
@@ -75,7 +76,7 @@ const createBeeFX = waCtx => {
       if (fx.isActive !== on) {
         fx.isActive = on
         
-        if (fx.exo.activate) {
+        if (fx.exo.activate) { //: LFO and EnvFollower have their own
           fx.exo.activate(fx, on)
         } else {
           fx.input.disconnect()
@@ -290,7 +291,7 @@ const createBeeFX = waCtx => {
   }
   
   beeFx.getRootPath = _ => //: full url 'cause of youtube
-    window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '/'
+    window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '//beefx.mork.work/' //  '/'
   
   beeFx.getPresetPath = sub => beeFx.getRootPath() + 'pres/' + sub 
   beeFx.getJsPath = sub => beeFx.getRootPath() + 'js/' + sub
@@ -341,6 +342,8 @@ const createBeeFX = waCtx => {
     return fx  
   }
   
+  beeFx.onReady = _ => Promise.all(beeFx.readyPromises)
+  
   beeFx.registerFxType = (fxName, fxObj) => {
     if (fxHash[fxName]) {
       console.warn(`registerFx: ${fxName} has been already registered, will skip.`)
@@ -348,7 +351,10 @@ const createBeeFX = waCtx => {
       return
     }
     fxObj.fxName = fxName
+    wassert(fxObj.def)
     fxObj.def = fxObj.def || {}
+    fxObj.promises && beeFx.readyPromises.push(...fxObj.promises)
+    fxObj.promises && console.log(`promises when adding ${fxName}:`, beeFx.readyPromises)
     fxObj.name = fxObj.name || fxName[3].toUpperCase() + fxName.substr(4)
     if (fxObj.fxNamesDb) {
       for (const db in fxObj.fxNamesDb) {
