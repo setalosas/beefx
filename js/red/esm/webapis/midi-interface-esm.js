@@ -1,7 +1,7 @@
 /* eslint-disable no-debugger, spaced-comment, no-multi-spaces, valid-typeof, indent, new-cap,
    object-curly-spacing, no-trailing-spaces, block-spacing, comma-spacing, handle-callback-err,
    no-return-assign, camelcase, yoda, object-property-newline, no-void, quotes, import/first,
-   no-floating-decimal, space-unary-ops,  standard/no-callback-literal */
+   no-floating-decimal, space-unary-ops, prefer-promise-reject-errors */
 
 //8#3ae4Midi control (Akai Midimix)
 
@@ -69,15 +69,10 @@ export const createInterface = onController => {
     }
   }
 
-  midi.init = _ => new Promise(resolve => {
-    if (midi.initialized) {
-      console.warn(`midi already initialized!`)
-      return resolve()
-    }
-    midi.initialized = true
-    
+  midi.readyPromise = new Promise((resolve, reject) => {
     if (!navigator.requestMIDIAccess) {
-      return console.log('This browser does not support WebMIDI!')
+      console.log('This browser does not support WebMIDI!')
+      reject()
     }
 
     navigator.requestMIDIAccess({sysex: konfig.sysex})
@@ -107,7 +102,7 @@ export const createInterface = onController => {
       .catch(error => console.error(error.message))
   })
   
-  midi.isReady = midi.init()
+  midi.init = _ => midi.readyPromise
   
   return midi
 }

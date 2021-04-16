@@ -17,7 +17,8 @@ const {set$} = DOMplusUltra
 export const createTestMidi = ui => {
   const midi = {
     activeFpo: null,
-    midiMap: {}
+    midiMap: {},
+    isReady: false
   }
     
   const onMidi = (track, controller, value) => {
@@ -39,6 +40,9 @@ export const createTestMidi = ui => {
   Midi.createInterface(onMidi).init().then(_ => midi.isReady = true)
   
   const activateFpo = fpo => {
+    if (!midi.isReady) {
+      return
+    }
     midi.midiMap = {}
     for (const node$ of midi.midifiedNodes || []) {
       set$(node$, {deattr: {midified: ''}})
@@ -82,20 +86,16 @@ export const createTestMidi = ui => {
         fill('mid', mid)
         fill('lo', lo)
       }
-      console.table(midi.midiMap)
+      //console.table(midi.midiMap)
     } else {
     }
     midi.activeFpo = fpo
   }
   
-  midi.addFpo = fxPanelObj => {
-    if (midi.isReady) {
-      set$(fxPanelObj.fxrama$, {on: {
-        mouseenter: _ => activateFpo(fxPanelObj),
-        mouseleave: _ => activateFpo(null)
-      }})
-    }
-  }
+  midi.addFpo = fxPanelObj => set$(fxPanelObj.fxrama$, {on: {
+    mouseenter: _ => activateFpo(fxPanelObj),
+    mouseleave: _ => activateFpo(null)
+  }})
   
   return midi
 }
