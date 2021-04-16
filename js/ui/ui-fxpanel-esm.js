@@ -6,7 +6,7 @@
    
 import {Corelib, DOMplusUltra, createGraphBase} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, clamp, s_a} = Corelib
+const {Ø, undef, isNum, isFun, nop, no, clamp, s_a} = Corelib
 const {wassert} = Corelib.Debug
 const {post, startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
@@ -16,6 +16,9 @@ const {round} = Math
 export const extendUi = ui => {
   const {body} = document
 
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
+  
   const graphBase = createGraphBase(ui.root.waCtx)
   const CANVAS_SIZE = 300
     
@@ -55,7 +58,7 @@ export const extendUi = ui => {
   const addCmd = (parO, name, callback) => 
     parO.control$ = div$({class: 'bee-cmd', text: name, click: event => callback('fire')})
                      
-  const addCmdWithLed = (parO, name, callback, color) => 
+  const addCmdWithLed = (parO, name, callback, color = 0) => 
     parO.control$ = div$({class: 'bee-cmd wled', text: name, click: event => callback('fire')},
       div$({class: 'led-fx fix-on', css: {__ledhue: color}}))
 
@@ -75,9 +78,10 @@ export const extendUi = ui => {
 
   //8#c47 fxPanelObj management
   
-  const createFxPanelObj = (stageObj, ix, par = {}, {stageIx} = stageObj) => ({
+  const createFxPanelObj = (stageObj, ix, par = {}, {stageIx, stage} = stageObj) => ({
     stageObj,                                        //: base object of the stage, if there is one
     stageIx: stageIx,
+    stage,
     ix,                                               //:vertical index        
     fxrama$: ix === -1 ? stageObj.endRatio$ : div$(stageObj.ramas$),
                          //: fxrama$ is the most external div of the fx panel
@@ -103,6 +107,10 @@ export const extendUi = ui => {
     return stageObj.fxPanelObjArr[ix] = 
       stageObj.fxPanelObjArr[ix] || createFxPanelObj(stageObj, ix, par)
   }
+  /* const getNewFxPanelObj = (stageIx, ix, par) => {
+    const stageObj = wassert(ui.getStageObj(stageIx))
+    return stageObj.fxPanelObjArr[ix] = createFxPanelObj(stageObj, ix, par)
+  } */
   
   const reassignFxPanelObjFx = (fxPanelObj, nuFx) => {
     fxPanelObj.fx = nuFx   //: the assignment of the CURRENT fx to the STATIC fxPanelObj
@@ -112,7 +120,10 @@ export const extendUi = ui => {
   
   //8#2aa Parameter-specific helpers
   
-  const refreshDisplay = (fxPanelObj, key) => {
+  const refreshDisplay = (fxPanelObj, key, assertFx) => {
+    if (assertFx !== fxPanelObj.fx) {
+      return console.warn(`refreshDsiplay: fx changed in fxPanelObj, skip!`)
+    }
     const {pars, fx} = fxPanelObj
     const parO = pars[key]
     const {parDef} = parO
@@ -127,15 +138,13 @@ export const extendUi = ui => {
         if (val !== parseFloat(parO.input$.value)) {
           parO.input$.value = val
         }
-        //console.log('refreshDisplay', {key, dispVal, type: typeof dispVal})
+        clog('refreshDisplay', {key, dispVal, type: typeof dispVal})
         set$(parO.control$, {attr: {val: num2str(dispVal, isInt ? 0 : prec)}})
       },
       piano: _ => {
         for (const key$ of parO.keys$$) {
-          //setclass
-          set$(key$, key$.getAttribute('note') === dispVal ? {class: 'act'} : {declass: 'act'})
+          setClass$(key$, key$.getAttribute('note') === dispVal, 'act') 
         }
-        // dispValt actba kell rakni
       },
       boolean: _ => {
         const checked = ''
@@ -178,7 +187,7 @@ export const extendUi = ui => {
     if (!graph.triggerKeys || !key || graph.triggerKeys.includes(key)) { //: optimize redraw
       panelGraph.graphInstance.render()
     } else {
-      console.log('graph wont redraw', key)
+      clog('graph wont redraw', key)
     }
   }
   
@@ -200,7 +209,7 @@ export const extendUi = ui => {
       renderPanelGraph(fxPanelObj, graphName + ix)
     }
     set$(panel.parsFrame$, {class: 'graph gt-' + fx.exo.fxName})
-    console.log(`📈Graph added for ${fx.zholger} with ${graphArr.length} items.`, timer.summary())
+    clog(`📈Graph added for ${fx.zholger} with ${graphArr.length} items.`, timer.summary())
   }
   
   //8#9c0 Rebuilding the parameter-specific parts of the fx panel
@@ -211,7 +220,7 @@ export const extendUi = ui => {
     const {exo} = fx
     
     const onValChanged = key => val => {
-      console.log('onchanged', {key, val})
+      clog('onchanged', {key, val})
       fx.setLinearValue(key, val)
     }
     
@@ -263,11 +272,12 @@ export const extendUi = ui => {
       }
       readOnly && set$(parO.input$, {attr: {disabled: ''}})
       div$(panel.parsFrame$, {class: 'fxr-parval fxt-' + type}, parO.control$)
-      refreshDisplay(fxPanelObj, key) //: initial display
-      fx.onValueChange(key, _ => refreshDisplay(fxPanelObj, key))
+      refreshDisplay(fxPanelObj, key, fx) //: initial display
+      //+ fx is workaround for new fxpanel bug -> fxpanel refaktoring will correct this
+      fx.onValueChange(key, _ => refreshDisplay(fxPanelObj, key, fx))
     }
 
-    ui.root.midi?.addFpo(fxPanelObj) //: testing only, can be deleted
+    void ui.root.midi?.addFpo(fxPanelObj) //: testing only, can be deleted
   }
   
   const rebuildFxPanel = fxPanelObj => {
@@ -284,16 +294,17 @@ export const extendUi = ui => {
   
   //+fxPanelObj legyen egy closure metodokkal!!!! ui-fxpanel-esm.js fob a dis helyett v fxob v fxo
 
-  ui.refreshFxPanelActiveState = fxPanelObj => {
-    set$(fxPanelObj.fxrama$, fxPanelObj.isActive ? {declass: 'bypass'} : {class: 'bypass'})
-  }
-  ui.toggleFxPanelActiveState = fxPanelObj => {
-    fxPanelObj.isActive = !fxPanelObj.isActive
+  ui.refreshFxPanelActiveState = ({fxrama$, isActive}) => setClass$(fxrama$, !isActive, 'bypass')
+
+  ui.setFxPanelActiveState = (fxPanelObj, on = !fxPanelObj.fx.isActive) => {
     fxPanelObj.isEndRatio 
-      ? ui.pg.activateStage(fxPanelObj.stageIx, fxPanelObj.isActive)
-      : fxPanelObj.fx.activate(fxPanelObj.isActive)
+      ? fxPanelObj.stage.activate(on)
+      : fxPanelObj.fx.activate(on)
+    fxPanelObj.isActive = on
     ui.refreshFxPanelActiveState(fxPanelObj)  
   }
+  ui.toggleFxPanelActiveState = fxPanelObj => ui.setFxPanelActiveState(fxPanelObj)
+
   ui.destroyStageLastFxPanel = (stageObj, fx) => {
     const lastFpo = stageObj.fxPanelObjArr.pop()
     wassert(lastFpo.fx === fx)
@@ -301,13 +312,22 @@ export const extendUi = ui => {
   }  
   ui.rebuildStageFxPanel = (stageIx, ix, fx, par = {}) => {
     //: creates fxPanelObj on 1st callonly -> reuse on later calls (like changeFx())
+    
+    //+ nooooooooooooooooooooooooooooooo
+    
+    //const stageObj = wassert(ui.getStageObj(stageIx))
+    //const fxPanelObj = createFxPanelObj(stageObj, ix, par)
+    //const {hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
+    
+    //+ noooooooooooooooooooooooo fxPanels MUST be RECREATED, not reused!!
+
     const fxPanelObj = getFxPanelObj(stageIx, ix, par)
-    const {stageObj, hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
+    const {stageObj, stage, hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
+    
     reassignFxPanelObjFx(fxPanelObj, fx)  //: puts fx, fxname into fxPanelObj
     rebuildFxPanel(fxPanelObj)            //: puts panel into fxPanelObj
     const {fxname, panel} = fxPanelObj     //:fxname is in the 'Blank' format (not fx_blank!)
     const {pg} = ui
-    const stage = pg.stageMan.getStage(stageIx) //+ can be undef?
     
     const isBlank = fxname === 'Blank'
     const isGain = fxname === 'Gain'
@@ -328,7 +348,7 @@ export const extendUi = ui => {
         const isFolded = toggleClass$(fxrama$, 'folded')
         if (event.altKey) { //: do the same with all fxpanels of the same type
           iterateAllFxPanelObjs(fpo => (event.ctrlKey || fpo.fxname === fxname) && 
-            fpo.isRemoveable && setClass$(fpo.fxrama$, isFolded, 'folded', console.log(fpo)))
+            fpo.isRemoveable && setClass$(fpo.fxrama$, isFolded, 'folded', clog(fpo)))
           //: maybe this should be filtered to normal stages and not fixed fxs
         }
       }})
@@ -337,9 +357,24 @@ export const extendUi = ui => {
       div$({class: 'bfx-delete', click: _ => pg.changeFx(stageIx, ix, 'fx_blank')})
       
     const bypassLed$ = isOnOff && 
-      div$({class: 'led-fx bfxact fix-on', click: _ => ui.toggleFxPanelActiveState(fxPanelObj, pg)})
+      div$({class: 'led-fx bfxact fix-on', click: _ => ui.toggleFxPanelActiveState(fxPanelObj)})
     
-    const topmenu$ = isEndRatio && div$({class: 'bfx-topmenu'}, [
+    if (isEndRatio) {
+      fx.setValue('onCmd', ({op, par}) => {
+        const action = {
+          activate: _ => ui.setFxPanelActiveState(fxPanelObj, par),
+          regen: _ => _,
+          save: _ => _,
+          master: _ => _,
+          slave: _ => _
+        }[op]
+        void action?.()
+        if (op === 'activate') {
+          
+        }
+      })
+    }
+    const topmenu$ = no && isEndRatio && div$({class: 'bfx-topmenu'}, [
       div$({class: 'bfx-mitem', text: 'Solo', click: _ => stage.setSolo()}),
       div$({class: 'bfx-mitem', text: 'Regen', click: _ => pg.rebuildStage(stageIx)}),
       div$({class: 'bfx-mitem', text: '===', click: pg.equalRatios}),
