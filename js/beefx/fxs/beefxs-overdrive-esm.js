@@ -14,20 +14,19 @@ const {max, pow, round, tanh, abs, min, sign, sqrt} = Math
 onWaapiReady.then(waCtx => {
   const {registerFxType, newFx, connectArr, dB2Gain, gainToDb} = BeeFX(waCtx)
   
-  //const threshold = -27 // dB
-  //const headroom = 27 // dB
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
+  
   const e4 = (x, k) => 1.0 - Math.exp(-k * x)
-  let cnt = 0
   
   const shape = amount => {
-    const threshold = -27 + 24 * (amount - .5) 
-    const headroom = 21 + 24 * (amount - .5)
+    const threshold = -27 + 24 * (amount - .5) // -27
+    const headroom = 21 + 24 * (amount - .5) // 27
     const linearThreshold = dB2Gain(threshold)
     const linearHeadroom = dB2Gain(headroom)
     const maximum = 1.505 * linearHeadroom * linearThreshold
     const kk = (maximum - linearThreshold)
-    cnt++ % 2 && 
-      console.log(`amount=${amount} threshold=${threshold} headroom=${headroom} linThr=${linearThreshold} linHead=${linearHeadroom} max=${maximum} kk=${kk}`)
+    clog(`amount=${amount} threshold=${threshold} headroom=${headroom} linThr=${linearThreshold} linHead=${linearHeadroom} max=${maximum} kk=${kk}`)
     
     return x => {
       const sign = x < 0 ? -1 : +1
@@ -251,19 +250,14 @@ onWaapiReady.then(waCtx => {
     }
   })()
   
-  const confuseTheCurveAmp = (n_samples, wsCurve, confuse) => {
-    for (let i = 0; i < n_samples; i++) {
-      const data = wsCurve[i]
-      wsCurve[i] = clamp((1 + abs(confuse)) * (wsCurve[i] - confuse), -1, 1)
-    }
-  }
-  
   const confuseTheCurve = (n_samples, wsCurve, confuse) => {
     for (let i = 0; i < n_samples; i++) {
       const data = wsCurve[i]
       wsCurve[i] = clamp((1 + abs(confuse)) * (wsCurve[i] - confuse), -1, 1)
     }
   }
+  
+  //: These two overdrive filters should be merged into two variants of one.
   
   const overdriveFx = {//8#9a4 ----- Overdrive (Tuna) -----
     def: {
@@ -277,6 +271,7 @@ onWaapiReady.then(waCtx => {
       algorithm: {defVal: 0, type: 'strings', subType: algNameDb},
       sigmoidGraph: {type: 'graph'}
     },
+    midi: {pars: ['drive,postDrive,outputGain', 'curveAmount,confuse']},
     name: 'Overdrive',
     graphs: {}
   }
@@ -304,10 +299,9 @@ onWaapiReady.then(waCtx => {
   }[key])
   
   overdriveFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    int.nSamples = 1024 //+ez miert, allithato? 8192
+    int.nSamples = 2048
     int.wsCurve = new Float32Array(int.nSamples)
-    int.nSamplesGraph = 512
-    int.wsCurveGraph = new Float32Array(int.nSamplesGraph)
+    int.graphDiv = 4 // 2048 / 4 = 512
     
     int.inputDrive = waCtx.createGain()
     int.waveshaper = waCtx.createWaveShaper()
@@ -317,11 +311,9 @@ onWaapiReady.then(waCtx => {
     
     fx.rerunAlgorithm = _ => {
       if (int.algorithm) {
-        int.algorithm(atm.curveAmount, int.nSamplesGraph, int.wsCurveGraph, atm.confuse)
         int.lastAlgName = int.algorithm(atm.curveAmount, int.nSamples, int.wsCurve, atm.confuse)
         if (atm.confuse) {
-          //confuseTheCurve(int.nSamplesGraph, int.wsCurveGraph, atm.confuse)
-          //confuseTheCurve(int.nSamples, int.wsCurve, atm.confuse)
+          confuseTheCurve(int.nSamples, int.wsCurve, atm.confuse)
         }
         int.waveshaper.curve = int.wsCurve
         fx.valueChanged('drive')//: redraw graph?
@@ -356,6 +348,7 @@ onWaapiReady.then(waCtx => {
       oversampling4x: {defVal: false, type: 'boolean', uiLabel: '4x oversampl'},
       sigmoidGraph: {type: 'graph'}
     },
+    midi: {pars: ['drive,preBand', 'color,postCut,curveAmount']},
     name: 'OverdriveWAC',
     graphs: {}
   }
@@ -390,19 +383,17 @@ onWaapiReady.then(waCtx => {
     postCut: _ =>  fx.setAt('lowpass', 'frequency', value),
     curveAmount: _ => fx.rerunAlgorithm(),
     algorithm: _ => {
-      int.algorithm = overdriveAlgorithms(parseInt(value)) // overdriveFx.algorithms(value)
-      wassert(int.algorithm)
-      //console.log('algchg', int.algorithm, value)
+      int.algorithm = overdriveAlgorithms(parseInt(value))
+      clog('algchg', wassert(int.algorithm), value)
       fx.rerunAlgorithm()
     },
     oversampling4x: _ => int.waveshaper.oversampling = value ? '4x' : 'none'
   }[key])
   
   overdriveWACFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    int.nSamples = 1024 // 8192
+    int.nSamples = 2048 // 8192
     int.wsCurve = new Float32Array(int.nSamples)
-    int.nSamplesGraph = 512
-    int.wsCurveGraph = new Float32Array(int.nSamplesGraph)
+    int.graphDiv = 4 // 2048 / 4 = 512
 
     int.bandpass = waCtx.createBiquadFilter()
     int.bpWet = waCtx.createGain()
@@ -415,10 +406,9 @@ onWaapiReady.then(waCtx => {
     
     fx.rerunAlgorithm = _ => {
       if (int.algorithm) {
-        int.algorithm(atm.curveAmount, int.nSamplesGraph, int.wsCurveGraph, atm.confuse)
         int.lastAlgName = int.algorithm(atm.curveAmount, int.nSamples, int.wsCurve, atm.confuse)
         int.waveshaper.curve = int.wsCurve
-        fx.valueChanged('drive')//: redraw graph?
+        fx.valueChanged('drive')
       }
     }
   }
