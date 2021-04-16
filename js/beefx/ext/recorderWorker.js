@@ -48,12 +48,14 @@ class Recorder extends AudioWorkletProcessor {
       } else if (data.op === 'stop') {
         this.isRecording = false
       } else if (data.op === 'params') {
+        this.noRecording = true
         this.flushFrames()         //: usually this doesn't happen while recording, but...
         this.compactZoom = data.params.compactZoom
         this.frameLimit = data.params.frameLimit
         this.transferCompact = data.params.transferCompact
         this.transferAudio = data.params.transferAudio
         this.resetData()
+        this.noRecording = false
       }
     }
   }
@@ -101,7 +103,7 @@ class Recorder extends AudioWorkletProcessor {
   }
 
   process (inputs, outputs, parameters) {
-    if (this.isRecording) {
+    if (this.isRecording && !this.noRecording) {
       if (!inputs.length || !inputs[0].length) {  //: hacking the "audioWorklet"
         console.warn('Recorder worklet: process got no input. (????)')
         return true
