@@ -14,6 +14,9 @@ const {max, pow, round, tanh, abs, min, sign, sqrt} = Math
 onWaapiReady.then(waCtx => {
   const {registerFxType, newFx, connectArr, dB2Gain, gainToDb} = BeeFX(waCtx)
   
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
+  
   // Copyright 2012, Google Inc.
   // All rights reserved.
   //
@@ -50,7 +53,7 @@ onWaapiReady.then(waCtx => {
     const buffer = waCtx.createBuffer(1, length, waCtx.sampleRate)
     const chnData = buffer.getChannelData(0)
     
-    console.log("createFadeBuffer() length = ", {length, length1, length2})
+    clog("createFadeBuffer() length = ", {length, length1, length2})
     
     const fadeLength = fadeTime * waCtx.sampleRate
     const fadeIndex1 = fadeLength
@@ -75,7 +78,7 @@ onWaapiReady.then(waCtx => {
     const buffer = waCtx.createBuffer(1, length, waCtx.sampleRate)
     const chnData = buffer.getChannelData(0)
 
-    console.log("createDelayTimeBuffer() length = ", {length, length1, length2})
+    clog("createDelayTimeBuffer() length = ", {length, length1, length2})
     
     for (let i = 0; i < length; ++i) {
       chnData[i] = i < length1
