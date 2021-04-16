@@ -15,7 +15,7 @@ const {fetch, AudioWorkletNode} = window
 onWaapiReady.then(async waCtx => {
   const {registerFxType, newFx, connectArr, getJsPath} = BeeFX(waCtx)
   
-  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js?x'))
+  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js'))
 
   auWorkletPromise
     .then(_ => console.log(`Recorder audioWorklet loaded.`))
@@ -24,8 +24,6 @@ onWaapiReady.then(async waCtx => {
       //debugger
     })
     
-  await auWorkletPromise //: stop here if couldn't load worklet 
-  
   const redrawWave = fx => {
     const {int, atm} = fx
     const {cc, ccext, width, height} = int
@@ -137,6 +135,7 @@ onWaapiReady.then(async waCtx => {
       zoom: {defVal: 3, min: 2, max: 4, unit: '2^', subType: 'int'}, //: for zoom test only
       limit: {defVal: 1, min: 0, max: 2, unit: '2^', subType: 'int'} //: for zoom test only
     },
+    promises: [auWorkletPromise],
     name: `Dev Recorder`,
     graphs: {
       wave: {
@@ -226,7 +225,7 @@ onWaapiReady.then(async waCtx => {
           }
           addToGraph(data.up)
         } else {
-          console.log('Recorder got unknown op from worklet:', data.op)
+          console.warn('Recorder got unknown op from worklet:', data.op)
         }
       } else if (data instanceof ArrayBuffer || data instanceof Float32Array) {
         if (int.lastEventOp === 'preCompact') {
@@ -235,7 +234,7 @@ onWaapiReady.then(async waCtx => {
           addToAudio(data)
         }
       } else {
-        console.log('Recorder got invalid message from worklet:', event)
+        console.warn('Recorder got invalid message from worklet:', event)
       }
       int.lastEventOp = event.data.op || ''
     }

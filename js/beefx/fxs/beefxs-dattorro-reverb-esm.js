@@ -2,18 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
+import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
-const {round} = Math
-const {fetch, AudioWorkletNode} = window
+const {AudioWorkletNode} = window
 
 onWaapiReady.then(async waCtx => {
-  const {registerFxType, newFx, connectArr, getJsPath} = BeeFX(waCtx)
+  const {registerFxType, connectArr, getJsPath} = BeeFX(waCtx)
   
   const presets = {
     preDelay: [1525, 0, 0, 0],
@@ -51,11 +47,9 @@ onWaapiReady.then(async waCtx => {
     .then(_ => console.log(`Dattoro's reverb audioWorklet loaded.`))
     .catch(err => {
       console.error(`Dattoro's reverb audioWorklet failed to load.`, err)
-      //debugger
+      debugger
     })
     
-  await auWorkletPromise //: stop here if couldn't load worklet 
-
   const dattoroReverbFx = {
     def: {
       preset: {defVal: 0, type: 'strings', subType: presetNames},
@@ -72,6 +66,13 @@ onWaapiReady.then(async waCtx => {
       wet: {defVal: .3, min: 0, max: 1},
       dry: {defVal: .6, min: 0, max: 1}
     },
+    promises: [auWorkletPromise],
+    midi: {pars: [
+      'preDelay,inputDiffusion1,decayDiffusion1',
+      'bandwidth,inputDiffusion2,decayDiffusion2',
+      'excursionRate,wet,decay', 
+      'excursionDepth,dry,damping'
+    ]},
     name: `Reverb (Dattorro)`
   }
 
