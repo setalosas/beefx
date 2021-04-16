@@ -2,12 +2,10 @@
    object-curly-spacing, object-curly-newline, object-property-newline, no-floating-decimal,
    handle-callback-err, quotes, yoda, no-void, import/first, standard/no-callback-literal */
 
-import {Corelib, DOMplusUltra, onWaapiReady, Playground, createUI} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, onWaapiReady, Playground} from '../improxy-esm.js'
 
 const {onDomReady, div$, q$, set$} = DOMplusUltra
 const {adelay} = Corelib.Tardis
-
-//const adelay = delay  => new Promise(resolve => setTimeout(resolve, delay))
 
 onDomReady(async _ => {
   console.log('CromBee beeFx/Youtube main started.')
@@ -23,7 +21,6 @@ onDomReady(async _ => {
     onYoutube: true,
     killEmAll: false
   }
-  await adelay(10) //: it basically skips a few frames so all beeFx extensions can register
 
   const trigger$ = div$(document.body, {class: 'beetrigger', text: 'BeeeFX!'})
 
@@ -33,7 +30,6 @@ onDomReady(async _ => {
       set$(trigger$, {class: 'hasvideo', click: event => {
         root.mediaElement = video
         root.killEmAll = event.shiftKey //: we'll remove most of Youtube if shift was pressed
-        root.ui = createUI(root)
         Playground.runPlayground(root)
       }})
       console.log('CromBee found video tag:', video)
