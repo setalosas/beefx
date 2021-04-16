@@ -2,27 +2,33 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, no, yes, isArr, getRnd, getRndFloat} = Corelib
+const {undef, nop, no, yes, isArr} = Corelib // eslint-disable-line
 const {wassert} = Corelib.Debug
-const {post} = Corelib.Tardis
-const {round, max} = Math
+const {max} = Math
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr} = BeeFX(waCtx)
   
   const logRatio = false
   const rlog = (...args) => logRatio && console.log(...args)
-  const slog = (...args) => logRatio && console.warn(...args)
+  const slog = (...args) => logRatio && console.warn(...args) // eslint-disable-line
   const glog = (...args) => logRatio && console.group(...args)
   const hlog = _ => logRatio && console.groupEnd()
   
   const ratioFx = { //8#666 ------- ratio -------
     def: {
-      gain: {defVal: .25, min: 0.00001, max: 1.00001, name: 'Stage ratio'}
+      solo: {defVal: 'off', type: 'cmd', name: 'Solo'},
+      same: {defVal: 'off', type: 'cmd', name: '==='},
+      regen: {defVal: 'off', type: 'cmd', name: 'Regen'},
+      save: {defVal: 'off', type: 'cmd', name: 'Save'},
+      master: {defVal: 'off', type: 'cmd', subType: 'led', color: 0, name: 'Master'},
+      slave: {defVal: 'off', type: 'cmd', subType: 'led', color: 50, name: 'Slave'},
+      gain: {defVal: .25, min: 0.00001, max: 1.00001, name: 'Stage ratio'},
+      onCmd: {defVal: nop, subType: 'skipui'}
     }
   }
   
@@ -31,7 +37,7 @@ onWaapiReady.then(waCtx => {
       fx.setAt('gain', 'gain', value)
       fx.distributeGain()
     }
-  }[key])
+  }[key] || (_ => fx.cmdProc(value, key)))
   
   const getAggregatedGain = arr => arr.reduce((acc, fx) => acc + fx.atm.gain, 0)
   
@@ -41,7 +47,7 @@ onWaapiReady.then(waCtx => {
       const tab = []
       for (const chainFx of shared.chainArr) {
         const {zholger, isActive} = chainFx
-        const gain = chainFx.atm.gain
+        const gain = chainFx.atm.gain.toFixed(3)
         const isThisMe = fx === chainFx ? '🟠' : '⚪️'
         tab.push(`${zholger.substr(0, 4)} ${isThisMe} ${gain} act:${isActive}`)
       }
@@ -56,6 +62,33 @@ onWaapiReady.then(waCtx => {
     connectArr(fx.start, int.gain, fx.output)
     
     fx.modifyGain = factor => fx.setValue('gain', max(atm.gain * factor, minGain))
+    
+    fx.cmdProc = (fire, op) => {
+      if (fire === 'fire') {
+        const action = {
+          solo: _ => {
+            const {shared} = int
+            const wasSolo = fx === shared.soloFx
+            shared.isWarModeOn++
+            for (const chainFx of shared.chainArr) {
+              void chainFx.atm.onCmd?.({op: 'activate', par: fx === chainFx || wasSolo})
+              chainFx.setValue('solo', fx === chainFx && !wasSolo ? 'on' : 'off')
+            }
+            shared.isWarModeOn--
+            if (wasSolo) {
+              fx.setValue('gain', shared.origSoloGain)
+              shared.soloFx = undef
+            } else {
+              shared.origSoloGain = atm.gain
+              fx.setValue('gain', 1)
+              shared.soloFx = fx
+            }
+          },
+          same: _ => fx.isActive && fx.level()
+        }[op]
+        action ? action() : void fx.atm.onCmd?.({op})
+      }
+    }
 
     fx.chain = (...arr) => { //: rewrites all shareds created previously, but others not!
       arr = isArr(arr[0]) ? arr[0] : arr
@@ -63,15 +96,15 @@ onWaapiReady.then(waCtx => {
       const chainLen = chainArr.length
       const sumGain = maxGain + minGain * (chainLen - 1)
       const resetGain = sumGain / chainLen
-      int.shared = {chainArr, chainLen, sumGain, resetGain, isWarModeOn: true}
+      int.shared = {chainArr, chainLen, sumGain, resetGain, isWarModeOn: 1}
       
       rlog(`🔗🔗fx.chain() calling setValue(gain) loop now:`)
       for (const chainedFx of chainArr) {
         chainedFx.int.shared = int.shared
         chainedFx.setValue('gain', resetGain)
       }
-      int.shared.isWarModeOn = false
-      //rlog(`🔗🔗fx.chain() calling setValue(gain) now:`, {shared: int.shared, int, fx})
+      int.shared.isWarModeOn--
+      rlog(`🔗🔗fx.chain() calling setValue(gain) now:`, {shared: int.shared, int, fx})
       dumpChain(fx, '🔗🔗fx.chain() finished')
       fx.onActivated()
     }
@@ -94,18 +127,14 @@ onWaapiReady.then(waCtx => {
 
     fx.distributeGain = (masterGain = atm.gain) => {
       const {shared} = int
-      if (!shared) {
-        slog(`Too early post() brought us here (after state restore?), skip!`, fx)
+      if (!shared || shared.isWarModeOn) {
         return
       }
-      if (shared.isWarModeOn) {
-        return
-      }
-      shared.isWarModeOn = true
+      shared.isWarModeOn++
       glog(`🔗📊 %cdistributeGain(${fx.zholger}) masterGain=${masterGain}`, 'background: #ff8')
       //slog('callers')
       dumpChain(fx, '🔗📊 ')
-      if (shared.activeChainLen > 1) {
+      if (shared.activeChainLen > 0) {
         const othersAggregated = getAggregatedGain(shared.activeChainArr.filter(f => f !== fx))
         const remaining = shared.sumGain - masterGain // 3.5
         const factor = remaining / othersAggregated
@@ -121,7 +150,17 @@ onWaapiReady.then(waCtx => {
         hlog() //: groupEnd
       }
       hlog()
-      shared.isWarModeOn = false
+      shared.isWarModeOn--
+    }
+    
+    fx.level = _ => {
+      const {shared} = int
+      if (shared.activeChainLen) {
+        const fixedGain = maxGain / shared.activeChainLen
+        for (const chainFx of shared.activeChainArr) {
+          chainFx.setValue('gain', fixedGain)
+        }
+      }
     }
   }
   ratioFx.onActivated = fx => fx.onActivated()
