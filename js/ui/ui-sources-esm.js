@@ -39,14 +39,19 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   const {stageMan, players, sources} = pg
   const {getStage, iterateStages, iterateStandardStages} = stageMan
   
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
+  
   const {maxSources = 8} = root.config
   const sourceIxArr = getIncArray(1, maxSources)
   
-  const uiSources = [{}, ...sourceIxArr.map(ix => ({
+  const sourceUis = [{}, ...sourceIxArr.map(ix => ({
     ix,
+    sourceIx: ix,
     frame$: undef,
     media$: undef,
     ctrl$: undef,
+    dragBar$: undef, 
     info$: undef,
     ui$: undef,
     mock$: undef,
@@ -55,14 +60,14 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   }))]
   
   const sourcesUi = {
-    uiSources
+    sourceUis
   }
   
   const init = _ => {
     set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, sourceIxArr.map(ix => 
-      uiSources[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
-        uiSources[ix].media$ = div$({class: 'src-media'}),
-        uiSources[ix].ctrl$ = div$({class: 'src-ctrl'})
+      sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
+        sourceUis[ix].media$ = div$({class: 'src-media'}),
+        sourceUis[ix].ctrl$ = div$({class: 'src-ctrl'})
     ])))
   }
   
@@ -97,7 +102,6 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     [`Portishead - SOS`, 'WVe-9VWIcCo'],
     [`Jon Hopkins - Singularity (Official Video)`, 'lkvnpHFajt0'],
     [`The Chemical Brothers - Escape Velocity (Official Music Video)`, 'sXMhGADyMxE'],
-    [`Demuja - Loose Legs`, 'MfN57sFEcyc'],
     [`Kollektiv Turmstrasse - Tristesse HD`, 'tyVnJjE9sDo'],
     [`Ame - Rej (Original) [Full Length] 2006`, 'VkWg1xOQwTI'],
     [`La Bien Querida - Muero De Amor (33)`, 'u5jP4uCHcWs'],
@@ -131,7 +135,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     [`Jürgen Paape - So Weit Wie Noch Nie`, '8BaY3_112yQ'],
     [`Baxendale - I Buit This City (Michael Mayer Mix)`, 'fdfDt7mPixA'],
     [`Claude Vonstroke - Who's Afraid Of Detroit (MockBeat Remix)`, 'dGClgGcF0KU'],
-    [`JEAN-JACQUES PERREY & AIR 'COSMIC BIRD'`, 'Nj_APKH9qg0'],
+    [`JEAN-JACQUES PERREY & AIR - 'COSMIC BIRD'`, 'Nj_APKH9qg0'],
     [`Mama Oliver - Eastwest (stoned together)`, 'R2lr8_URqeI'],
     [`Josh Rouse - Straight To Hell (The Clash cover)`, '79PffDsRp88']
   ].map(a => ({
@@ -164,86 +168,50 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   
   const mockVideoInStripWithAudio = (media$, videoId) => {
     const mockMp3 = searchMockAudioForVideoId(videoId)
-    console.log(`Mock mp3 will be used instead of ${videoId}:`, mockMp3)
+    clog(`📀Mock mp3 will be used instead of ${videoId}:`, mockMp3)
     return ui.insertAudioPlayerInto(media$, mockMp3.src, mockMp3.title)
   }
   
   const prepareSourceChange = sourceIx => {
-    const uiSource = uiSources[sourceIx]
-    uiSource.ytPlayer = undef
-    uiSource.isMaster = false
-    uiSource.isMocked = false
-    uiSource.isAudio = false
-    uiSource.isVideo = false
-    uiSource.isBuffer = false
-    uiSource.iframe$ = undef
-    uiSource.video$ = undef
-    uiSource.audio$ = undef
-    set$(uiSource.frame$, {deattr: {type: ''}})
-    set$(uiSource.media$, {html: ''},
-      uiSource.info$ = div$({class: 'src-info'}))
+    const sourceUi = sourceUis[sourceIx]
+    sourceUi.capture({
+      isMaster: false,
+      isMocked: false,
+      isAudio: false,
+      isVideo: false,
+      isBuffer: false,
+      ytPlayer: undef,
+      iframe$: undef,
+      video$: undef,
+      audio$: undef,
+      stop: nop,
+      play: nop,
+      // etc
+      refreshPlayer: nop
+    })
+    set$(sourceUi.frame$, {deattr: {type: ''}})
+    set$(sourceUi.media$, {html: ''},
+      sourceUi.info$ = div$({class: 'src-info'}))
       
-    return uiSource
+    return sourceUi
   }
     
-  const finalizeSourceChange = sourceIx => {
-    const uiSource = uiSources[sourceIx]
-    set$(uiSource.ctrl$, {html: ``}, [
-      div$({class: 'ctrl-cmd cc-play', text: 'Play', click: _ => ui.playSource(sourceIx)}),
-      div$({class: 'ctrl-cmd cc-stop', text: 'Stop', click: _ => ui.stopSource(sourceIx)}),
-      div$({class: 'ctrl-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceIx)})
+  const finalizeSourceChange = sourceUi => {
+    ui.recreateSourcePlayer(sourceUi)
+    
+    set$(sourceUi.ctrl$, {html: ``}, [
+      div$({class: 'ctrl-cmd cc-play', text: 'Play', click: _ => sourceUi.play()}),
+      div$({class: 'ctrl-cmd cc-stop', text: 'Stop', click: _ => sourceUi.stop()}),
+      div$({class: 'ctrl-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
     ])
   }
   
-  ui.stopSource = sourceIx => {
-    const uiSource = uiSources[sourceIx]
-    if (uiSource.isMocked) {
-      uiSource.audio$.pause()
-      uiSource.ytPlayer.pauseVideo()
-    } else {
-      void uiSource.audio$?.pause()
-      void uiSource.video$?.pause()
-    }
-  }
-  ui.playSource = sourceIx => {
-    const uiSource = uiSources[sourceIx]
-    if (uiSource.isMocked) {
-      uiSource.audio$.play()
-      uiSource.ytPlayer.mute()
-      uiSource.ytPlayer.playVideo()
-    } else {
-      void uiSource.audio$?.play()
-      void uiSource.video$?.play()
-    }
-  }
-  ui.autoPlaySource = sourceIx => ui.flags.isAutoplayOn && ui.playSource(sourceIx)
-  ui.autoStopSource = sourceIx => ui.flags.isAutostopOn && ui.stopSource(sourceIx)
+  ui.autoPlaySource = sourceIx => ui.flags.isAutoplayOn && sourceUis[sourceIx].play()
+  ui.autoStopSource = sourceIx => ui.flags.isAutostopOn && sourceUis[sourceIx].stop()
   
-  //+ ezt a source hivja, biztos szar es nemidevalo es nemodavalo hanem a playerbe
-  
-  /* ui.mediaPlay = (sourceIx, mediaElement) => { //: plays native audio/video and embed iframes too
-    //+NOT USED
-    if (mediaElement.tagName === 'VIDEO') {
-      if (sourceIx > 0) { //: aux players 1 2 3 4 -> 0 1 2 3
-        const player = ytApi.players[sourceIx - 1]
-        if (player) {
-          player.playVideo() //: youtube video in an iframe (we created it)
-        } else {
-          console.warn(`no such player to play`, sourceIx, mediaElement)
-        }
-      } else {
-        mediaElement.play() //: youtube normal video (not in an iframe)
-      }
-    } else if (mediaElement.tagName === 'AUDIO') {
-      mediaElement.play() //: mediaElement.js 'normal' audio
-    } else {
-      console.warn(`ui.mediaPlay: bad media`, sourceIx, mediaElement)
-    }
-  } */
-    
-  const insertYoutubeIframe = (node$, ix, videoId)  => new Promise(resolve => {
+  const insertYoutubeIframe = (node$, sourceUi, videoId)  => new Promise(resolve => {
     const YT = wassert(window.YT)
-    uiSources[ix].ytPlayer = new YT.Player(node$, {
+    sourceUi.ytPlayer = new YT.Player(node$, {
       width: '320', height: '180', videoId, events: {onReady: resolve}
     })
   })
@@ -254,60 +222,61 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   }
   
   ui.changeAudioSource = (sourceIx, {src, title, videoId}) => {//8#2b2 [audio]
-    const uiSource = prepareSourceChange(sourceIx)
-    const audio = ui.insertAudioPlayerInto(uiSource.media$, src, title)
-    uiSource.audio$ = audio
-    uiSource.isAudio = true
-    set$(uiSource.frame$, {attr: {type: 'audio'}})
-    set$(uiSource.info$, {text: title})
+    const sourceUi = prepareSourceChange(sourceIx)
+    const audio = ui.insertAudioPlayerInto(sourceUi.media$, src, title)
+    sourceUi.audio$ = audio
+    sourceUi.isAudio = true
+    set$(sourceUi.frame$, {attr: {type: 'audio'}})
+    set$(sourceUi.info$, {text: title})
+    finalizeSourceChange(sourceUi)
     sources.changeSource(sourceIx, {audio})
-    finalizeSourceChange(sourceIx)
   }
   ui.changeVideoElementSource = (sourceIx, video$) => {//8#2b2 [master]
-    const uiSource = prepareSourceChange(sourceIx)
-    uiSource.video$ = video$
-    uiSource.isMaster = true
-    set$(uiSource.frame$, {attr: {type: 'master'}})
-    set$(uiSource.info$, {text: 'Master video'})
+    const sourceUi = prepareSourceChange(sourceIx)
+    sourceUi.video$ = video$
+    sourceUi.isMaster = true
+    set$(sourceUi.frame$, {attr: {type: 'master'}})
+    set$(sourceUi.info$, {text: 'Master video'})
+    finalizeSourceChange(sourceUi)
     sources.changeSource(sourceIx, {video: video$})
-    finalizeSourceChange(sourceIx)
   }
   ui.changeVideoSource = (sourceIx, {videoId, title, src}) => {//8#2b2 [mock / video]
-    const uiSource = prepareSourceChange(sourceIx)
-    const mediaHolder$ = uiSource.media$
+    const sourceUi = prepareSourceChange(sourceIx)
+    const mediaHolder$ = sourceUi.media$
     set$(mediaHolder$, {html: ''}, div$({}))
       
-    insertYoutubeIframe(mediaHolder$.children[0], sourceIx, videoId)
+    insertYoutubeIframe(mediaHolder$.children[0], sourceUi, videoId)
       .then(_ => {
-        console.log(`ChangeVideoSource: Youtube iframe created and loaded.`, mediaHolder$)
+        clog(`📀ChangeVideoSource: Youtube iframe created and loaded.`, mediaHolder$)
         const iframe$ = mediaHolder$.children[0]
         if (iframe$?.tagName === 'IFRAME') {
-          uiSource.iframe$ = iframe$
+          sourceUi.iframe$ = iframe$
           try {
             const idoc = iframe$.contentWindow.document
             const video = idoc.querySelector('video')
             if (video) {
-              uiSource.isVideo = true
-              set$(uiSource.frame$, {attr: {type: 'video'}})
+              sourceUi.isVideo = true
+              sourceUi.video$ = video
+              set$(sourceUi.frame$, {attr: {type: 'video'}}) //: inkabb isvideo isiframe egyszerre
+              finalizeSourceChange(sourceUi)
               sources.changeSource(sourceIx, {video})
-              finalizeSourceChange(sourceIx)
             } else {
-              console.warn(`ChangeVideoSource: cannot find video in iframe.`)
+              console.warn(`📀ChangeVideoSource: cannot find video in iframe.`)
             }
           } catch (err) {
-            console.log(`ChangeVideoSource: error accessing video tag:`, err)
+            clog(`📀ChangeVideoSource: error accessing video tag:`, err)
             if (!root.onYoutube) {
-              console.log(`ChangeVideoSource: mocking failed video with audio`)
-              const audio = mockVideoInStripWithAudio(uiSource.media$, videoId)
-              uiSource.isMocked = true
-              set$(uiSource.frame$, {attr: {type: 'mock'}})
-              uiSource.audio$ = audio
+              clog(`📀ChangeVideoSource: mocking failed video with audio`)
+              const audio = mockVideoInStripWithAudio(sourceUi.media$, videoId)
+              sourceUi.isMocked = true
+              set$(sourceUi.frame$, {attr: {type: 'mock'}})
+              sourceUi.audio$ = audio
+              finalizeSourceChange(sourceUi)
               sources.changeSource(sourceIx, {audio})
-              finalizeSourceChange(sourceIx)
             }
           }
         } else {
-          console.warn(`ChangeVideoSource: cannot access iframe.contentWindow.document`)
+          console.warn(`📀ChangeVideoSource: cannot access iframe.contentWindow.document`)
         }
       })
       .catch(err => brexru(console.error(err)))
@@ -336,33 +305,28 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     //+ localstorage!!!!!!
     
     if (on) {
-      ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'})
-      for (const videoId of root.videoIds) {
-        if (videoId?.length === 11) {
-          const backgroundImage = `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')`
-          div$(ui.u2list$, {
-            class: 'emulated', 
-            attr: {id: 'thumbnail', videoId}, 
+      ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'}, [
+        div$(),
+         ...root.mp3s.map(({src, title, videoId}) => {
+          const [art, tit] = title.split(' - ') 
+          const html = `<em>${art}</em> - ${tit}`
+          const backgroundImage = videoId?.length === 11 ? `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')` : undef
+          return div$({
+            class: 'emulated au', 
+            attr: {id: 'thumbnail', videoId, src, title},
             css: {backgroundImage}
-          })
-        }
-      }
-      set$(ui.u2list$, {}, root.mp3s.map(({src, title, videoId}) => {
-        const [art, tit] = title.split(' - ') 
-        const html = `<em>${art}</em> - ${tit}`
-        const backgroundImage = videoId?.length === 11 ? `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')` : undef
-        return div$({
-          class: 'emulated au', 
-          attr: {id: 'thumbnail', videoId, src, title},
-          css: {backgroundImage}
-        }, div$({class: 'audiv', html}))
-      }))
+          }, div$({class: 'audiv', html}))
+        })
+      ])
     }
   }
   
   ui.onVideoListToggled = on => {
     buildVideoList(on)
-    on && ui.toggleGrab(on) //: this will call ui.ongrabToggled() (after changing the cmd state)
+    if (on) {
+      ui.toggleGrab(false) //: this will call ui.ongrabToggled() (after changing the cmd state)
+      ui.toggleGrab(true)
+    }
   }
   
   ui.onGrabToggled = on => {
@@ -373,7 +337,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
         for (const thumb of q$$('a#thumbnail')) {
           const href = thumb.getAttribute('href')
           if (!href?.length) {
-            console.log(`onGrabToggled: no href in youtube thumb`, thumb)
+            clog(`💿onGrabToggled: no href in youtube thumb`, thumb)
             continue
           }
           const videoId = href.split('?v=')[1].split('&')[0]
@@ -385,12 +349,12 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
         const src = thumb.getAttribute('src')
         const title = thumb.getAttribute('title')
         if (!videoId?.length && !src?.length) {
-          console.log(`onGrabToggled: no src in emu thumb`, thumb)
+          clog(`💿onGrabToggled: no src in emu thumb`, thumb)
           continue
         }
         thumbs.push({thumb, src, videoId, title})
       }
-      console.table(thumbs)
+      //console.table(thumbs)
       for (const {thumb, videoId, src = '', title = ''} of thumbs) {
         if (videoId?.length === 11 || src) {
           div$(thumb, {class: 'bfx-grab-frame', attr: {videoId, title, src}},
@@ -405,29 +369,28 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     }
   }
   
-  ui.setSourceInUseInfo = (ix, info) => set$(uiSources[ix].frame$, {attr: {info}})
+  ui.setSourceInUseInfo = (ix, info) => set$(sourceUis[ix].frame$, {attr: {info}})
   
   const destStr = source => source.destStageIxArr.map(a => getStage(a).letter).join(', ') || 'Mute'
   
   ui.refreshSourcesUi = _ => {
     const {sourceArr, slog, tlog} = sources
     
+    //: setting output marks on sources
     sourceArr.map(({destStageIxArr}, sourceIx) => sourceIx && sourceArr[sourceIx].isMediaElement &&
       ui.setSourceInUseInfo(sourceIx, destStr({destStageIxArr})))
       
+    //: setting input marks on stages  
     iterateStages(({stageIx, sourceIx}) => { 
-      slog(`setting input selectors: stage#${stageIx}] = ${sourceIx}`)
+      slog(`💿setting input selectors: stage#${stageIx}] = ${sourceIx}`)
       ui.setStageInputState(stageIx, sourceIx)
     })
     
-    tlog(sourceArr.map(src => ({...src, stages: src.destStageIxArr.join(', ')})))
+    tlog(`💿`, sourceArr.map(src => ({...src, stages: src.destStageIxArr.join(', ')})))
     
     //+sidebar will be eliminated
     void sources.listUi?.refresh(sourceArr.map((src, ix) => `<em>sourceIx[${ix}]</em> stages: ${destStr(src)} player: [][][]`))
-      //debugger
-    console.table(sourceArr)  
-    for (const source of sourceArr) {
-      //console.log(source)
-    }  
+      
+    sources.dbgDump()
   }
 }
