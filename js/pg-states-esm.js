@@ -48,11 +48,10 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
     }
     const ret = {}
     pg.propertiesToArr().sort().map(stage => ret[stage] = pg[stage])
-    //console.log(ret)
     return ret
   }
   const setups = { //: These compressed defs are ugly, but it's easier to overview
-    preset2xb: {AB: 'b'},
+    preset2xb: {A: 'bitCrusher'},
     preset2sampler: {AB: 'b,sampler,scope'},
     preset3rec: {A: 'osc,sampler,scope', B: 'osc,recorder,scope', C: 'osc,sampler,scope'},
     preset2xpitch: {AB: 'b,pitchShifterNote,scope'},
@@ -79,13 +78,18 @@ export const getActualPreset = async ({name, parent$}) => new Promise(resolve =>
       B: 'scope,ax,odwac,b,scope',
       C: 'scope,ax,comp,b,scope',
       D: 'scope,bi,b,b,scope'},
+    youtubeDefault: {
+      A: 'pitchShifterNote,odwac,scope',
+      B: 'conv,bi,scope',
+      C: 'dattoroReverb,comp,scope',
+      D: 'sampler,ax,scope'},
     youtubeMinimal: {ABCD: 'g,b,b'},
     presetBigBlank: {ABCD: 'g,bi,b,b,b,b'},
     presetFull: {
-      A: 'g,biquad,vibrato,b,b',
-      B: 'g,biquad,pitch,b,b',
-      C: 'g,biquad,biquad,b,b',
-      D: 'g,biquad,moog2,b,b'},
+      A: 'g,bi,vibrato,b,b',
+      B: 'g,bi,pitch,b,b',
+      C: 'g,bi,bi,b,b',
+      D: 'g,bi,moog,b,b'},
     test: {
       A: 'b,b,b,b,b,b',
       B: 'spect,convGen,scope,pitch,scope,g',
