@@ -12,7 +12,10 @@ const {wassert} = Corelib.Debug
 onWaapiReady.then(waCtx => {
   const {connectArr, registerFxType, newFx} = BeeFX(waCtx)
   
-  const logOscPerf = false
+  const logOn = false
+  const logPerfOn = false
+  const clog = (...args) => logOn && console.log(...args)  
+  const plog = (...args) => logPerfOn && console.log(...args)
   
   const findZeroCrossing = (data, width, sensitivity) => {
     const min = (sensitivity - 0) / 100 * 128 + 128
@@ -130,7 +133,7 @@ onWaapiReady.then(waCtx => {
       
       timer.mark('stroke&text')
       const sum = timer.sum()
-      if (logOscPerf) {
+      if (logPerfOn) {
         int.prof.push(sum.dur.sum)
         if (version) {
           if (int.prof.length % 410 === 405) {
@@ -140,7 +143,7 @@ onWaapiReady.then(waCtx => {
               agg += last[i]
             }
             agg = Math.round(agg * 2.5)
-            console.log(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
+            plog(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
           }
         }
       }
@@ -162,10 +165,11 @@ onWaapiReady.then(waCtx => {
     def: {
       sensitivity: {defVal: 50, min: 1, max: 100},
       zoom: {defVal: 1, min: .025, max: 2, subType: 'exp'},
-      fullZoom: {defVal: 'off', type: 'cmd'},
-      halfZoom: {defVal: 'off', type: 'cmd'},
-      resetZoom: {defVal: 'act', type: 'cmd'},
-      freeze: {defVal: 'off', type: 'cmd'},
+      fullZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x1'},
+      halfZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x2'},
+      quartZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x4'},
+      resetZoom: {defVal: 'act', type: 'cmd', name: 'No zoom'},
+      freeze: {defVal: 'off', type: 'cmd', name: 'Freeze'},
       scope: {type: 'graph'}
     },
     name: 'Oscilloscope',
@@ -181,6 +185,7 @@ onWaapiReady.then(waCtx => {
     zoom: _ => fx.resizeFFT(),
     fullZoom: _ => value === 'fire' && fx.setCmds('fullZoom', int.width / 16384),
     halfZoom: _ => value === 'fire' && fx.setCmds('halfZoom', int.width / 8192),
+    quartZoom: _ => value === 'fire' && fx.setCmds('quartZoom', int.width / 4096),
     resetZoom: _ => value === 'fire' && fx.setCmds('resetZoom', 1),
     freeze: _ => int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc()
   }[key])
@@ -191,8 +196,8 @@ onWaapiReady.then(waCtx => {
     int.prof = []
     int.drawCnt = 0
     int.rAF = null
-    int.cc = undef    //: baseGraph fills it with onInit
-    int.width = 600   //: baseGraph fills it with onInit
+    int.cc = undef    //: baseGraph fills it in onInit
+    int.width = 600   //: baseGraph fills it in onInit
     int.isRAFOn = false
     
     const regenFFTArray = fftSize => {
@@ -200,7 +205,7 @@ onWaapiReady.then(waCtx => {
         int.fftSize = fftSize
         int.osc.fftSize = fftSize
         int.freqData = new Uint8Array(int.osc.frequencyBinCount) //: fftSize / 2
-        //console.log(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
+        clog(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
       }
     }
     
@@ -219,7 +224,7 @@ onWaapiReady.then(waCtx => {
           break
         }
       }
-      //console.log(`Scope.resizeFFT: actual fft reqs recalculated:`, {zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
+      clog(`Scope.resizeFFT: actual fft reqs recalculated:`, {zoom: atm.zoom.toFixed(3), idealFFTSize, oldFFT: int.fftSize, newFFT: found, width: int.width})
       regenFFTArray(found)
     }
     
@@ -235,6 +240,7 @@ onWaapiReady.then(waCtx => {
       fx.setValue('zoom', newZoomVal)
       fx.setValue('fullZoom', act === 'fullZoom' ? 'active' : 'off')
       fx.setValue('halfZoom', act === 'halfZoom' ? 'active' : 'off')
+      fx.setValue('quartZoom', act === 'quartZoom' ? 'active' : 'off')
       fx.setValue('resetZoom', act === 'resetZoom' ? 'active' : 'off')
     }
   }
