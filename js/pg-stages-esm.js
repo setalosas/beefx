@@ -79,7 +79,7 @@ export const createStageManager = root => {
   
   const getEndRatios = _ => getStageGroup().map(stage => stage.endRatio)
   
-  const equalRatios = _ => void getStageGroup()[0]?.endRatio.chain(...getEndRatios())
+  //const equalRatios = _ => void getStageGroup()[0]?.endRatio.chain(...getEndRatios())
 
   const stageMan = {
     iterateStages, 
@@ -88,16 +88,16 @@ export const createStageManager = root => {
     checkStageByLetter,
     getStageGroup,
     getEndRatios,
-    equalRatios,
+    //equalRatios,
     getFilteredStages,
     stages,
     listUi: root.ui.createSideList('side-left stagelist-frame')
   }
   
-  stageMan.dump = _ => {
+  stageMan.dump = startEndThrottle(_ => {
     console.table(stages)
     void stageMan.listUi?.refresh(stages.map((stage, ix) => `#${stage.stageIx} [${stage.letter}] fxs: ${stage.fxArr.length}`))
-  }
+  }, 500)
 
   stageMan.changeFx = ({stageId, ix, type}) => {
     const stage = getStageById(stageId)
@@ -188,12 +188,12 @@ export const createStageManager = root => {
     
     stage.deactivate = _ => stage.activate(false)
     
-    stage.setSolo = _ => {
+    /* stage.setSolo = _ => {
       const stageGroupArr = getStageGroup()
       for (const groupStage of stageGroupArr) {
         groupStage.activate(groupStage === stage)
       }
-    }
+    } */
     
     stage.decompose = _ => { //+a nullas basz nem stage par, hanem fxarr[0], amit a playgrnd rak oda
       stage.input.disconnect()
