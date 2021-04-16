@@ -2,29 +2,32 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, undef, clamp} = Corelib
-const {wassert, weject} = Corelib.Debug
-const {createPerfTimer, post, schedule} = Corelib.Tardis
-const {max, pow, round, floor, log2, tanh, abs, min, sign, sqrt} = Math
-const {fetch, AudioWorkletNode} = window
+const {nop, clamp} = Corelib
+const {wassert, weject} = Corelib.Debug // eslint-disable-line
+const {post} = Corelib.Tardis
+const {max, round, floor} = Math
+const {AudioWorkletNode, requestAnimationFrame: RAF} = window
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr, concatAudioBuffers} = BeeFX(waCtx)
   
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
+  
   const drawWaveOverview = fx => {
-    const {int, atm} = fx
-    const {cc, ccext, width, height} = int
-    const {graphZoom: zoom, graphStartRel, graphEndRel} = int
-    const {sampleStartR, sampleEndR, recLength} = int
+    const {int} = fx
+    const {cc, ccext, width, height, disp, final} = int
     const {sampleRate} = waCtx
     
-    const sec2Pix = sec => (sec - graphStartRel) * sampleRate / zoom
-    const startx = sec2Pix(sampleStartR)
-    const endx = sec2Pix(sampleEndR === sampleStartR ? recLength - .2 : sampleEndR)
+    const sec2Pix = sec => (sec - disp.startRel) * sampleRate / disp.zoom
+    
+    const startx = sec2Pix(final.startRel)
+    const midx = sec2Pix(final.startRel + final.len / 2)
+    const endx = sec2Pix(final.endRel)
     
     const drawRecIndicator = _ => {
       if (int.inRec) {
@@ -41,9 +44,9 @@ onWaapiReady.then(waCtx => {
     const drawGrid = _ => {
       cc.clearRect(0, 0, width, height)
       cc.font = '32px roboto condensed'
-      cc.lineWidth = 3
-      cc.strokeStyle = 'hsla(200, 70%, 55%, 0.8)'
-      for (let sec = floor(graphStartRel); sec < floor(graphEndRel) + 1; sec++) {
+      cc.lineWidth = 2
+      cc.strokeStyle = 'hsla(200, 70%, 50%, 0.8)'
+      for (let sec = floor(disp.startRel); sec < floor(disp.endRel) + 1; sec++) {
         const secX = sec2Pix(sec)
         ccext.drawLine(secX, 0, secX, height)
       }
@@ -52,12 +55,13 @@ onWaapiReady.then(waCtx => {
       ccext.drawLine(startx, 0, startx, height)
       cc.strokeStyle = 'hsla(330, 70%, 65%, 0.8)'
       ccext.drawLine(endx, 0, endx, height)
+      cc.lineWidth = 3
+      cc.strokeStyle = 'hsla(25, 70%, 65%, 0.8)'
+      ccext.drawLine(midx, 0, midx, height)
       drawRecIndicator()
     }
     
     const drawWave = _ => {
-      const timer = Corelib.Tardis.createPerfTimer()
-      timer.mark('getdata')
       const scale = height / 2
       const centerY = height / 2
       const data = int.audioBuffer.getChannelData(0)
@@ -66,16 +70,18 @@ onWaapiReady.then(waCtx => {
       cc.strokeStyle = 'hsl(35, 100%, 80%)' // strokeStyle
       cc.beginPath()
       
-      let frameIx = graphStartRel * sampleRate
-      const maxFrame = graphEndRel * sampleRate
+      let frameIx = disp.startRel * sampleRate
+      const maxFrame = disp.endRel * sampleRate
       
       cc.moveTo(0, centerY - data[round(frameIx)] * scale)
+      const step = 1 / (2 + Math.random())
+      const startX = Math.random() / 2
+      const fstep = disp.zoom * step
 
-      for (let x = 0; frameIx < maxFrame && x < width; x++, frameIx += zoom) {
+      for (let x = startX; frameIx < maxFrame && x < width; x += step, frameIx += fstep) {
         const magnitude = data[round(frameIx)] * scale
         cc.lineTo(x, centerY - magnitude)
       }
-      timer.mark('calc')
       cc.stroke()
     }
     
@@ -85,6 +91,7 @@ onWaapiReady.then(waCtx => {
         drawWave()
       }
     }
+    int.isRAFOn && RAF(_ => drawWaveOverview(fx))
   }
 
   const samplerEx = { //8#aa8 -------loop -------
@@ -93,18 +100,20 @@ onWaapiReady.then(waCtx => {
       modeBypass: {defVal: 'active.ledon', type: 'cmd', subType: 'led', color: 140, name: 'Bypass'},
       modeRecord: {defVal: 'on', type: 'cmd', subType: 'led', color: 0, name: 'Record'},
       modeSampler: {defVal: 'off', type: 'cmd', subType: 'led', color: 180, name: 'Sampler'},
-      useScriptProc: {defVal: 'on', type: 'cmd', name: 'scriptProcessor (slow)'},
-      useWorklet: {defVal: 'off', type: 'cmd', name: 'audioWorklet (slow)'},
+      useScriptProc: {defVal: 'on', type: 'cmd', subType: 'led', name: 'scriptProcessor (slow)'},
+      useWorklet: {defVal: 'off', type: 'cmd', subType: 'led', name: 'audioWorklet (slow)'},
       wave: {type: 'graph'},
-      recStart: {defVal: 'on', type: 'cmd'},
-      recEnd: {defVal: 'on', type: 'cmd'},
-      startMod: {defVal: 0, min: -1, max: 3, unit: 's'},
-      endMod: {defVal: 0, min: -3, max: .1, unit: 's'},
+      trimLeft: {defVal: 'on', type: 'cmd', name: 'Trim left (1s)'},
+      trimReset: {defVal: 'on', type: 'cmd', name: 'Reset'},
+      trimRight: {defVal: 'on', type: 'cmd', name: 'Trim right (1s)'},
+      startMod: {defVal: 0, min: -1, max: 1, unit: 's'},
+      endMod: {defVal: 0, min: -1, max: 1, unit: 's'},
       samplePlay: {defVal: 'off', type: 'cmd', name: 'Play'},
       sampleLoop: {defVal: 'off', type: 'cmd', subType: 'led', color: 80, name: 'Loop sample'},
       sampleStop: {defVal: 'off', type: 'cmd', name: 'Stop loop'},
       piano: {defVal: 'Cm', type: 'piano'}
     },
+    midi: {pars: ['startMod', 'endMod']},
     name: 'Dev Sampler',
     graphs: {
       wave: {
@@ -116,203 +125,205 @@ onWaapiReady.then(waCtx => {
 
   samplerEx.setValue = (fx, key, value, {atm, int} = fx) => ({
     log: nop,
-    startMod: _ => fx.recalcEverything(),
-    endMod: _ => fx.recalcEverything(),
+    startMod: _ => fx.recalcMarkers(),
+    endMod: _ => fx.recalcMarkers(),
     piano: _ => fx.setTone(value)
-  }[key] || (_ => fx.cmdProc(value, key)))
+  }[key] || (_ => fx.cmdProc(value, key))) //: all commands sent to cmdProc
 
+  samplerEx.onActivated = (fx, isActive) => isActive || fx.shutdownRecorder() //: cleanup!
+  
   samplerEx.construct = (fx, pars, {int, atm} = fx) => {
+    const recorded = {} //: this is fix
+    const trim = {}     //: trim from the start and the end (in theory it's reversible)
+    const sample = {}   //: can be changed with trim
+    const final = {}    //: sample modified with startMod/endMod (sliders)
+    const disp = {}     //: graph display interval
+    int.capture({final, disp}) //: as we will need these in the graph redraw
+      
     const initFx = _ => {
+      int.isRAFOn = false
       int.useScriptProcessor = false
-      int.scriptProcessorFrames = 4096
-      int.muteInputOn = true
+      int.procFrames = 4096
+      int.muteInputOn = true //: so the next line will have a real effect
       muteInput(false)
       setMainMode('modeBypass')
       setScriptProcMode(int.useScriptProcessor)
-      
-      int.recStartAt = 0 //: for the last recording if there was any
-      int.recEndAt = 0
-      int.recLength = 0
-      int.sampleStartAt = 0
-      int.sampleEndAt = 0
-      int.sampleStartRel = 0
-      int.sampleEndRel = 0
-      int.sampleLength = 0
+
       int.maxRunningLength = 6
-      
       int.isLoopPlaying = false
       int.aubLength = 0
-      int.sampleStored = false
+      int.sampleStored = false //: not used yet
+      resetMarkers()
     }
-    const muteInput = on => {
+    const resetMarkers = _ => { //: called at the start of a recording segment
+      recorded.startAt = recorded.endAt = waCtx.currentTime
+      trim.left = trim.right = 0
+    }
+    const muteInput = on => { //: we have two states: 'audio pass through' / 'sampler as source'
       if (int.muteInputOn !== on) {
         int.muteInputOn = on
         on ? fx.start.disconnect(fx.output) : fx.start.connect(fx.output)
       }
     }
-
-    fx.recalcEverything = _ => {
-      int.recLength = int.recEndAt - int.recStartAt
-      int.sampleStartRel = int.sampleStartAt - int.recStartAt
-      int.sampleEndRel = int.sampleEndAt ? int.sampleEndAt - int.recStartAt : 0
-      int.sampleLength = int.sampleEndRel ? int.sampleEndRel - int.sampleStartRel : 0
-
-      int.graphStartRel = int.sampleStartRel
-        ? max(int.sampleStartRel - 1, 0)
-        : max(int.recLength - int.maxRunningLength, 0)
-
-      int.graphEndRel = int.recLength
-      int.graphLength = int.graphEndRel - int.graphStartRel  
-      int.graphFrames = int.graphLength * waCtx.sampleRate
-      int.graphZoom = int.graphFrames / int.width
-      
-      int.sampleStartR = clamp(int.sampleStartRel + atm.startMod, 0, int.recLength)
-      int.sampleEndR = clamp(int.sampleEndRel + atm.endMod, int.sampleStartR, int.recLength)
-      int.sampleLengthR = int.sampleEndR - int.sampleStartR
-      drawWaveOverview(fx)
-      updateLog()
+    const setRAF = on => {
+      if (on && !int.isRAFOn) {
+        RAF(_ => drawWaveOverview(fx)) //: could be called directly, but RAF gives a bit time gap
+      }                              //: + this is called by onaudioprocess, cannot touch the DOM
+      int.isRAFOn = on
     }
-    
-    const setScriptProcMode = useScriptProcessor => {
-      int.useScriptProcessor = useScriptProcessor
-      fx.setValue('useWorklet', useScriptProcessor ? 'off' : 'on')
-      fx.setValue('useScriptProc', useScriptProcessor ? 'on' : 'off')
+    const relativize = interval => {
+      interval.startRel = interval.startAt - recorded.startAt
+      interval.endRel = interval.endAt - recorded.startAt
+      interval.len = interval.endAt - interval.startAt
     }
-      
-    const updateLog = _ => {
-      const fix3 = prop => round(int[prop] * 1000) / 1000
-      
-      if (!int.recLength) {
-        fx.setValue('log', 'No sample recorded.')
+    fx.recalcMarkers = _ => {
+      recorded.len = recorded.endAt - recorded.startAt
+      const isInRec = int.mode === 'modeRecord'
+      if (isInRec) {
+        const padding = clamp(recorded.len / 20, .01, 1)
+        sample.startAt = recorded.startAt + padding
+        sample.endAt = recorded.endAt - padding
       } else {
-        const recTime = `Rec length: ${int.recLength.toFixed(3)}`
-        const sampleTime = `Sample: ${fix3('sampleStartR')}-${fix3('sampleEndR')}`
-        
-        fx.setValue('log', [
-        `${recTime} ${sampleTime}`
-        ].join('<br>'))
+        sample.startAt = recorded.startAt + .0 + trim.left
+        sample.endAt = max(recorded.endAt - .0 - trim.right, sample.startAt + .01)
+      }
+      relativize(sample)
+
+      final.startAt = clamp(sample.startAt + atm.startMod, recorded.startAt, recorded.endAt)
+      final.endAt = clamp(sample.endAt + atm.endMod, final.startAt + .01, recorded.endAt)
+      relativize(final)
+      
+      if (isInRec) {
+        disp.startAt = max(recorded.startAt, recorded.endAt - int.maxRunningLength)
+        disp.endAt = recorded.endAt
+      } else {        
+        const margin = clamp(final.len / 10, .1, 1)
+        disp.startAt = final.startAt - margin
+        disp.endAt = final.endAt + margin
+      }
+      relativize(disp)
+      disp.frames = disp.len * waCtx.sampleRate
+      disp.zoom = disp.frames / int.width
+
+      setRAF(true)
+      post(updateLog) //: we can be in onaudiprocess, so we'll post it
+      int.trimmable = int.mode === 'modeSampler' && sample.len > 2
+      if (int.mode === 'modeSampler') { //: we cannot be in audioprocess if in sampler mode
+        fx.setValue('trimLeft', int.trimmable ? 'on' : 'off')
+        fx.setValue('trimRight', int.trimmable ? 'on' : 'off')
       }
     }
-    
-    fx.sendWorkerParams = _ => {
-      const frameLimit = 1280
-      int.workerParams = {frameLimit, transferCompact: false, transferAudio: true}
-      int.recorder.port.postMessage({op: 'params', params: int.workerParams})
-      updateLog()
+    const updateLog = _ => {
+      const fix = v => round(v * 100) / 100
+      
+      if (!recorded.len) {
+        fx.setValue('log', `No sample recorded.<br>Sample: - Final: -`)
+      } else {
+        const recTime = `Recorded/Sample/Final: ${recorded.len.toFixed(3)}s / ${fix(sample.len)}s / ${fix(final.len)}s`
+        const sampleTime = `Sample: ${fix(sample.startRel)}-${fix(sample.endRel)} `
+        const finalTime = `Final: ${fix(final.startRel)}-${fix(final.endRel)} Tr[-${trim.left}, -${trim.right}]`
+        
+        fx.setValue('log', [recTime, sampleTime + finalTime].join('<br>'))
+      }
     }
-    
-    const setupRecorder = _ => { //: the output of both is int.audioBuffer / int.aubLength
-      if (int.useScriptProcessor) { //8#a43 Recorder SpriptProcessorNode. Fast, simple & deprecated.
-        int.scriptNode = int.scriptNode || 
-          waCtx.createScriptProcessor(int.scriptProcessorFrames, 1, 1)
-          
-          int.scriptNode.onaudioprocess = ({inputBuffer}) => {
-            wassert(int.mode === 'modeRecord')
-            int.audioBuffer = concatAudioBuffers(int.audioBuffer, inputBuffer)
-            int.aubLength += int.scriptProcessorFrames
-            int.recEndAt = waCtx.currentTime 
-            fx.recalcEverything()
-          }
 
-        connectArr(fx.start, int.scriptNode, waCtx.destination)
-      } else {            //8#43a Recorder AudioWorklet. Slow, complex & unstable.
-        //: recorder already loaded the worklet or this wont work
-        int.recorder = int.recorder || 
-          new AudioWorkletNode(waCtx, 'Recorder', {outputChannelCount: [2]})
-          
+    const setScriptProcMode = (useScriptProcessor, isActive = false) => {
+      int.useScriptProcessor = useScriptProcessor
+      const act = isActive ? 'ledon' : 'ledoff'
+      fx.setValue('useWorklet', useScriptProcessor ? 'off.ledoff' : 'on.' + act)
+      fx.setValue('useScriptProc', useScriptProcessor ? 'on.' + act : 'off.ledoff')
+    }
+    const appendBuffer = (buffer, frames) => {
+      int.audioBuffer = concatAudioBuffers(int.audioBuffer, buffer)
+      int.aubLength += frames
+      recorded.endAt = waCtx.currentTime
+      fx.recalcMarkers()
+    }
+    const setupRecorder = _ => { //: the output of both is int.audioBuffer / int.aubLength
+      delete int.audioBuffer
+      int.aubLength = 0
+      setScriptProcMode(int.useScriptProcessor, true)
+
+      if (int.useScriptProcessor) { //8#a43 Recorder ScriptProcessorNode. Fast, simple & deprecated.
+        int.scriptNode = int.scriptNode || waCtx.createScriptProcessor(int.procFrames, 2, 2)
+        int.scriptNode.onaudioprocess = data => appendBuffer(data.inputBuffer, int.procFrames)
+        connectArr(fx.start, int.scriptNode, fx.output) //, waCtx.destination)//+teszt ha ez nincs
+      } else {                      //8#43a Recorder AudioWorklet. Slow, complex & unstable.
+        const pars = {outputChannelCount: [2]}
+        int.recorder = int.recorder || new AudioWorkletNode(waCtx, 'Recorder', pars)
         int.recorder.port.onmessage = event => {
           const {data} = event
-          if (data.op) {
-            if (data.op === 'audio') {
-              const {frames, channels, channelData} = data
-              int.last = {frames, channels}
-              const transBuff = waCtx.createBuffer(channels, frames, waCtx.sampleRate)
+          if (data.op === 'audio') {
+            const {frames, channels, channelData} = data
+            const transBuff = waCtx.createBuffer(channels, frames, waCtx.sampleRate)
               
-              for (let ch = 0; ch < int.last.channels; ch++) {
-                transBuff.copyToChannel(channelData[ch], ch , 0)
-              }
-              int.audioBuffer = concatAudioBuffers(int.audioBuffer, transBuff)
-              int.aubLength += int.last.frames
-              int.recEndAt = waCtx.currentTime
-              fx.recalcEverything()
+            for (let ch = 0; ch < channels; ch++) {
+              transBuff.copyToChannel(channelData[ch], ch , 0)
             }
+            appendBuffer(transBuff, frames)
           } else {
             console.log('Recorder got invalid message from worklet:', event)
           }
-          int.lastEventOp = event.data.op || ''
-        }
-        
-        fx.sendWorkerParams()
+        }//: recorder already loaded the worklet or this wont work
         fx.start.connect(int.recorder)
+        const params = {frameLimit: int.procFrames, transferCompact: false, transferAudio: true}
+        int.recorder.port.postMessage({op: 'params', params})
         int.recorder.port.postMessage({op: 'rec'})
       }
     }
-    const shutdownRecorder = _ => {
+    fx.shutdownRecorder = _ => {
+      setScriptProcMode(int.useScriptProcessor, false)
       if (int.useScriptProcessor) {
-        int.scriptNode.onaudioprocess = null
-        delete int.scriptNode
+        if (int.scriptNode) {
+          int.scriptNode.onaudioprocess = null
+          delete int.scriptNode
+        }
       } else {
-        void int.recorder?.port.postMessage({op: 'stop'})
-        delete int.recorder
+        if (int.recorder) {
+          int.recorder.port.postMessage({op: 'stop'})
+          delete int.recorder
+        }
       }
     }
     
     const updateMode = mode => {
+      clog('enter ' + mode)
       int.mode = mode
       fx.setValue('modeBypass', 'on.ledoff')
       fx.setValue('modeRecord', 'on.ledoff')
-      checkForValidSample()
+      sample.len
         ? fx.setValue('modeSampler', 'on.ledoff')
-        : fx.setValue('modeSampler', 'on.ledoff') // this could be off
+        : fx.setValue('modeSampler', 'off.ledoff')
       fx.setValue(mode, 'active.ledon')
+      setRAF(int.mode !== 'modeBypass')
+      fx.recalcMarkers()
     }
     
-    const enterBypassMode = _ => {
-      if (int.mode !== 'modeBypass') {
-        updateMode('modeBypass')
-        console.log('enter modeBypass')
-      }
-    }
-    const exitBypassMode = _ => {
-      if (int.mode === 'modeBypass') {
-        console.log('exit modeBypass')
-      }
-    }
+    const enterBypassMode = _ => int.mode !== 'modeBypass' && updateMode('modeBypass')
 
+    const exitBypassMode = _ => _
+    
     const enterRecordMode = _ => {
       if (int.mode !== 'modeRecord') {
-        delete int.audioBuffer
-        weject(int.isLoopReady)
-        int.aubLength = 0
         setupRecorder()
         fx.setValue('startMod', 0)
         fx.setValue('endMod', 0)
-        int.sampleEndAt = 0
-        int.sampleStartAt = int.recStartAt = int.recEndAt = waCtx.currentTime
-        fx.setValue('recStart', 'active')
-        fx.setValue('recEnd', 'off')
+        fx.setValue('trimLeft', 'off')
+        fx.setValue('trimRight', 'off')
+        resetMarkers()
         updateMode('modeRecord')
-        console.log('enter modeRecord')
       }
     }
-    const exitRecordMode = _ => {
-      if (int.mode === 'modeRecord') {
-        shutdownRecorder()
-        //int.recEndAt = waCtx.currentTime //: ez inkabb auto az onprocessben es akkor itt nem kell, de mindig no
-        fx.setValue('recStart', 'off')
-        fx.setValue('recEnd', 'off')
-        console.log('exit modeRecord')
-      }
-    }
-    
-    const enterSamplerMode = _ => { //+ no need for check validsample ? already checked
+    const exitRecordMode = _ => int.mode === 'modeRecord' &&  fx.shutdownRecorder()
+
+    const enterSamplerMode = _ => {
       if (int.mode !== 'modeSampler') {
         muteInput(true)
         fx.setValue('samplePlay', 'on')
         fx.setValue('sampleLoop', 'on')
         fx.setValue('sampleStop', 'on')
+        fx.setValue('trimReset', 'on')
         updateMode('modeSampler')
-        console.log('enter modeSampler')
       }
     }
     const exitSamplerMode = _ => {
@@ -323,30 +334,16 @@ onWaapiReady.then(waCtx => {
         fx.setValue('samplePlay', 'off')
         fx.setValue('sampleLoop', 'off')
         fx.setValue('sampleStop', 'off')
-        console.log('exit modeSampler')
+        fx.setValue('trimReset', 'off')
       }
     }
-    const checkForValidSample = _ => !!int.sampleLength
     
     const setMainMode = mode => {
       if (int.mode !== mode) { //: only if changed
-        if (mode === 'modeBypass') { //: always valid
-          exitRecordMode()
-          exitSamplerMode()
-          enterBypassMode()
-        } else if (mode === 'modeRecord') {
-          exitBypassMode()
-          exitSamplerMode()
-          enterRecordMode()
-        } else if (mode === 'modeSampler') {
-          if (checkForValidSample()) {
-            exitBypassMode()
-            exitRecordMode()
-            enterSamplerMode()
-          } else if (int.mode === 'modeRecord') {
-            fx.cmdProc('fire', 'recEnd')
-          }
-        }
+        void (exitBypassMode(), exitRecordMode(), exitSamplerMode())
+        mode === 'modeBypass' && enterBypassMode()
+        mode === 'modeRecord' && enterRecordMode()
+        mode === 'modeSampler' && enterSamplerMode()
       }
     }
 
@@ -356,22 +353,9 @@ onWaapiReady.then(waCtx => {
           modeBypass: _ => setMainMode(mode),
           modeRecord: _ => setMainMode(mode),
           modeSampler: _ => setMainMode(mode),
-          recStart: _ => {
-            if (int.mode === 'modeRecord') {
-              int.sampleStartAt = waCtx.currentTime
-              fx.setValue('recStart', 'on')
-              fx.setValue('recEnd', 'active')
-              fx.recalcEverything()
-            }
-          },
-          recEnd: _ => {
-            if (int.mode === 'modeRecord') {
-              int.sampleEndAt = waCtx.currentTime
-              fx.recalcEverything()
-              //fx.setValue('recEnd', 'off')
-              schedule(200).then(_ => setMainMode('modeSampler'))
-            }
-          },
+          trimLeft: _ => int.trimmable && trim.left++,
+          trimRight: _ => int.trimmable && trim.right++,
+          trimReset: _ => trim.left = trim.right = 0,
           samplePlay: _ => int.mode === 'modeSampler' && playOnce(),
           sampleLoop: _ => int.mode === 'modeSampler' && startPlayLoop(),
           sampleStop: _ => int.mode === 'modeSampler' && endPlayLoop(),
@@ -379,8 +363,8 @@ onWaapiReady.then(waCtx => {
           useWorklet: _ => int.mode !== 'modeRecord' && setScriptProcMode(false)
         }[mode]
         void action?.()
+        fx.recalcMarkers()
       }
-      updateLog()
     }
     
     const playOnce = _ => {
@@ -389,7 +373,7 @@ onWaapiReady.then(waCtx => {
         int.singleSource.buffer = int.audioBuffer
         int.singleSource.connect(fx.output)
         int.singleSource.detune.value = int.detune
-        int.singleSource.start(0, int.sampleStartR, int.sampleLengthR)
+        int.singleSource.start(0, final.startRel, final.len)
       }
     }
     const endPlayOnce = _ => int.singleSource?.stop()
@@ -401,12 +385,13 @@ onWaapiReady.then(waCtx => {
         int.source.buffer = int.audioBuffer
         int.source.connect(fx.output)
         int.source.loop = true
-        int.source.loopStart = int.sampleStartR
-        int.source.loopEnd = int.sampleEndR
-        int.source.start(0, int.sampleStartR)
+        int.source.loopStart = final.startRel
+        int.source.loopEnd = final.endRel
+        int.source.start(0, final.startRel)
         fx.setValue('sampleLoop', 'active.ledon')
       } else {
         endPlayLoop()
+        startPlayLoop() //: so this is a 'loopRestart'
       }
     }
     const endPlayLoop = _ => {
@@ -417,7 +402,6 @@ onWaapiReady.then(waCtx => {
     
     fx.setTone = tone => {      
       const val = 'abcdefghijklmnopqrstuvwxy'.indexOf(tone[1])
-      wassert(val > -1)
       int.tone = tone
       int.inOff = val
       int.detune = ((val - 12) / 12 || 0) * 100
@@ -425,7 +409,7 @@ onWaapiReady.then(waCtx => {
       int.isLoopPlaying || playOnce()
     }
     
-    initFx()
+    post(initFx)
   }
   registerFxType('fx_sampler', samplerEx)
 })
