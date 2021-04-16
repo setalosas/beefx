@@ -14,6 +14,9 @@ const {fetch} = window
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, newFx, connectArr, getPresetPath} = BeeFX(waCtx)
+  
+  //const clog = nop
+  const clog = console.log
 
   const convPresets = [
     ['tuna/impulse_guitar', '1. Default'],
@@ -86,7 +89,7 @@ onWaapiReady.then(waCtx => {
        impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, impDecay)
        impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, impDecay)
      }
-     console.log(`loadGenImpResp spent`, timer.sum().summary, {impDuration, impDecay, impReverse})
+     clog(`loadGenImpResp spent`, timer.sum().summary, {impDuration, impDecay, impReverse})
      onBufferReady(impulse)
    }
   
@@ -105,11 +108,12 @@ onWaapiReady.then(waCtx => {
         sampleGraph: {type: 'graph'}  ,
         highCut: {defVal: 22050, min: 20, max: 22050, subType: 'exp'},
         lowCut: {defVal: 20, min: 20, max: 22050, subType: 'exp'},
-        Q: {defVal: 1, min: .0001, max: 100, subType: 'exp'},
+        Q: {defVal: 1, min: .0001, max: 40, subType: 'exp'},
         freqGraph: {type: 'graph'},
         dryLevel: {defVal: .5, min: 0, max: 1},
         wetLevel: {defVal: 1, min: 0, max: 1}
       },
+      midi: {pars: ['highCut,lowCut,Q', 'dryLevel,wetLevel', isGenImp ? 'impDuration,impDecay' : '']},
       name: isGenImp ? 'Convolver (generated impulse)' : 'Convolver (from sample)',
       fxNamesDb: {convPresets},
       graphs: {
@@ -186,7 +190,7 @@ onWaapiReady.then(waCtx => {
     def: {
       buffer: {defVal: convPresets[2][0], type: 'strings', subType: convPresets}
     },
-    name: 'Reverb (DEPRECATED)',
+    name: 'Obs.Reverb (DEPRECATED)',
     fxNamesDb: {convPresets}
   }
   
@@ -205,14 +209,12 @@ onWaapiReady.then(waCtx => {
   
   registerFxType('fx_reverb', reverbFx)
   
-  //+No use of this, just a watered down dummy convolver wrapper (example for convolver supering)
-
   const cabinetFx = {  //8#2a8 ----- Cabinet (Tuna) -----
     def: {
       buffer: {defVal: convPresets[0][0], type: 'strings', subType: convPresets},
       makeupGain: {defVal: 1, min: 0, max: 20}
     },
-    name: 'Cabinet (DEPRECATED)'
+    name: 'Obs.Cabinet (DEPRECATED)'
   }
   cabinetFx.setValue = (fx, key, value, {int} = fx) => ({
     makeupGain: _ => fx.setAt('makeupNode', 'gain', value),
