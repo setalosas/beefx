@@ -104,7 +104,8 @@ export const createSources = (playground, root) => {
   }
   const dbgCheckIx = sourceIx => wassert(sourceIx && sourceIx <= maxSources)
   
-  //const maxSources = 33 //: 0 = main, 1 2 3 4 .. 32 = aux elements
+  const dbgDump = startEndThrottle(_ => console.table(sourceArr), 500)
+    
   const {maxSources = 8} = root.config
   const sourceIxArr = getIncArray(1, maxSources)
   
@@ -117,6 +118,7 @@ export const createSources = (playground, root) => {
   const sourceArr = []
   const sources = {
     sourceArr,
+    dbgDump,
     dbgMarkNode,
     dbgCheckNode,
     slog, tlog, wlog
@@ -131,41 +133,41 @@ export const createSources = (playground, root) => {
   
   sources.getValidSourcesCnt = _ => sourceIxArr.filter(ix => sourceArr[ix]).length
   
-  /* const playMedia = sourceIx => {
-    dbgCheckIx(sourceIx)
-    const source = sourceArr[sourceIx]
-    //console.log('PLAY', source)
-    const {mediaElement} = source
-    ui.mediaPlay(sourceIx, mediaElement)
-  } */
+  sources.getSource = ix => sourceArr[ix]
   
   //8#c39 In the beginning, there was Jack, and Jack had a source.
   
-  const createSource = (sourceIx, externalSource, destStageIxArr) => {
+  const createSource = (sourceIx, paramExternalSource, destStageIxArr) => {
     dbgCheckIx(sourceIx)
     const newSource = {
       isMediaElement: false,
       mediaElement: undef,
-      externalSourceNode: undef,  //: not needed any more, just for debug
+      paramExternalSourceNode: undef,  //: not needed any more, just for debug
       sourceNode: waCtx.createGain(),
       destStageIxArr,   //: saved from previous source in this slot
       sourceIx
     }
-    if (externalSource instanceof AudioNode) {
-      newSource.externalSourceNode = externalSource
+    if (paramExternalSource instanceof AudioNode) {
+      newSource.externalSourceNode = paramExternalSource
       newSource.isAudioNode = true
-    } else if (externalSource.tagName === 'AUDIO' || externalSource.tagName === 'VIDEO') {
-      newSource.isMediaElement = true
-      newSource.isAudio = externalSource.tagName === 'AUDIO'
-      newSource.isVideo = externalSource.tagName === 'VIDEO'
-      newSource.mediaElement = externalSource
-      newSource.externalSourceNode = waCtx.createMediaElementSource(newSource.mediaElement)
+    } else if (paramExternalSource.node instanceof AudioNode) {
+      newSource.externalSourceNode = paramExternalSource.node
+      newSource.isAudioNode = true
     } else {
-      console.error(`Invalid external source`)
+      newSource.isAudio = paramExternalSource.tagName === 'AUDIO'
+      newSource.isVideo = paramExternalSource.tagName === 'VIDEO'
+      
+      if (newSource.isAudio || newSource.isVideo) {
+        newSource.isMediaElement = true
+        newSource.mediaElement = paramExternalSource
+        newSource.externalSourceNode = waCtx.createMediaElementSource(newSource.mediaElement)
+        newSource.externalSourceNode.connect(mutedNode)
+      } else {
+        console.error(`💦💦Invalid external source`)
+        newSource.isInvalid = true
+      }
     }
-    
-    newSource.isMediaElement && newSource.externalSourceNode.connect(mutedNode)
-    newSource.externalSourceNode.connect(newSource.sourceNode)
+    newSource.isInvalid || newSource.externalSourceNode.connect(newSource.sourceNode)
 
     return sourceArr[sourceIx] = newSource
   }
@@ -179,11 +181,10 @@ export const createSources = (playground, root) => {
     
     if (!sourceIn) {
       debugger
-      return wlog(`changeSource: no source/mediaElement to connect [${sourceIx}]!`)
+      return wlog(`💦changeSource: no source/mediaElement to connect [${sourceIx}]!`)
     }
     let destStageIxArr = []
     const sourcesCnt = sources.getValidSourcesCnt()
-    console.log({sourcesCnt})
     
     if (sourceArr[sourceIx]) {
       const currSource = sourceArr[sourceIx]
@@ -194,10 +195,16 @@ export const createSources = (playground, root) => {
     }
     const newSource = createSource(sourceIx, sourceIn, destStageIxArr)
     
+    if (newSource.isInvalid) {
+      return
+    }
+    
     if (newSource.isMediaElement) {
       if (!sourceIx) { //: local main media, we will listen its state changes
-        slog('sources calling initlocalmedialisteners')
-        playground.players.initLocalMediaListeners(newSource.mediaElement)
+        slog('💦sources calling initlocalmedialisteners')
+        //playground.players.initLocalMediaListeners(newSource.mediaElement)
+        //+ ittt kell a player kontrollokat beapplikalni
+        //: ui.addMediaPlayerControls(sourceIx)
       }
     }
     if (destStageIxArr.length) {
@@ -209,7 +216,8 @@ export const createSources = (playground, root) => {
       //: temporary debug tests:
       weject(destStageIxArr.length)
       iterateStandardStages(stage => wassert(stage.sourceIx === -1))
-      sources.floodStages(sourceIx)
+      
+      sources.floodStages({sourceIx})
     } else {
       for (const stageIx of destStageIxArr) {
         const stage = getStage(stageIx)
@@ -221,8 +229,6 @@ export const createSources = (playground, root) => {
     ui.refreshSourcesUi()
   }
 
-  //sources.changePrimarySource = mediaElement => sources.changeSource(1, mediaElement)
-  
   sources.changeStageSourceIndex = (stageId, newSourceIx, {isFirst} = {}) => {
     dbgCheckIx(newSourceIx)
     const stage = getStage(stageId)
@@ -237,19 +243,19 @@ export const createSources = (playground, root) => {
       if (oldSourceIx === newSourceIx) {
         return console.warn(`chgStageSrc: same old & new! stage[${stageId}] srcIx=${newSourceIx}`)
       }
-      slog(`playground.chgStageSrc st: [${stageId}] sourceIx: ${oldSourceIx} -> ${newSourceIx}`)
+      slog(`💦playground.chgStageSrc st: [${stageId}] sourceIx: ${oldSourceIx} -> ${newSourceIx}`)
       
       //: starting a volatile state until connectSrc
       disconnectSource(oldSourceIx, stage)
     }
     //: evth is ok now, old (if there was one) has been disconnected, and there IS a new one
-    slog(`chgStageSrcIx: connecting source ${newSourceIx} to stage ${stageId}`)
+    slog(`💦hgStageSrcIx: connecting source ${newSourceIx} to stage ${stageId}`)
     connectSource(newSourceIx, stage) //: stable again
     dbgCheckConsistency()
     ui.refreshSourcesUi()
   }
   
-  sources.floodStages = sourceIx => iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
+  sources.floodStages = ({sourceIx}) => iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
   
   //:8#597 --------------- sources methods ---------------
   
