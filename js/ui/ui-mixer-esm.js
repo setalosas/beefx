@@ -170,6 +170,7 @@ export const extendUi = ui => {
   ui.startMixer = _ => {
   }
   ui.finalizeMixer = _ => {
+    return
     pg.initMixerStages()
     const localFx = pg.bpmTransformer
     const remoteFx = pg.bpmTransformer

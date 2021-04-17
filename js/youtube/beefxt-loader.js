@@ -39,14 +39,12 @@ const onReadyState = _ => new Promise(resolve => document.getElementsByTagName('
   })
 )
 
-// Autoinit
-
 onReadyState().then(_ => {
-  console.log('injecting content script', konfig.contentScript)
+  console.log('Injecting content scripts', konfig.contentScripts)
   for (const contentScript of konfig.contentScripts) {
     injectContentScript(contentScript)
   }
-  console.log('injecting styles', konfig.styles)
+  console.log('Injecting styles', konfig.styles)
   for (const style of konfig.styles) {
     injectCss(style)
   }

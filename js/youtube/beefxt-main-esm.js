@@ -11,8 +11,8 @@ onDomReady(async _ => {
   console.log('CromBee beeFx/Youtube main started.')
 
   const config = {
-    showEndSpectrums: true, //+ youtube kiakad, ha ez itt nem true! check!
-    maxSources: 6
+    showEndSpectrums: false, //+ youtube kiakad, ha ez itt nem true! check!
+    maxSources: 4
   }
   const root = {
     config,
