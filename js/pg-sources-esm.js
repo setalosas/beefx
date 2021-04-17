@@ -127,10 +127,6 @@ export const createSources = (playground, root) => {
   mutedNode.gain.value = 0
   mutedNode.connect(waCtx.destination)
   
-  if (root.config.sourceListDisplayOn) {
-    sources.listUi = ui.createSideList('side-right sourcelist-frame')
-  }
-  
   sources.getValidSourcesCnt = _ => sourceIxArr.filter(ix => sourceArr[ix]).length
   
   sources.getSource = ix => sourceArr[ix]
