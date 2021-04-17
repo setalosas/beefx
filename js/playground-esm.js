@@ -2,36 +2,35 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
+/* eslint-disable no-unused-vars */
    
 import * as pgIm from './improxy-esm.js'
 
 const {Corelib, Visualizer} = pgIm
 
-const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
+const {s_a, undef, isFun, isNum, getRnd} = Corelib
 const {wassert, weject} = Corelib.Debug
-const {schedule, adelay, NoW, since, startEndThrottle, post} = Corelib.Tardis
-const {createSpectrumVisualizer} = Visualizer
-const {BroadcastChannel} = window
+const {schedule, adelay, NoW, startEndThrottle, post} = Corelib.Tardis
 
 const {BeeFX, BPM, Players, Sources, StateManager, StageManager, createUI} = pgIm
 
 const createPlayground = async root => {
   const {waCtx, ui} = root
-  const {newFx, namesDb, connectArr, onReady: onBeeReady} = BeeFX(waCtx)
+  const {newFx, namesDb, onReady: onBeeReady, getFxType} = BeeFX(waCtx)
   await onBeeReady()
   
   ui.configNames(namesDb)
   
-  //const dummyFx = waCtx.createGain()
   const output = waCtx.createGain()
+  
   const stageMan = StageManager.createStageManager(root)
-  const {getEndRatios, iterateStages, getFilteredStages, getStage} = stageMan
+  const {getStage} = stageMan
 
   const pg = {
     stageMan, //+ PFUJ de sourcesnek kell es fxpaneluinak is
     bpmAuditor: undef,
-    bpmTransformer: newFx('fx_bpmTransformer'),
+    //bpmTransformer: newFx('fx_bpmTransformer'),
     bpm: 0,
     lastSentAt: 0,
     lastReceivedAt: 0,
@@ -39,56 +38,14 @@ const createPlayground = async root => {
     listenerStage: undef, //: the stage object
     meState: {},
     meStateHash: '',
-    fingerPrint: getRnd(100000, 999999)
+    fingerPrint: getRnd(100000, 999999),
+    getFxType
   }
   
-  const sources = pg.sources = Sources.createSources(pg, root)
-  const players = pg.players = Players.extendWithPlayers(pg, root)
-  const {radio} = players
+  pg.sources = Sources.createSources(pg, root)
+  pg.players = Players.extendWithPlayers(pg, root)
+  const {radio} = pg.players
   
-  //8#a6c Compose & decompose - they won't touch sources, starting from stInput of stages
-  
-  /* const decompose = _ => {
-    iterateStages(({fxArr, stInput, stEndRatio}) => {
-      stInput.disconnect()
-      for (const fx of fxArr) {
-        fx.disconnect()
-      }
-      stEndRatio.disconnect()
-    })
-  }
-  const connectArrayDest = (array, dest) => {
-    for (let ix = 0; ix < array.length; ix++) {
-      array[ix].connect(array[ix + 1] || dest)
-    }
-  }
-  const compose = _ => {
-    let unconnected = null
-    
-    iterateStages(({fxArr, stInput, stEndRatio, stSource, stAnalyzer, ix}) => {
-      if (fxArr[0]) {
-        if (dis.graphMode === 'parallel') { //: parallel can handle empty stages
-          if (stEndRatio.isActive) {
-            stInput.connect(fxArr[0])
-            connectArrayDest(fxArr, stEndRatio)
-            stEndRatio.connect(stAnalyzer)
-            stEndRatio.connect(output)
-          } else {
-            //: no connection to output at all if inActive
-          }
-        } else {                             //:sequential is a bit more tricky
-          ;(unconnected || stInput).connect(fxArr[0])  //+ TODO
-          const trimmedFxArr = [...fxArr]
-          const lastFx = trimmedFxArr.pop()
-          connectArrayDest(trimmedFxArr, lastFx)
-          unconnected = lastFx
-        }
-      }
-    })
-    wassert(unconnected || pg.graphMode === 'parallel')
-    void unconnected?.connect(output)
-  } */
-
   //8#a66 ----------- Change core playground Fxs -----------
     
   pg.changeFx = (stageId, ix, type) => stageMan.changeFx({stageId, ix, type})
@@ -164,15 +121,13 @@ const createPlayground = async root => {
   //8#59c  ---------------- Stage init / change ----------------
   
   pg.addStage = letter => {
-    //const nuIx = ascii(letter) - ascii('A')
-    const stage = stageMan.createStage({letter}, {hasEndSpectrum: true, hasEndRatio: true})
+    const hasEndSpectrum = root.config.showEndSpectrums
+    const stage = stageMan.createStage({letter}, {hasEndSpectrum, hasEndRatio: true})
     const {stageIx} = stage
     const uiStage = ui.addStage(stage)//:only once, restore will call ui.resetState()
     stage.assignUi({uiStage})
     stage.changeFx({ix: 0, type: 'fx_gain', params: {isFixed: true, hasStageMark: true}})
     stage.output.connect(output)
-    //pg.sources.changeStageSourceIndex(stageIx, 1, {isFirst: true}) //: 
-    //initStageSender(nuIx)
     return stageIx
   }
   
@@ -185,8 +140,8 @@ const createPlayground = async root => {
   const init = _ => {
     console.log(BeeFX(waCtx).fxHash)
     output.connect(waCtx.destination)
-    players.init()
-    players.initRadioListeners()
+    pg.players.init()
+    pg.players.initRadioListeners()
   }
   
   pg.initMixerStages = _ => {
@@ -310,6 +265,7 @@ export const runPlaygroundWithin = async (waCtx, options) => { //: no mediaE, AB
   }
   root.ui = createUI(root)
   const playground = await createPlayground(root)
+  root.pg = playground
   root.ui.start(playground) //+ csekk disz
   return {root, playground}
 }
@@ -318,6 +274,7 @@ export const runPlayground = async root => { //: we may have a mediaElement in r
   const ui = root.ui = createUI(root)
   root.midi = pgIm.TestMidi?.createTestMidi(ui) //: MIDI test, can be deleted
   const playground = await createPlayground(root)
+  root.pg = playground
   ui.start(playground)
 
   const setupName = root.onYoutube 
@@ -326,7 +283,9 @@ export const runPlayground = async root => { //: we may have a mediaElement in r
   
   const parent$ = root.config.presetDisplayOn ? document.body : undef
   
-  StateManager.getActualPreset({name: setupName, parent$})
+  root.stateManager = StateManager.create(root)
+  
+  root.stateManager.getActualPreset({name: setupName, parent$})
     .then(setup => {
       playground.setPreset(setup, setupName)
       
