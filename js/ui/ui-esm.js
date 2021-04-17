@@ -4,8 +4,9 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, StagesUi, FxUi, PlayersUi, SourcesUi, MixerUi} from '../improxy-esm.js'
+import * as Im from '../improxy-esm.js'
 
+const {Corelib, DOMplusUltra, StagesUi, FxUi, PlayersUi, SourcesUi, MixerUi, StatesUi} = Im
 const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib // eslint-disable-line
 const {wassert, brexru} = Corelib.Debug
 const {schedule} = Corelib.Tardis
@@ -21,6 +22,7 @@ export const createUI = (root, exroot) => {
     flags: {
       isGrabOn: false,
       isListActive: false,
+      isStagePresetListActive: false,
       isAutoplayOn: false,
       isAutostopOn: false,
       isMixerOn: false,
@@ -119,6 +121,7 @@ export const createUI = (root, exroot) => {
     PlayersUi.extendUi(ui)
     SourcesUi.extendUi(ui)
     MixerUi.extendUi(ui)
+    StatesUi.extendUi(ui)
     //ui.startMixer()
     initCommandHandlers()
     ui.toggleAutoplay()
@@ -149,7 +152,9 @@ export const createUI = (root, exroot) => {
       click: _ => toggleClass$(ui.syncbar$, 'off')}))      */
     mItems.push(ui.grabCmd$ = div$({class: 'mitem rt', text: 'Grab!', click: _ => ui.toggleGrab()}))
     mItems.push(ui.listCmd$ = 
-      div$({class: 'mitem rt', text: 'Select sources...', click: _ => ui.toggleList()}))
+      div$({class: 'mitem rt', text: 'Sources...', click: _ => ui.toggleList()}))
+    mItems.push(ui.stagePresetCmd$ = 
+      div$({class: 'mitem rt', text: 'Stage slots...', click: _ => ui.toggleStagePresets()}))
     mItems.push(ui.mixerCmd$ = 
       div$({class: 'mitem rt', text: 'Mixer...', click: _ => ui.toggleMixer()}))
     mItems.push(ui.syncCmd$ = 
@@ -176,6 +181,9 @@ export const createUI = (root, exroot) => {
     ui.toggleAutoplay = ui.toggleCmd(ui.flags, ui.autoplayCmd$, 'isAutoplayOn')
     ui.toggleAutostop = ui.toggleCmd(ui.flags, ui.autostopCmd$, 'isAutostopOn')
     ui.toggleList = ui.toggleCmd(ui.flags, ui.listCmd$, 'isListActive', ui.onVideoListToggled)
+    ui.toggleStagePresets = 
+      ui.toggleCmd(ui.flags, ui.stagePresetCmd$, 'areStagePresetsActive', ui.onStagePresetsToggled)
+    
     ui.toggleGrab = ui.toggleCmd(ui.flags, ui.grabCmd$, 'isGrabOn', ui.onGrabToggled)
     ui.toggleMixer = ui.toggleCmd(ui.flags, ui.mixerCmd$, 'isMixerOn', on => {
       setClass$(ui.mixermenu$, !on, 'off')
