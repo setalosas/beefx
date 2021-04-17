@@ -307,7 +307,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     if (on) {
       ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'}, [
         div$(),
-         ...root.mp3s.map(({src, title, videoId}) => {
+        ...root.mp3s.map(({src, title, videoId}) => {
           const [art, tit] = title.split(' - ') 
           const html = `<em>${art}</em> - ${tit}`
           const backgroundImage = videoId?.length === 11 ? `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')` : undef
