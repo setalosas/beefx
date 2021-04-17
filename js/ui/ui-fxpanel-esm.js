@@ -4,16 +4,18 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, DOMplusUltra, createGraphBase} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, DragWithDOM, createGraphBase} from '../improxy-esm.js'
 
 const {Ø, undef, isNum, isFun, nop, no, clamp, s_a} = Corelib
 const {wassert} = Corelib.Debug
 const {post, startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, leaf$, set$, setClass$, toggleClass$, canvas$, haltEvent} = DOMplusUltra
+const {addDraggable, addDragTarget} = DragWithDOM
 const {round} = Math
   
 export const extendUi = ui => {
+  const {root, pg} = ui
   const {body} = document
 
   const logOn = false
@@ -327,7 +329,6 @@ export const extendUi = ui => {
     reassignFxPanelObjFx(fxPanelObj, fx)  //: puts fx, fxname into fxPanelObj
     rebuildFxPanel(fxPanelObj)            //: puts panel into fxPanelObj
     const {fxname, panel} = fxPanelObj     //:fxname is in the 'Blank' format (not fx_blank!)
-    const {pg} = ui
     
     const isBlank = fxname === 'Blank'
     const isGain = fxname === 'Gain'
@@ -366,7 +367,13 @@ export const extendUi = ui => {
           regen: _ => _,
           save: _ => _,
           master: _ => _,
-          slave: _ => _
+          slave: _ => _,
+          dbgDeact: _ => stage.deactivate(),
+          dbgDecomp: _ => stage.decompose(),
+          dbgReset: _ => stage.reset(),
+          dbgChg: _ => stage.chg(),
+          dbgComp: _ => stage.compose(),
+          dbgAct: _ => stage.activate()
         }[op]
         void action?.()
         if (op === 'activate') {
@@ -385,7 +392,23 @@ export const extendUi = ui => {
         click: _ => pg.setListenerStage(stageIx)}, div$({class: 'led-fx fix-on'}))
     ])
     
-    fxrama$.className = 'bfx-rama'
+    const dragDroppedOnStage = dstLetter => (data, mod) => {
+      const [source, slot] = data.split('.')
+      if (source === 'fromSlot') {
+        root.stateManager.onSlotToStageDrop({dstLetter, slot})
+      } else if (source === 'fromStage') {
+        const srcLetter = slot
+        root.stateManager.onStageToStageDrop({dstLetter, srcLetter})
+      }
+    }
+    const drid = stage.letter + '.' + fx.zholger
+    
+    const dragger$ = isEndRatio && 
+      addDraggable(div$({class: 'fx-dragger', attr: {drid}}), 'fromStage.' + stage.letter)
+    
+    isEndRatio && addDragTarget(set$(fxrama$, {attr: {drid}}), dragDroppedOnStage(stage.letter))
+    
+    fxrama$.className = 'bfx-rama' //: reset
     
     set$(fxrama$, {class: auxClass, attr: {fxname, isFixed, isAlterable, isBlank}, html: ''}, [
       bypassLed$,
@@ -393,7 +416,8 @@ export const extendUi = ui => {
       topmenu$,
       foldIcon$,
       remove$,
-      panel.parsFrame$
+      panel.parsFrame$,
+      dragger$
     ])
     
     return fxPanelObj
