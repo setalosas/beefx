@@ -30,7 +30,8 @@ const {schedule, adelay, startEndThrottle} = Corelib.Tardis
   */
 export const createStageManager = root => {
   const {waCtx} = root
-  const {newFx, connectArr} = BeeFX(waCtx)
+  const beeFx = BeeFX(waCtx)
+  const {newFx, connectArr} = beeFx 
   
   //8#c89 -------- Helpers --------
   
@@ -129,6 +130,8 @@ export const createStageManager = root => {
     const stageIx = nuIx
     const fxArr = []
     const endRatio = stageParams.hasEndRatio ? newFx('fx_ratio') : undef //: cannot be false (?.)
+    beeFx.debug.addStage(endRatio, letter)
+    
     const output = endRatio || waCtx.createGain()
     void endRatio?.chain(...getEndRatios()) //: only the other chain elements' stage is needed
     
@@ -149,6 +152,7 @@ export const createStageManager = root => {
     }
     
     if (stageParams.hasEndSpectrum) {
+      debugger
       stage.analyser = waCtx.createAnalyser()
       stage.output.connect(stage.analyser)
     }
@@ -188,14 +192,7 @@ export const createStageManager = root => {
     
     stage.deactivate = _ => stage.activate(false)
     
-    /* stage.setSolo = _ => {
-      const stageGroupArr = getStageGroup()
-      for (const groupStage of stageGroupArr) {
-        groupStage.activate(groupStage === stage)
-      }
-    } */
-    
-    stage.decompose = _ => { //+a nullas basz nem stage par, hanem fxarr[0], amit a playgrnd rak oda
+    stage.decompose = _ => { //: endRatio too, but maybe it shouldn't
       stage.input.disconnect()
       for (const fx of fxArr) {
         void fx?.disconnect()
@@ -209,26 +206,31 @@ export const createStageManager = root => {
       }
     }
     
-    stage.changeFx = ({ix = fxArr.length, type, params = {}}) => {
-      //console.log(`playground.changeFxLow(${stage.ix}, ${ix}, ${type})`)
-      wassert(ix <= fxArr.length) //: the array can't have a gap
-      stage.decompose()
-
+    const changeFxLow = ({ix = fxArr.length, type, params = {}}) => {
       void fxArr[ix]?.deactivate()
+      
       fxArr[ix] = newFx(type)
+      beeFx.debug.addStage(fxArr[ix], letter + ix)
       
       if (fxArr[ix]) { //: create ui for the fx if the stage has one
         stage.uiStage && root.ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], params)
       } else {
         console.error(`Bad Fx type:`, type)
       }
-      stage.compose()
       return fxArr[ix]
+    }
+
+    stage.changeFx = ({ix = fxArr.length, type, params = {}}) => {
+      wassert(ix <= fxArr.length) //: the array can't have a gap
+      stage.decompose()
+      const fx = changeFxLow({ix, type, params})
+      stage.compose()
+      return fx
     }
     
     stage.saveState = _ => fxArr.map(fx => fx.getFullState())
     
-    stage.reset = _ => {
+    stage.reset = _ => { //+nem lehet kivulrol hivhato egy olyan method ami decompose nelkul modosit
       for (let ix = 0; ix < fxArr.length; ix++) { //: delete all non fixed fxs
         if (fxArr[ix] && !fxArr[ix].isFixed) {
           stage.changeFx({ix, type: 'fx_blank'})
@@ -241,18 +243,48 @@ export const createStageManager = root => {
         stage.uiStage && root.ui.destroyStageLastFxPanel(stage.uiStage, fx)
       } 
       //:ui.resetStage(stageIx)
+      beeFx.debug.dump('(resetted)')
+    }
+
+    const destroyLastFx = _ => {
+      wassert(fxArr.length)
+      const fx = fxArr.pop() //: we need a destroy ui fpo here
+      stage.uiStage && root.ui.destroyStageLastFxPanel(stage.uiStage, fx)
+    }
+
+    const destroyLastFxsAfter = newLen => {
+      while (newLen < fxArr.length) {
+        destroyLastFx()
+      }
     }
     
-    stage.loadState = fxStates => {
-      stage.deactivate()
+    stage.loadState = async fxStates => {
+      /* stage.deactivate()
+      beeFx.debug.dump('before decompose (deactivated)')
+      await adelay(15000) */
+
       stage.decompose()
-      stage.reset()
+      beeFx.debug.dump('after decompose')
+      
+      /* stage.reset()
+      beeFx.debug.dump('after reset')
+      await adelay(15000) */
+      
+      destroyLastFxsAfter(fxStates.length)
+      
       for (let ix = 0; ix < fxStates.length; ix++) {
         const fxState = fxStates[ix]
-        void stage.changeFx({type: wassert(fxState.fxName)})?.restoreFullState(fxState)
+        fxArr[ix]?.isFixed ||
+          void changeFxLow({ix, type: wassert(fxState.fxName)})?.restoreFullState(fxState)
       }
+      beeFx.debug.dump('afterc chg')
+      console.log('chged', stage.fxArr)
+      
       stage.compose()
-      stage.activate()
+      beeFx.debug.dump('after compose (deactivated)')
+
+      /* stage.activate()
+      beeFx.debug.dump('after compose (activated)') */
     }
     
     stage.rebuild = _ => {
