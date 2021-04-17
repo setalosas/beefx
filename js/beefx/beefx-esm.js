@@ -44,7 +44,7 @@ const createBeeFX = waCtx => {
   //8#936 ------------- Bee debug ->should be put into other module -------------
   
   const debug = (_ => {
-    const {AudioWorkletNode} = window
+    const {AudioWorkletNode, MediaElementAudioSourceNode} = window
     const checkSetAt = true
     const fxStageHash = {}
     const connections = {}
@@ -122,13 +122,15 @@ const createBeeFX = waCtx => {
     debug.addCon = (src, dst) => {
       src instanceof AudioWorkletNode && (src.__resource_id__ = 'AW.' + debug.nuid++)
       dst instanceof AudioWorkletNode && (dst.__resource_id__ = 'AW.' + debug.nuid++)
+      src instanceof MediaElementAudioSourceNode && (src.__resource_id__ = 'ME.' + debug.nuid++)
+      
       const srcRes = src.__resource_id__
       const dstRes = dst.__resource_id__
       if (srcRes && dstRes) {
         connections[srcRes] = connections[srcRes] || {}
         connections[srcRes][dstRes] = true
       } else {
-        wassert(false)
+        console.warn(`AudioNode without resourceId:`, src, dst)
       }  
     }
     debug.addDisco = (src, dst) => {
@@ -142,7 +144,7 @@ const createBeeFX = waCtx => {
           connections[srcRes] = {}
         }
       } else {
-        debugger
+        console.warn(`AudioNode without resourceId:`, src, dst)
       }  
     }
     debug.addFx = fx => zharr.push(fx)
