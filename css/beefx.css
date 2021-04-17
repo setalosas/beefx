@@ -508,6 +508,9 @@ body::after {
 .st-stageslot.dragover {
   box-shadow: inset 0 0 6px 2px red;
 }
+.dragover {
+  box-shadow: inset 0 0 6px 2px red;
+}
 .dragged {
   background: yellow;
 }
