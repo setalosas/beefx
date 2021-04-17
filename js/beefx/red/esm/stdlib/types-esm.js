@@ -95,6 +95,5 @@ extendInternalType(Object, 'getPropertyCnt', function (par1, par2) { // (own | o
   }
   const par1Obj = typeof par1 === 'object' && par1
   const obj = par1Obj ? par1 : this
-  const filterOwn = par1Obj ? !!par2 : !!par1
-  return Object[(filterOwn ? 'keys' : 'allKeys')](obj).length 
+  return Object.keys(obj).length 
 })
