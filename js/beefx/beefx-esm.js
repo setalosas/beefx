@@ -41,9 +41,122 @@ const createBeeFX = waCtx => {
     logSetValue: false
   }
   
-  const debug = {
-    checkSetAt: true
-  }
+  //8#936 ------------- Bee debug ->should be put into other module -------------
+  
+  const debug = (_ => {
+    const {AudioWorkletNode} = window
+    const checkSetAt = true
+    const fxStageHash = {}
+    const connections = {}
+    const discos = []
+    const zharr = []
+    const debug = {
+      on: true,
+      nuid: 1000
+    }
+    
+    const getGraphString = node => {
+      const res = wassert(node.__resource_id__)
+      return res + ' -> ' + (connections[res] || {}).propertiesToArr().join(', ')
+    }
+    debug.table = tab => {
+      const columns = {}
+      for (const item of tab) {
+        for (const key in item) {
+          if (key !== 'isActive') {
+            columns[key] = columns[key] || {maxlen: key.length}
+            columns[key].maxlen = max(columns[key].maxlen, item[key].length)
+          }
+        }
+      }
+      for (const item of [0, ...tab]) {
+        let line = ''
+        for (const key in columns) {
+          const pad = columns[key].maxlen
+          const str = item ? merge('', item[key]) : key
+          line += ' | ' + str + ' '.repeat(columns[key].maxlen - str.length)
+        }
+        const cols = item 
+          ? line[4] === '_' 
+            ? 'color:#888;background:#ffe;' 
+            : 'color:#000;background:#ffb;border-top: 3px solid #00c;' 
+          : 'color:#000;background:#fc9;'
+        const act = item.isActive ? '' : 'font-style: italic; color: #bbb;'
+        console.log(`%c${line}`, 'font: 400 11px hack;padding: 1px 0; margin: 0;' + cols + act)
+      }
+    }
+    debug.dump = msg => {
+      msg && console.log(msg)
+      const tab = []
+      for (const fx of zharr) {
+        const {isActive, zholger} = fx
+        const stage = fxStageHash[zholger] || 'No stage!'
+        const bItem = {
+          isActive,
+          zh: (isActive ? `🔸` : '🔹') + zholger,
+          stage,
+          short: fx.getName(),
+          in: getGraphString(fx.input),
+          start: getGraphString(fx.start),
+          out: getGraphString(fx.output)
+        }
+        tab.push(bItem)
+        for (const int in fx.int) {
+          const intern = fx.int[int]
+          if (intern?.__resource_id__) {
+            tab.push({
+              isActive,
+              zh: '__' + zholger,
+              stage,
+              short: '__' + intern.toString().split(' ')[1].slice(0, -1),
+              id: getGraphString(intern)
+            })
+          }
+        }
+      }
+      debug.table(tab)
+      console.log({connections, zharr, fxStageHash})
+    }
+    debug.addStage = (fx, stageLetter) => fxStageHash[fx.zholger || 0] = stageLetter
+    
+    debug.addCon = (src, dst) => {
+      src instanceof AudioWorkletNode && (src.__resource_id__ = 'AW.' + debug.nuid++)
+      dst instanceof AudioWorkletNode && (dst.__resource_id__ = 'AW.' + debug.nuid++)
+      const srcRes = src.__resource_id__
+      const dstRes = dst.__resource_id__
+      if (srcRes && dstRes) {
+        connections[srcRes] = connections[srcRes] || {}
+        connections[srcRes][dstRes] = true
+      } else {
+        wassert(false)
+      }  
+    }
+    debug.addDisco = (src, dst) => {
+      const srcRes = src.__resource_id__
+      if (srcRes) {
+        const dstRes = dst?.__resource_id__
+        if (dstRes) {
+          wassert(connections[srcRes][dstRes])
+          delete connections[srcRes][dstRes]
+        } else {
+          connections[srcRes] = {}
+        }
+      } else {
+        debugger
+      }  
+    }
+    debug.addFx = fx => zharr.push(fx)
+    
+    !(!waCtx.destination.__resource_id__ || !debug.on) ||
+      debug.propertiesToArr().map(key => isFun(debug[key]) && (debug[key] = nop))
+      
+    return debug
+  })()
+
+  window.beedump = debug.dump
+  beeFx.capture({debug})
+  
+  //8#845 ------------- Bee debug EBN -------------
     
   const pepper = 'zholger'
   let uid = 1
@@ -63,6 +176,7 @@ const createBeeFX = waCtx => {
                //: normally accessed through get/setValue
       past: {} //: previous values of atm       
     }
+    debug.addFx(fx)
     
     fx.connect = dest => fx.output.connect(dest[pepper] ? dest.input : dest)
     
@@ -209,7 +323,7 @@ const createBeeFX = waCtx => {
     //8#892------- Getter helpers --------
     
     fx.getName = _ => fx.exo.name
-    fx.getShortName = _ => fx.exo.name.substr(3)
+    fx.getShortName = _ => fx.exo.name.substr(3) //+ this is bugged
     
     fx.getPepper = _ => fx[pepper]
     
@@ -329,6 +443,8 @@ const createBeeFX = waCtx => {
       return null
     }
     const fx = newFxBase(type)
+    console.log(`beeFx.newFx:`, type)
+    //debugger
     const {optional = {activate: true}} = pars
     fx.exo = fxHash[type]       //: exo = {..., def, construct, ...}
     fx.initPars(pars)           //: changes or creates pars.initial
@@ -341,6 +457,8 @@ const createBeeFX = waCtx => {
     
     return fx  
   }
+  
+  beeFx.getFxType = fxname => fxHash[fxname]
   
   beeFx.onReady = _ => Promise.all(beeFx.readyPromises)
   
@@ -399,13 +517,6 @@ const createBeeFX = waCtx => {
   
   //8#e92------- Connect/disconnect override --------
     
-  const addConnectionToStats = (src, dest) => {
-    //ha nincs pepper, de igazi node, adjon hozza egyet!
-  }
-  const addDisconnectionToStats = (src, dst) => {
-    // elvileg mindenhol kell peppernek lenni, de adjon hozza egyet (ha elobb hivtak disconnectet mint connectet, lehet)
-  }
-  
   void (_ => { //: init only Once In A Lifetime
     const gain = waCtx.createGain()
     const proto = Object.getPrototypeOf(Object.getPrototypeOf(gain))
@@ -428,7 +539,7 @@ const createBeeFX = waCtx => {
         console.error(err)
         debugger
       }
-      addConnectionToStats(this, arguments[0])
+      debug.addCon(this, arguments[0])
       return node
     }
 
@@ -444,7 +555,7 @@ const createBeeFX = waCtx => {
         console.error(err)
         debugger
       }
-      addDisconnectionToStats(this, arguments[0])
+      debug.addDisco(this, arguments[0])
     }
   })()
   
