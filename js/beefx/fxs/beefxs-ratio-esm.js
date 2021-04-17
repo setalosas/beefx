@@ -27,6 +27,12 @@ onWaapiReady.then(waCtx => {
       save: {defVal: 'off', type: 'cmd', name: 'Save'},
       master: {defVal: 'off', type: 'cmd', subType: 'led', color: 0, name: 'Master'},
       slave: {defVal: 'off', type: 'cmd', subType: 'led', color: 50, name: 'Slave'},
+      /* dbgDeact: {defVal: 'off', type: 'cmd'},
+      dbgDecomp: {defVal: 'off', type: 'cmd'},
+      dbgReset: {defVal: 'off', type: 'cmd'},
+      dbgChg: {defVal: 'off', type: 'cmd'},
+      dbgComp: {defVal: 'off', type: 'cmd'},
+      dbgAct: {defVal: 'off', type: 'cmd'}, */
       gain: {defVal: .25, min: 0.00001, max: 1.00001, name: 'Stage ratio'},
       onCmd: {defVal: nop, subType: 'skipui'}
     }
