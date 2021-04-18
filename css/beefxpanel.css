@@ -100,10 +100,10 @@
 .bfx-rama .bfx-foldicon::after {
   content: '➖';
 }
-.bfx-rama.folded .bfx-foldicon::after {
+.bfx-rama.isFolded .bfx-foldicon::after {
   content: '➕';
 }
-.bfx-rama.folded .fxr-parval:not(.fxt-info):not(.fxt-cmd):not(.fxt-piano) {
+.bfx-rama.isFolded .fxr-parval:not(.fxt-info):not(.fxt-cmd):not(.fxt-piano) {
   display: none;
 }
 .bfx-rama .selektor.sel-selfx {
