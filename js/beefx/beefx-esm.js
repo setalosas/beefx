@@ -44,14 +44,14 @@ const createBeeFX = waCtx => {
   //8#936 ------------- Bee debug ->should be put into other module -------------
   
   const debug = (_ => {
-    const {AudioWorkletNode, MediaElementAudioSourceNode} = window
+    const {AudioWorkletNode, MediaElementAudioSourceNode, GainNode} = window
     const checkSetAt = true
     const fxStageHash = {}
     const connections = {}
     const discos = []
     const zharr = []
     const debug = {
-      on: true,
+      on: true,     //: must be turned off if not used as it interferes too much
       nuid: 1000
     }
     
@@ -76,10 +76,12 @@ const createBeeFX = waCtx => {
           const str = item ? merge('', item[key]) : key
           line += ' | ' + str + ' '.repeat(columns[key].maxlen - str.length)
         }
+        const letter = item.stage?.[0]
+        const hue = {A: 130, B: 220, C: 280, D: 340, E: 60, F: 180, G: 250, H: 30}[letter] || 0
         const cols = item 
           ? line[4] === '_' 
-            ? 'color:#888;background:#ffe;' 
-            : 'color:#000;background:#ffb;border-top: 3px solid #00c;' 
+            ? `color:#888;background:hsl(${hue}, 100%, 96%);`
+            : `color:#000;background:hsl(${hue}, 100%, 91%);border-top: 3px solid #00c;`
           : 'color:#000;background:#fc9;'
         const act = item.isActive ? '' : 'font-style: italic; color: #bbb;'
         console.log(`%c${line}`, 'font: 400 11px hack;padding: 1px 0; margin: 0;' + cols + act)
@@ -87,28 +89,40 @@ const createBeeFX = waCtx => {
     }
     debug.dump = msg => {
       msg && console.log(msg)
-      const tab = []
+      const taa = []
       for (const fx of zharr) {
         const {isActive, zholger} = fx
         const stage = fxStageHash[zholger] || 'No stage!'
         const bItem = {
+          fx,
           isActive,
           zh: (isActive ? `🔸` : '🔹') + zholger,
+          zholger,
           stage,
           short: fx.getName(),
           in: getGraphString(fx.input),
           start: getGraphString(fx.start),
           out: getGraphString(fx.output)
         }
-        tab.push(bItem)
+        taa.push(bItem)
+      }
+      taa.sort((a, b) => a.stage > b.stage ? 1 : -1)
+      const tab = []
+      for (const item of taa) {
+        const {isActive, zholger, fx, stage} = item
+        delete item.fx
+        delete item.zholger
+        tab.push(item)
+      
         for (const int in fx.int) {
           const intern = fx.int[int]
           if (intern?.__resource_id__) {
+            const extra = intern instanceof GainNode ? ` (${intern.gain.value.toFixed(3)})` : ''
             tab.push({
               isActive,
               zh: '__' + zholger,
               stage,
-              short: '__' + intern.toString().split(' ')[1].slice(0, -1),
+              short: '__' + intern.toString().split(' ')[1].slice(0, -1) + extra,
               id: getGraphString(intern)
             })
           }
@@ -122,7 +136,6 @@ const createBeeFX = waCtx => {
     debug.addCon = (src, dst) => {
       src instanceof AudioWorkletNode && (src.__resource_id__ = 'AW.' + debug.nuid++)
       dst instanceof AudioWorkletNode && (dst.__resource_id__ = 'AW.' + debug.nuid++)
-      src instanceof MediaElementAudioSourceNode && (src.__resource_id__ = 'ME.' + debug.nuid++)
       
       const srcRes = src.__resource_id__
       const dstRes = dst.__resource_id__
@@ -130,7 +143,8 @@ const createBeeFX = waCtx => {
         connections[srcRes] = connections[srcRes] || {}
         connections[srcRes][dstRes] = true
       } else {
-        console.warn(`AudioNode without resourceId:`, src, dst)
+        src instanceof MediaElementAudioSourceNode ||
+          console.warn(`AudioNode without resourceId:`, src, dst)
       }  
     }
     debug.addDisco = (src, dst) => {
