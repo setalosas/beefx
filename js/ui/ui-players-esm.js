@@ -18,7 +18,7 @@ const {round, abs} = Math
 
 export const extendUi = ui => {
   const {root, pg} = ui
-  //const {stageMan, players, sources} = pg
+  const {sources} = pg
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -141,6 +141,13 @@ export const extendUi = ui => {
     slider curr dur 
     
     */
+    observer.getState = _ => sourceUi.video$ 
+      ? observer.videoState 
+      : sourceUi.audio$ 
+        ? observer.audioState
+        : sourceUi.iframe$
+          ? observer.iframeState : {}
+
     const syncMocked = _ => { // startEndThrottle(_ => {
       const {iframeState: slave, audioState: master} = observer
       const {ytPlayer} = sourceUi
@@ -242,6 +249,10 @@ export const extendUi = ui => {
   
   ui.recreateSourcePlayer = sourceUi => {
     const player = {}
+      
+    const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
+    
+    const getState = _ => observer.getState()
     
     sourceUi.stop = _ => {
       void sourceUi.ytPlayer?.pauseVideo()
@@ -253,6 +264,18 @@ export const extendUi = ui => {
       sourceUi.isMocked && void sourceUi.ytPlayer?.mute()
       void sourceUi.audio$?.play()
       void sourceUi.video$?.play()
+    }
+    sourceUi.seek = sec => {
+      void sourceUi.ytPlayer?.seekTo(sec, true) //+ ez minek ha video is van??
+      sourceUi.audio$ && (sourceUi.audio$.currentTime = sec)
+      sourceUi.video$ && (sourceUi.video$.currentTime = sec)
+    }
+    sourceUi.seekPt = pt => {
+      const duration = getState().duration
+      if (!duration) {
+        return console.warn('sourceUi.seekPt failure: no duration', {pt, sourceUi})
+      }
+      sourceUi.seek(duration * pt / 100)
     }
     
     sourceUi.refreshPlayerControl = data => {
@@ -281,7 +304,7 @@ export const extendUi = ui => {
         player.set('duration', {text: secToString(duration)})
       } */
     }
-    sourceUi.mediaObserver = createMediaObserver(sourceUi)
+  
     /* 
     if (sourceUi.isMocked) { //: ez bonyi, 2 observert kell osszehangolni 1 sourceUiba es playerbe!
       sourceUi.mockObserver = createMediaObserver(sourceUi, {isVideo: false})
@@ -293,129 +316,43 @@ export const extendUi = ui => {
     } else if (sourceUi.audio$) { //: audio without videoId
       sourceUi.mediaObserver = createMediaObserver(sourceUi, {isVideo: false})
     } */
+    const buildUi = _ => {
+      const playCtrl = (cmd, par) => {} // pg.players.control(cmd, par, isLocal) //+BAD
+  
+      const dragBar = event => (event.type === 'click' || event.buttons & 1) &&
+        sourceUi.seekPt(round(1000 * event.offsetX / event.target.clientWidth) / 10)
+        
+      const relSeekS = sec => _ => sourceUi.seekRel(sec)  
+          
+      set$(sourceUi.ctrl$, {html: ``}, [
+        div$({class: 'src-navtop'}, [
+          div$({class: 'ctrl-cmd cc-play', text: 'BPM', click: _ => sourceUi.play()}),
+          div$({class: 'ctrl-cmd cc-play', text: 'BPM.X', click: _ => sourceUi.play()}),
+          div$({class: 'ctrl-cmd cc-play', text: 'Play', click: _ => sourceUi.play()}),
+          div$({class: 'ctrl-cmd cc-stop', text: 'Stop', click: _ => sourceUi.stop()}),
+          div$({class: 'ctrl-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
+        ]),
+        div$({class: 'src-navmid'},
+          sourceUi.navRama$ = div$({class: 'player-navframe'}, [
+            sourceUi.thumb$ = div$({class: 'nav-thumb'}, [
+              sourceUi.dragBar$ = div$({class: 'drag-bar', on: {mousemove: dragBar, click: dragBar}}, [
+                sourceUi.current$ = div$({class: 'curr time'}),
+                sourceUi.duration$ = div$({class: 'dur time'})
+              ]),
+              sourceUi.navNoneed$ = div$({class: 'player-nav'}, [
+                div$({class: 'nav-cmd n-start', text: 'Start', click: _ => playCtrl('absseeks', 0)}),
+                div$({class: 'nav-cmd n-m10s', text: '-10s', click: relSeekS(-10)}),
+                div$({class: 'nav-cmd n-m2b', text: '-2b', click: _ => playCtrl('relseekb', -2)}),
+                div$({class: 'nav-cmd n-m1b', text: '-1b', click: _ => playCtrl('relseekb', -1)}),
+                div$({class: 'nav-cmd n-p1b', text: '+1b', click: _ => playCtrl('relseekb', 1)}),
+                div$({class: 'nav-cmd n-p2b', text: '+2b', click: _ => playCtrl('relseekb', 2)}),
+                div$({class: 'nav-cmd n-p10s', text: '+10s', click: relSeekS(10)}),
+                div$({class: 'nav-cmd n-p30s', text: '+30s', click: relSeekS(30)})
+              ])
+            ])
+          ]))
+      ])
+    }
+    buildUi()
   }
 }
-
-/* 
-const create = _ => {
-  const audio = {}
-    audiorama$ = div$({class: '', attr: {id: 'audio-player-container'}},
-      leaf$('audio', {attr: {src:''}}),
-      div$({class: 'play'})
-      div$({class: 'play'})
-
-  <button id="play-icon"></button>
-  <span id="current-time" class="time">0:00</span>
-  <input type="range" id="seek-slider" max="100" value="0">
-  <span id="duration" class="time">0:00</span>
-  <output id="volume-output">100</output>
-  <input type="range" id="volume-slider" max="100" value="100">
-  <button id="mute-icon"></button>
-</div>
-const playIconContainer = document.getElementById('play-icon');
-const audioPlayerContainer = document.getElementById('audio-player-container');
-const seekSlider = document.getElementById('seek-slider');
-const volumeSlider = document.getElementById('volume-slider');
-const muteIconContainer = document.getElementById('mute-icon');
-let playState = 'play';
-let muteState = 'unmute'
-
-playIconContainer.addEventListener('click', () => {
-    if(playState === 'play') {
-        audio.play();
-        playState = 'pause';
-    } else {
-        audio.pause();
-        playState = 'play';
-    }
-});
-
-muteIconContainer.addEventListener('click', () => {
-    if(muteState === 'unmute') {
-        audio.muted = true;
-        muteState = 'mute';
-    } else {
-        audio.muted = false;
-        muteState = 'unmute';
-    }
-});
-
-const showRangeProgress = (rangeInput) => {
-    if(rangeInput === seekSlider) audioPlayerContainer.style.setProperty('--seek-before-width', rangeInput.value / rangeInput.max * 100 + '%');
-    else audioPlayerContainer.style.setProperty('--volume-before-width', rangeInput.value / rangeInput.max * 100 + '%');
-}
-
-seekSlider.addEventListener('input', (e) => {
-    showRangeProgress(e.target);
-});
-volumeSlider.addEventListener('input', (e) => {
-    showRangeProgress(e.target);
-});
-
-const audio = document.querySelector('audio');
-const durationContainer = document.getElementById('duration');
-const currentTimeContainer = document.getElementById('current-time');
-const outputContainer = document.getElementById('volume-output');
-let raf = null;
-
-const calculateTime = (secs) => {
-    const minutes = Math.floor(secs / 60);
-    const seconds = Math.floor(secs % 60);
-    const returnedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
-    return `${minutes}:${returnedSeconds}`;
-}
-
-const displayDuration = () => {
-    durationContainer.textContent = calculateTime(audio.duration);
-}
-
-const setSliderMax = () => {
-    seekSlider.max = Math.floor(audio.duration);
-}
-
-const displayBufferedAmount = () => {
-    const bufferedAmount = Math.floor(audio.buffered.end(audio.buffered.length - 1));
-    audioPlayerContainer.style.setProperty('--buffered-width', `${(bufferedAmount / seekSlider.max) * 100}%`);
-}
-
-const whilePlaying = () => {
-    seekSlider.value = Math.floor(audio.currentTime);
-    currentTimeContainer.textContent = calculateTime(seekSlider.value);
-    audioPlayerContainer.style.setProperty('--seek-before-width', `${seekSlider.value / seekSlider.max * 100}%`);
-    raf = requestAnimationFrame(whilePlaying);
-}
-
-if (audio.readyState > 0) {
-    displayDuration();
-    setSliderMax();
-    displayBufferedAmount();
-} else {
-    audio.addEventListener('loadedmetadata', () => {
-        displayDuration();
-        setSliderMax();
-        displayBufferedAmount();
-    });
-}
-
-audio.addEventListener('progress', displayBufferedAmount);
-
-seekSlider.addEventListener('input', () => {
-    currentTimeContainer.textContent = calculateTime(seekSlider.value);
-    if(!audio.paused) {
-        cancelAnimationFrame(raf);
-    }
-});
-
-seekSlider.addEventListener('change', () => {
-    audio.currentTime = seekSlider.value;
-    if(!audio.paused) {
-        requestAnimationFrame(whilePlaying);
-    }
-});
-
-volumeSlider.addEventListener('input', (e) => {
-    const value = e.target.value;
-
-    outputContainer.textContent = value;
-    audio.volume = value / 100;
-}); */
