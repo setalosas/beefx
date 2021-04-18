@@ -51,7 +51,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
             
     set$(parent$, {}, 
       stageObj.frame$ = div$({class: cc}, [
-        stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector huerot'}),
+        stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector'}),
         stageObj.ramas$ = div$({class: 'bfx-ramas'}),
         stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
           stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
@@ -72,9 +72,10 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
       //console.log('found a stage to dispatch to', stageIx, stageObj)
       const chg = sourceIx => _ => sources.changeStageSourceIndex(stageIx, sourceIx)
       stageObj.inputCmd$ = []
-      //const {maxSources = 8} = root.config
       set$(stageObj.inputSelector$, {class: 'blue'}, [
+        div$({class: 'input-selbg huerot'}),
         div$({class: 'input-label', text: 'Input:'}),
+        div$({class: 'input-cmd bee-cmd', text: 'M'}),
         ...sourceIxArr.map((sourceIx, ix) => 
           stageObj.inputCmd$[ix] = div$({class: 'input-cmd bee-cmd', text: 'In ' + sourceIx,
             attr: {sourceIx, state: 'off'}, click: chg(sourceIx)}))
