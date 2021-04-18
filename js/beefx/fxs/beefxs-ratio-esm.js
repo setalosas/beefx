@@ -66,6 +66,7 @@ onWaapiReady.then(waCtx => {
     const {min: minGain, max: maxGain} = ratioFx.def.gain
     int.gain = waCtx.createGain()
     connectArr(fx.start, int.gain, fx.output)
+    int.isConnected = false
     
     fx.modifyGain = factor => fx.setValue('gain', max(atm.gain * factor, minGain))
     
@@ -167,6 +168,19 @@ onWaapiReady.then(waCtx => {
           chainFx.setValue('gain', fixedGain)
         }
       }
+    }
+  }
+  ratioFx.activate = (fx, on, {int} = fx) => { //: ratio has special activation
+    if (on !== int.isConnected) {
+      if (int.shared && !int.shared.isWarMode && int.shared.soloFx) {
+        int.shared.soloFx.setValue('solo', 'off')
+        delete int.shared.soloFx
+      }
+      console.log(`ratio ${fx.zholger} will connected (${on}), gain=${fx.atm.gain}`)
+      on
+        ? fx.input.connect(fx.start)
+        : fx.input.disconnect(fx.start)
+      int.isConnected = on
     }
   }
   ratioFx.onActivated = fx => fx.onActivated()
