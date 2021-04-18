@@ -335,21 +335,22 @@ export const extendUi = ui => {
     const isRemoveable = !isFixed && !isBlank
     const isAlterable = !isFixed
     const isFoldable = isRemoveable //: for now, but it can differ
+    const isFolded = isFoldable && (fxname === 'Oscilloscope' || fxname === 'Hi-res spectrum')
     fxPanelObj.capture({isBlank, isGain, isRemoveable, isAlterable, isFoldable})
 
     const truePropsToArr = obj => obj.propertiesToArr().filter(key => obj[key])
 
-    const auxClass = truePropsToArr({isBlank, isGain, isOnOff, isFixed, isRemoveable, isAlterable, isFoldable, hasStageMark}).join(' ')
+    const auxClass = truePropsToArr({isBlank, isGain, isOnOff, isFixed, isRemoveable, isAlterable, isFoldable, hasStageMark, isFolded}).join(' ')
     
     const fxSelector$ = isAlterable &&
       addListSelector({}, 'selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stageIx, ix, nfx))
       
     const foldIcon$ = isFoldable &&
       div$({class: 'bfx-foldicon', click: event => {
-        const isFolded = toggleClass$(fxrama$, 'folded')
+        const isFolded = toggleClass$(fxrama$, 'isFolded')
         if (event.altKey) { //: do the same with all fxpanels of the same type
           iterateAllFxPanelObjs(fpo => (event.ctrlKey || fpo.fxname === fxname) && 
-            fpo.isRemoveable && setClass$(fpo.fxrama$, isFolded, 'folded', clog(fpo)))
+            fpo.isRemoveable && setClass$(fpo.fxrama$, isFolded, 'isFolded', clog(fpo)))
           //: maybe this should be filtered to normal stages and not fixed fxs
         }
       }})
