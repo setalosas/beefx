@@ -10,7 +10,7 @@ const {Ø, undef, isNum, isFun, nop, clamp, s_a, getIncArray} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {post, startEndThrottle} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, setClass$, q$$, haltEvent} = DOMplusUltra
+const {div$, leaf$, set$, setClass$, q$$, haltEvent, iAttr} = DOMplusUltra
 const {round} = Math
 
 //8#c00 -------------------------- Youtube Interface --------------------------
@@ -198,12 +198,6 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     
   const finalizeSourceChange = sourceUi => {
     ui.recreateSourcePlayer(sourceUi)
-    
-    set$(sourceUi.ctrl$, {html: ``}, [
-      div$({class: 'ctrl-cmd cc-play', text: 'Play', click: _ => sourceUi.play()}),
-      div$({class: 'ctrl-cmd cc-stop', text: 'Stop', click: _ => sourceUi.stop()}),
-      div$({class: 'ctrl-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
-    ])
   }
   
   ui.autoPlaySource = sourceIx => ui.flags.isAutoplayOn && sourceUis[sourceIx].play()
@@ -220,7 +214,6 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   
   const changeSourcesWithSTEM = _ => {
   }
-  
   ui.changeAudioSource = (sourceIx, {src, title, videoId}) => {//8#2b2 [audio]
     const sourceUi = prepareSourceChange(sourceIx)
     const audio = ui.insertAudioPlayerInto(sourceUi.media$, src, title)
@@ -287,7 +280,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     const videoId = thumb.getAttribute('videoId')
     const src = thumb.getAttribute('src')
     const title = thumb.getAttribute('title')
-    const sourceIx = parseInt(event.target.className.split('grab-to-')[1])
+    const sourceIx = iAttr(event.target, 'srcix') + (event.shiftKey ? 4 : 0)
     haltEvent(event)
     
     if (videoId?.length === 11 && sourceIx) {
@@ -302,11 +295,24 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   const buildVideoList = on => { //: the videolist works both on Youtube and on the demo site
     void ui.u2list$?.remove()
     
-    //+ localstorage!!!!!!
+    //+ localstorage!!!!!! on youtube only
     
     if (on) {
       ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'}, [
-        div$(),
+        div$({class: 'thumb-head'}, [
+          div$({class: 'bee-cmd', attr: {state: 'alert'}, text: 'Close', 
+            click: _ => ui.onVideoListToggled(false)}),
+          div$({text: 'Hold shift to add src 5-8!'})  
+        ]),
+        div$({class: 'thumb-upload'}, [1, 2, 3, 4].map(ix =>
+          leaf$('input', {class: 'ss s' + ix, attr: {type: 'file', accept: 'audio/*'}, on: {
+            change: event => {
+              const file = event.target.files[0]
+              const fileUrl = window.URL.createObjectURL(file)
+              ui.changeAudioSource(ix, {src: fileUrl, title: file.name.split('.mp3')[0]})
+            }
+          }}))
+        ),
         ...root.mp3s.map(({src, title, videoId}) => {
           const [art, tit] = title.split(' - ') 
           const html = `<em>${art}</em> - ${tit}`
@@ -359,11 +365,12 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
         if (videoId?.length === 11 || src) {
           div$(thumb, {class: 'bfx-grab-frame', attr: {videoId, title, src}},
             '1234'.split('').map(text =>
-              div$({class: 'grabber grab-to-' + text, click: changeSourceFromGrab}, div$({text}))))
+              div$({class: 'grabber grab-to-' + text, attr: {srcix: text},
+                click: changeSourceFromGrab}, div$({text}))))
         }
       }
     } else {
-      for (const grab of q$$('a#thumbnail > .bfx-grab-frame')) {
+      for (const grab of q$$('#thumbnail > .bfx-grab-frame')) {
         grab.remove()
       }
     }
@@ -385,12 +392,5 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
       slog(`💿setting input selectors: stage#${stageIx}] = ${sourceIx}`)
       ui.setStageInputState(stageIx, sourceIx)
     })
-    
-    tlog(`💿`, sourceArr.map(src => ({...src, stages: src.destStageIxArr.join(', ')})))
-    
-    //+sidebar will be eliminated
-    void sources.listUi?.refresh(sourceArr.map((src, ix) => `<em>sourceIx[${ix}]</em> stages: ${destStr(src)} player: [][][]`))
-      
-    sources.dbgDump()
   }
 }
