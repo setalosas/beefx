@@ -105,6 +105,8 @@ export const createSources = (playground, root) => {
   const dbgCheckIx = sourceIx => wassert(sourceIx && sourceIx <= maxSources)
   
   const dbgDump = startEndThrottle(_ => console.table(sourceArr), 500)
+  
+  //const dummyInput = waCtx.createGain()
     
   const {maxSources = 8} = root.config
   const sourceIxArr = getIncArray(1, maxSources)
@@ -117,6 +119,7 @@ export const createSources = (playground, root) => {
   }
   const sourceArr = []
   const sources = {
+    autoFloodOnFirst: true,
     sourceArr,
     dbgDump,
     dbgMarkNode,
@@ -213,7 +216,7 @@ export const createSources = (playground, root) => {
       weject(destStageIxArr.length)
       iterateStandardStages(stage => wassert(stage.sourceIx === -1))
       
-      sources.floodStages({sourceIx})
+      sources.autoFloodOnFirst && sources.floodStages({sourceIx})
     } else {
       for (const stageIx of destStageIxArr) {
         const stage = getStage(stageIx)
@@ -225,6 +228,8 @@ export const createSources = (playground, root) => {
     ui.refreshSourcesUi()
   }
 
+  sources.floodStages = ({sourceIx}) => iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
+  
   sources.changeStageSourceIndex = (stageId, newSourceIx, {isFirst} = {}) => {
     dbgCheckIx(newSourceIx)
     const stage = getStage(stageId)
@@ -251,11 +256,13 @@ export const createSources = (playground, root) => {
     ui.refreshSourcesUi()
   }
   
-  sources.floodStages = ({sourceIx}) => iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
-  
   //:8#597 --------------- sources methods ---------------
   
   const connectSource = (sourceIx, stage) => {
+    /* if (!sourceIx) {
+      dummyInput.connect(stage.input)
+      return
+    } */
     dbgCheckIx(sourceIx)
     const currSource = sourceArr[sourceIx]
     const {stageIx, input} = stage
@@ -270,6 +277,10 @@ export const createSources = (playground, root) => {
   }
   
   const disconnectSource = (sourceIx, stage) => {
+    /* if (!sourceIx) {
+      dummyInput.disconnect(stage.input)
+      return
+    } */
     dbgCheckIx(sourceIx)
     const currSource = sourceArr[sourceIx]
     const {stageIx, input} = stage
