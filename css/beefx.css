@@ -416,6 +416,7 @@ body::after {
   font-weight: 700;
   color: transparent;
   text-align: center;
+  user-select: none;
 }
 .bfx-grab-frame .grabber div {
   position: relative;
@@ -550,6 +551,54 @@ body::after {
 #thumbnail.emulated .audiv em {
   font-style: normal;
   color: yellow;
+}
+.thumb-head,
+.thumb-upload {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+.thumb-head {
+  width: 84px;
+  height: 66px;
+  padding: 0 3px;
+  text-align: center;
+}
+.thumb-upload {
+  width: 150px;
+  height: 66px;
+  font-size: 10px;
+  font-weight: 400;
+}
+.thumb-upload .ss {
+  display: block;
+  width: 200px;
+  height: 22px;
+  transform: scale(0.7);
+  transform-origin: 0 0;
+}
+.thumb-upload .s1 {
+  position: absolute;
+  left: 4px;
+  top: 0;
+}
+.thumb-upload .s2 {
+  position: absolute;
+  left: 4px;
+  top: 25%;
+}
+.thumb-upload .s3 {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+}
+.thumb-upload .s4 {
+  position: absolute;
+  left: 4px;
+  top: 75%;
 }
 .audiomenu {
   position: fixed;
@@ -712,6 +761,7 @@ body::after {
   position: relative;
   left: 0;
   top: 0;
+  height: 100px;
 }
 .source-strip .source-frame .src-ctrl .ctrl-cmd {
   position: relative;
@@ -733,6 +783,104 @@ body::after {
   background-color: rgba(0, 0, 0, 0.5);
 }
 .source-strip .source-frame .src-ctrl .ctrl-cmd.act {
+  color: #ffb;
+}
+.source-strip .source-frame .src-ctrl .src-navtop {
+  position: relative;
+  width: 100%;
+  height: 22px;
+}
+.source-strip .source-frame .src-ctrl .src-navmid {
+  position: relative;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe {
+  position: relative;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.25);
+  background-size: cover;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .drag-bar {
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 252px;
+  height: 10px;
+  margin: 0px 0 0;
+  background: #666666;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .drag-bar .time {
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  color: #ffffff;
+  text-shadow: 0 0 1px #000000, 0 0 2px #000000, 0 0 4px #000000;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .drag-bar .curr {
+  position: absolute;
+  left: 50%;
+  top: -11px;
+  transform: translateX(-50%);
+  color: #ffb;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .drag-bar .dur {
+  position: absolute;
+  right: 2px;
+  top: -11px;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .drag-bar::after {
+  position: absolute;
+  content: '';
+  width: var(--prog);
+  height: 100%;
+  border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.5);
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .player-nav {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  padding: 6px 0 4px 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .player-nav .nav-cmd {
+  position: relative;
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 2px;
+  border-radius: 4px;
+  vertical-align: top;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  user-select: none;
+  color: #ffffff;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(1px);
+  margin: 0 2px;
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .player-nav .nav-cmd:hover {
+  color: #fc4;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.source-strip .source-frame .src-ctrl .src-navmid .player-navframe .nav-thumb .player-nav .nav-cmd.act {
   color: #ffb;
 }
 .source-strip .source-frame .src-mock-holder {
@@ -1137,9 +1285,17 @@ audio::-webkit-media-controls-toggle-closed-captions-button {}
   height: 20px;
   padding: 1px 0 2px;
   border-radius: 8px;
-  background: rgba(191, 64, 64, 0.6);
   text-align: center;
   backdrop-filter: blur(2px);
+}
+.input-selector .input-selbg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(191, 64, 64, 0.6);
+  border-radius: 8px;
 }
 .input-selector .input-label {
   position: relative;
@@ -1153,14 +1309,16 @@ audio::-webkit-media-controls-toggle-closed-captions-button {}
   /* margin: 1px 1px 2px; */
 }
 .input-selector .input-cmd.bee-cmd[state="active"] {
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.4);
+  color: #ffa;
+  background-color: #000000;
 }
 .input-selector .input-cmd.bee-cmd[state="on"] {
-  color: #ffffff;
-  background-color: rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 .input-selector .input-cmd.bee-cmd[state="off"] {
+  color: rgba(255, 255, 255, 0.5);
+  background-color: transparent;
   pointer-events: none;
   user-select: none;
 }
