@@ -130,7 +130,7 @@ export const createStageManager = root => {
     const stageIx = nuIx
     const fxArr = []
     const endRatio = stageParams.hasEndRatio ? newFx('fx_ratio') : undef //: cannot be false (?.)
-    beeFx.debug.addStage(endRatio, letter)
+    beeFx.debug.addStage(endRatio, letter + ':')
     
     const output = endRatio || waCtx.createGain()
     void endRatio?.chain(...getEndRatios()) //: only the other chain elements' stage is needed
@@ -180,19 +180,15 @@ export const createStageManager = root => {
       console.warn(`❗️❗️❗️ Overload in stage ${stageIx}, turning off. ❗️❗️❗️`)
     }
     
-    stage.activate = (on = true) => { //: ertelmetlen, az endratiot kapcsolgatja
+    stage.activate = (on = true) => { //: only the endRatio will be changed!
       endRatio.activate(on)
       stage.fpo && root.ui.refreshFxPanelActiveState(stage.fpo) //+ this is bad
-      void stage.vis?.setActive(on)
-      
-      for (const fx of fxArr) {
-        void fx?.activate(on) //: ezeknek az ui-jat is kene basztatni (activate nem csinalja??)
-      }
+      void stage.vis?.setActive(on) //: just for performance gain
     }
     
     stage.deactivate = _ => stage.activate(false)
     
-    stage.decompose = _ => { //: endRatio too, but maybe it shouldn't
+    stage.decompose = _ => { //: no endRatio!
       stage.input.disconnect()
       for (const fx of fxArr) {
         void fx?.disconnect()
