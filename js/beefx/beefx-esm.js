@@ -30,6 +30,7 @@ const createBeeFX = waCtx => {
     useSetTargetForDelayTime: true //: this is not evident
   }
   const fxHash = {}
+    const resMap = {}
   const beeFx = {
     fxHash,
     namesDb: {
@@ -52,12 +53,22 @@ const createBeeFX = waCtx => {
     const zharr = []
     const debug = {
       on: true,     //: must be turned off if not used as it interferes too much
-      nuid: 1000
+      nuid: 2000
     }
+    const auNStr = node => node.toString().split(' ')[1].slice(0, -1)
+    
+    const getResOf = node => node.__bee_res_id__ = node.__bee_res_id__ || node.__resource_id__ ||
+      (node instanceof AudioWorkletNode
+      ? 'AW.' + debug.nuid++
+      : node instanceof MediaElementAudioSourceNode
+        //? 'ME.' + debug.nuid++ 
+        ? (node.__resource_id__ = debug.nuid++)
+        : 'Unknown.' + debug.nuid++)
     
     const getGraphString = node => {
-      const res = wassert(node.__resource_id__)
-      return res + ' -> ' + (connections[res] || {}).propertiesToArr().join(', ')
+      const res = getResOf(node)
+      return res + ' -> ' + (connections[res] || {}).propertiesToArr()
+        .filter(a => a !== 'type').join(', ')
     }
     debug.table = tab => {
       const columns = {}
@@ -86,6 +97,25 @@ const createBeeFX = waCtx => {
         const act = item.isActive ? '' : 'font-style: italic; color: #bbb;'
         console.log(`%c${line}`, 'font: 400 11px hack;padding: 1px 0; margin: 0;' + cols + act)
       }
+    }
+    const getInsOuts = res => {
+      const outs = connections[res]?.propertiesToArr().filter(a => a !== 'type').join(', ')
+      const type = connections[res]?.type
+      const inArr = []
+      for (const key in connections) {
+        const conns = connections[key]
+        conns && conns.propertiesToArr().includes(res) && inArr.push(key)
+      }
+      return {ins: inArr.join(', '), outs, type}
+    }
+    debug.marks = _ => {
+      const tab = []
+      for (const res in resMap) {
+        const mark = resMap[res]
+        const {ins, outs, type} = getInsOuts(res)
+        tab.push({res, mark, ins, outs, type})
+      }
+      console.table(tab)
     }
     debug.dump = msg => {
       msg && console.log(msg)
@@ -116,52 +146,60 @@ const createBeeFX = waCtx => {
       
         for (const int in fx.int) {
           const intern = fx.int[int]
-          if (intern?.__resource_id__) {
+          if (intern?.__bee_res_id__) {
             const extra = intern instanceof GainNode ? ` (${intern.gain.value.toFixed(3)})` : ''
             tab.push({
               isActive,
               zh: '__' + zholger,
               stage,
-              short: '__' + intern.toString().split(' ')[1].slice(0, -1) + extra,
+              short: '__' + auNStr(intern) + extra,
               id: getGraphString(intern)
             })
           }
         }
       }
       debug.table(tab)
+      debug.marks()
       console.log({connections, zharr, fxStageHash})
     }
     debug.addStage = (fx, stageLetter) => fxStageHash[fx.zholger || 0] = stageLetter
-    
+            
     debug.addCon = (src, dst) => {
-      src instanceof AudioWorkletNode && (src.__resource_id__ = 'AW.' + debug.nuid++)
-      dst instanceof AudioWorkletNode && (dst.__resource_id__ = 'AW.' + debug.nuid++)
-      
-      const srcRes = src.__resource_id__
-      const dstRes = dst.__resource_id__
-      if (srcRes && dstRes) {
-        connections[srcRes] = connections[srcRes] || {}
-        connections[srcRes][dstRes] = true
-      } else {
-        src instanceof MediaElementAudioSourceNode ||
-          console.warn(`AudioNode without resourceId:`, src, dst)
+      const srcRes = getResOf(src)
+      const dstRes = getResOf(dst)
+      connections[srcRes] = connections[srcRes] || {type: auNStr(src)}
+      connections[srcRes][dstRes] = true
+      if (srcRes.beginS?.('Unknown') || dstRes.beginS?.('Unknown')) {
+        console.warn(`AudioNode without resourceId:`, src, dst)
       }  
     }
     debug.addDisco = (src, dst) => {
-      const srcRes = src.__resource_id__
+      const srcRes = getResOf(src)
       if (srcRes) {
-        const dstRes = dst?.__resource_id__
+        const dstRes = dst && getResOf(dst)
         if (dstRes) {
           wassert(connections[srcRes][dstRes])
           delete connections[srcRes][dstRes]
         } else {
-          connections[srcRes] = {}
+          connections[srcRes] = {type: auNStr(src)}
         }
       } else {
         console.warn(`AudioNode without resourceId:`, src, dst)
       }  
     }
+    debug.markNode = (node, mark) => {
+      if (node) {
+        const res = getResOf(node)
+        if (res) {
+          resMap[res] = (resMap[res] || '') + '//' + mark
+        } else {
+          console.warn(`AudioNode without resourceId:`, node)
+        }
+      }
+    }
     debug.addFx = fx => zharr.push(fx)
+    
+    //: if Audion is not active, we have to dummify our methods:
     
     !(!waCtx.destination.__resource_id__ || !debug.on) ||
       debug.propertiesToArr().map(key => isFun(debug[key]) && (debug[key] = nop))
@@ -258,7 +296,12 @@ const createBeeFX = waCtx => {
       }
     }
     fx.valueChanged = (key, value = fx.atm[key]) => {
-      fx.atm[key] = value
+      if (fx.atm[key] !== value && value !== 'fire') {
+        console.warn(`fx.valueChanged: mismatch on second setting:`, {fx, key, value})
+      //: We should not set the state AGAIN. This second one must be eliminated.
+        fx.atm[key] = value
+      //: So this is temporary now.
+      }
       callListenerArray(fx.listenersByKey[key])
       callListenerArray(fx.listenersByKey.all)
     }
@@ -272,10 +315,12 @@ const createBeeFX = waCtx => {
       fx.past[key] = fx.atm[key]
       fx.atm[key] = value
       
+      //: This is way too concise and unreadable.
+      //: Refakt: separate the arrayKey branch.
+      
       const {arrayKey = key, ix = -1, type} = fx.exo.def[key]
       if (type !== 'graph') {
         const fun = fx.exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
-  //+ nem kene az array tozsdeft meghivni
         if (fun) {
           fun()
           fx.valueChanged(key, value)
@@ -301,7 +346,7 @@ const createBeeFX = waCtx => {
     fx.getLinearValues = key => {
       const parO = fx.exo.def[key]
       if (parO.isExp) {
-        const {linMin: min, linMax: max, linDefVal: defVal} = parO //: defVal?
+        const {linMin: min, linMax: max, linDefVal: defVal} = parO
         const val = fromExp(fx.getValue(key))
         return {min, max, defVal, val}
       } else {
@@ -339,7 +384,7 @@ const createBeeFX = waCtx => {
     //8#892------- Getter helpers --------
     
     fx.getName = _ => fx.exo.name
-    fx.getShortName = _ => fx.exo.name.substr(3) //+ this is bugged
+    fx.getShortName = _ => fx.exo.name.substr(3) //+ this is bugged, check who calls this!
     
     fx.getPepper = _ => fx[pepper]
     
@@ -395,7 +440,7 @@ const createBeeFX = waCtx => {
     
     fx.restoreFullState = state => {
       const {isActive, atmState} = state
-      fx.setWithPars(atmState) //: only the externally observable state can be restored, not the internal
+      fx.setWithPars(atmState) //: only the externally observable state can be restored
       fx.activate(isActive)
     }
     
