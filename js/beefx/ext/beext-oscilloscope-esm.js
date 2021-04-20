@@ -187,7 +187,7 @@ onWaapiReady.then(waCtx => {
     halfZoom: _ => value === 'fire' && fx.setCmds('halfZoom', int.width / 8192),
     quartZoom: _ => value === 'fire' && fx.setCmds('quartZoom', int.width / 4096),
     resetZoom: _ => value === 'fire' && fx.setCmds('resetZoom', 1),
-    freeze: _ => int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc()
+    freeze: _ => value === 'fire' && (int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc())
   }[key])
   
   oscilloscopeExt.onActivated = (fx, isActive) => isActive ? fx.startOsc() : fx.stopOsc()
