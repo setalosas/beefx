@@ -24,7 +24,7 @@ onWaapiReady.then(waCtx => {
       solo: {defVal: 'off', type: 'cmd', name: 'Solo'},
       same: {defVal: 'off', type: 'cmd', name: '==='},
       regen: {defVal: 'off', type: 'cmd', name: 'Regen'},
-      save: {defVal: 'off', type: 'cmd', name: 'Save'},
+      clone: {defVal: 'off', type: 'cmd', name: 'Clone'},
       master: {defVal: 'off', type: 'cmd', subType: 'led', color: 0, name: 'Master'},
       slave: {defVal: 'off', type: 'cmd', subType: 'led', color: 50, name: 'Slave'},
       /* dbgDeact: {defVal: 'off', type: 'cmd'},
