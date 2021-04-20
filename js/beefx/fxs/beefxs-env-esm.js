@@ -142,7 +142,7 @@ onWaapiReady.then(waCtx => {
     },
     sweep: _ => {
       int._sweep = Math.pow(clamp(value, 0, 1), int._sensitivity)
-      window.envdebug.push({at: window.performance.now(), msg: 'sweep: ' + int._sweep})
+      //window.envdebug.push({at: window.performance.now(), msg: 'sweep: ' + int._sweep})
       int.setFilterFreq()
     },
     resonance: _ => {
@@ -179,7 +179,7 @@ onWaapiReady.then(waCtx => {
         //put on the next cycle to let all init properties be set
         int.filterFreqTimeout = setTimeout(int.setFilterFeq, 0)
       }
-      window.envdebug.push({at: window.performance.now(), msg: 'freq: ' + freq})
+      //window.envdebug.push({at: window.performance.now(), msg: 'freq: ' + freq})
     }
     
     int.envelopeFollower = newFx('fx_envelopeFollower', {initial: {
