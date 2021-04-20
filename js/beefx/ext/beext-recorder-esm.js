@@ -15,7 +15,13 @@ const {fetch, AudioWorkletNode} = window
 onWaapiReady.then(async waCtx => {
   const {registerFxType, newFx, connectArr, getJsPath} = BeeFX(waCtx)
   
-  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js'))
+  //: Off and on AudioWorklets are subject of unsolicited caching.
+  //: Even full reload or 'Disable cache' in devtools network tab won't help)
+  //: Also they are not shown at all in the devtools network tab which is extra helpful.
+  //: The only thing that worked here is to add some garbage to the end of the filename :-((
+  //: (This method isn't foolproof, but we still can pray for the reload. ymmv.)
+  
+  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js?dkdfk'))
 
   auWorkletPromise
     .then(_ => console.log(`Recorder audioWorklet loaded.`))
