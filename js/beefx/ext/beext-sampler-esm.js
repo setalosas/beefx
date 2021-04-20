@@ -30,7 +30,7 @@ onWaapiReady.then(waCtx => {
     const endx = sec2Pix(final.endRel)
     
     const drawRecIndicator = _ => {
-      if (int.inRec) {
+      if (int.mode === 'modeRecord') {
         const timeFrac = (waCtx.currentTime * 1000) % 1000
         if (timeFrac > 450) {
           cc.beginPath()
@@ -44,7 +44,16 @@ onWaapiReady.then(waCtx => {
     const drawGrid = _ => {
       cc.clearRect(0, 0, width, height)
       cc.font = '32px roboto condensed'
-      cc.lineWidth = 2
+      const pixPerSec = sec2Pix(1) - sec2Pix(0)
+      if (pixPerSec > 150) {
+        cc.lineWidth = 2
+        cc.strokeStyle = 'hsla(200, 70%, 50%, 0.6)'
+        for (let sec = floor(disp.startRel); sec < floor(disp.endRel) + 1; sec += .1) {
+          const secX = sec2Pix(sec)
+          ccext.drawLine(secX, 0, secX, height)
+        }
+      }
+      cc.lineWidth = 3
       cc.strokeStyle = 'hsla(200, 70%, 50%, 0.8)'
       for (let sec = floor(disp.startRel); sec < floor(disp.endRel) + 1; sec++) {
         const secX = sec2Pix(sec)
@@ -133,11 +142,11 @@ onWaapiReady.then(waCtx => {
   samplerEx.onActivated = (fx, isActive) => isActive || fx.shutdownRecorder() //: cleanup!
   
   samplerEx.construct = (fx, pars, {int, atm} = fx) => {
-    const recorded = {} //: this is fix
-    const trim = {}     //: trim from the start and the end (in theory it's reversible)
-    const sample = {}   //: can be changed with trim
-    const final = {}    //: sample modified with startMod/endMod (sliders)
-    const disp = {}     //: graph display interval
+    const recorded = {}     //: this is fix
+    const trim = {}         //: trim from the start and the end (in theory it's reversible)
+    const sample = {}       //: can be changed with trim
+    const final = {}        //: sample modified with startMod/endMod (sliders)
+    const disp = {}           //: graph display interval
     int.capture({final, disp}) //: as we will need these in the graph redraw
       
     const initFx = _ => {
@@ -247,6 +256,8 @@ onWaapiReady.then(waCtx => {
       if (int.useScriptProcessor) { //8#a43 Recorder ScriptProcessorNode. Fast, simple & deprecated.
         int.scriptNode = int.scriptNode || waCtx.createScriptProcessor(int.procFrames, 2, 2)
         int.scriptNode.onaudioprocess = data => appendBuffer(data.inputBuffer, int.procFrames)
+        
+        //+ pattogas nem szunik meg ha dest?
         connectArr(fx.start, int.scriptNode, fx.output) //, waCtx.destination)//+teszt ha ez nincs
       } else {                      //8#43a Recorder AudioWorklet. Slow, complex & unstable.
         const pars = {outputChannelCount: [2]}
@@ -266,7 +277,13 @@ onWaapiReady.then(waCtx => {
           }
         }//: recorder already loaded the worklet or this wont work
         fx.start.connect(int.recorder)
-        const params = {frameLimit: int.procFrames, transferCompact: false, transferAudio: true}
+        const params = {
+          frameLimit: int.procFrames, 
+          transferCompact: false, 
+          transferAudio: true,
+          debug: fx.zholger
+        }
+        console.log('sending params to worker', params)
         int.recorder.port.postMessage({op: 'params', params})
         int.recorder.port.postMessage({op: 'rec'})
       }
@@ -364,6 +381,18 @@ onWaapiReady.then(waCtx => {
         }[mode]
         void action?.()
         fx.recalcMarkers()
+        
+        //: This is a dirty one: 
+        //: After returning beeFx will set the cmd to 'fire' state although we already changed it.
+        //: (This didn't matter until we started to clone the state of one fx to another.)
+        //: So we will reset it at the end of this processing step.
+        //: Automatization can fail from this, the human interface is ok.
+        //: (The cmd handling needs refaktoring.)
+        const cmdValue = atm[mode]
+        if (cmdValue !== 'fire') {
+          console.log(`will set instead of fire:`, mode, cmdValue)
+          post(_ => fx.setValue(mode, cmdValue))
+        }
       }
     }
     
@@ -408,8 +437,7 @@ onWaapiReady.then(waCtx => {
       int.source && (int.source.detune.value = int.detune)
       int.isLoopPlaying || playOnce()
     }
-    
-    post(initFx)
+    initFx() //: was: post, but NEVER post the initFx!
   }
   registerFxType('fx_sampler', samplerEx)
 })
