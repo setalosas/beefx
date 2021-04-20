@@ -34,6 +34,7 @@ class Recorder extends AudioWorkletProcessor {
     this.frameLimit = 5120
     this.transferCompact = true
     this.transferAudio = false
+    this.gotParams = false
     this.data = {
       frames: 0,            //: frames collected (and unsent)
       channels: maxChannel, //: always 2
@@ -44,6 +45,11 @@ class Recorder extends AudioWorkletProcessor {
     
     this.port.onmessage = ({data}) => {
       if (data.op === 'rec') {
+        if (!this.gotParams) {
+          console.error(`Cannot start recording without params!`)
+          debugger
+          return
+        }
         this.isRecording = true
       } else if (data.op === 'stop') {
         this.isRecording = false
@@ -54,13 +60,20 @@ class Recorder extends AudioWorkletProcessor {
         this.frameLimit = data.params.frameLimit
         this.transferCompact = data.params.transferCompact
         this.transferAudio = data.params.transferAudio
+        this.debug = data.params.debug
         this.resetData()
+        this.gotParams = true
         this.noRecording = false
       }
     }
   }
   
   resetData () {
+    if (!this.frameLimit) {
+      console.error(`No frameLimit defined for recording!`)
+      debugger
+      this.frameLimit = 5120 //: prevent bigger trouble for a few secs
+    } 
     for (let ch = 0; ch < this.data.channels; ch++) {
       this.data.channelData[ch] = new Float32Array(this.frameLimit)
     } 
