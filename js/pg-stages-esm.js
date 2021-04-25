@@ -4,7 +4,7 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    no-unused-vars, standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, Visualizer} from './improxy-esm.js'
+import {Corelib, Visualizer} from './improxy-esm.js'
 
 const {s_a, undef, isFun, isNum, isStr, getRnd} = Corelib
 const {wassert, weject} = Corelib.Debug
@@ -29,8 +29,7 @@ const {schedule, adelay, startEndThrottle} = Corelib.Tardis
   Most methods can recognize both type of reference (see stageId as param name).
   */
 export const createStageManager = root => {
-  const {waCtx} = root
-  const beeFx = BeeFX(waCtx)
+  const {waCtx, beeFx} = root
   const {newFx, connectArr} = beeFx 
   
   //8#c89 -------- Helpers --------
@@ -80,8 +79,6 @@ export const createStageManager = root => {
   
   const getEndRatios = _ => getStageGroup().map(stage => stage.endRatio)
   
-  //const equalRatios = _ => void getStageGroup()[0]?.endRatio.chain(...getEndRatios())
-
   const stageMan = {
     iterateStages, 
     iterateStandardStages,
@@ -89,15 +86,12 @@ export const createStageManager = root => {
     checkStageByLetter,
     getStageGroup,
     getEndRatios,
-    //equalRatios,
     getFilteredStages,
-    stages,
-    listUi: root.ui.createSideList('side-left stagelist-frame')
+    stages
   }
   
   stageMan.dump = startEndThrottle(_ => {
     console.table(stages)
-    void stageMan.listUi?.refresh(stages.map((stage, ix) => `#${stage.stageIx} [${stage.letter}] fxs: ${stage.fxArr.length}`))
   }, 500)
 
   stageMan.changeFx = ({stageId, ix, type}) => {
@@ -118,8 +112,12 @@ export const createStageManager = root => {
   
   stageMan.createStage = ({letter, nuIx = stages.length}, params) => {
     const defaultParams = {
+      hasStageMarks: true, //+tmp
       hasEndSpectrum: false,
-      hasEndRatio: false
+      hasEndRatio: false,
+      hasUi: true,
+      isSourceStage: false,
+      sourceStageIx: 0 //: not 0 if sourceStage
     }
     const stageParams = {
       ...defaultParams,
@@ -130,8 +128,8 @@ export const createStageManager = root => {
     const stageIx = nuIx
     const fxArr = []
     const endRatio = stageParams.hasEndRatio ? newFx('fx_ratio') : undef //: cannot be false (?.)
-    beeFx.debug.addStage(endRatio, letter + ':')
-    
+    endRatio && beeFx.debug.addStage(endRatio, letter + ':')
+
     const output = endRatio || waCtx.createGain()
     void endRatio?.chain(...getEndRatios()) //: only the other chain elements' stage is needed
     
@@ -148,11 +146,12 @@ export const createStageManager = root => {
       analyser: undef,
       vis: undef,
       fxArr,
-      uiStage: undef             //: If the stage has an ui, also it's a flag for this
+      uiStage: undef,            //: If the stage has an ui, also it's a flag for this
+      ...stageParams
     }
+    beeFx.debug.markNode(stage.input, `stages[${nuIx}].input`)
     
-    if (stageParams.hasEndSpectrum) {
-      debugger
+    if (stage.hasEndSpectrum) {
       stage.analyser = waCtx.createAnalyser()
       stage.output.connect(stage.analyser)
     }
@@ -161,15 +160,16 @@ export const createStageManager = root => {
     weject(stageLetterHash[letter])
     stageLetterHash[letter] = stage
     
-    stage.assignUi = ({uiStage}) => {
-      stage.uiStage = uiStage
+    if (stage.hasUi) {
+      const parent$ = stage.isSourceStage ? undef : undef
+      stage.uiStage = root.ui.addStage(stage, parent$)
       
       if (stage.analyser) {
-        const {spectcanv$, levelMeter$} = uiStage
+        const {spectcanv$, levelMeter$} = stage.uiStage
         stage.vis = spectcanv$ && Visualizer
           .createSpectrumVisualizer(stage.analyser, spectcanv$, levelMeter$, nuIx, stage.mayday)
       }
-      stage.fpo = root.ui.rebuildStageEndPanel(stage, endRatio) //+pfuj
+      stage.fpo = endRatio && root.ui.rebuildStageEndPanel(stage, endRatio) //+pfuj
     }
   
     stage.mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
@@ -226,7 +226,7 @@ export const createStageManager = root => {
     
     stage.saveState = _ => fxArr.map(fx => fx.getFullState())
     
-    stage.reset = _ => { //+nem lehet kivulrol hivhato egy olyan method ami decompose nelkul modosit
+    /* stage.reset = _ => { //+ should be const reset, not stage.reset to avoid call from outside
       for (let ix = 0; ix < fxArr.length; ix++) { //: delete all non fixed fxs
         if (fxArr[ix] && !fxArr[ix].isFixed) {
           stage.changeFx({ix, type: 'fx_blank'})
@@ -240,7 +240,7 @@ export const createStageManager = root => {
       } 
       //:ui.resetStage(stageIx)
       beeFx.debug.dump('(resetted)')
-    }
+    } */
 
     const destroyLastFx = _ => {
       wassert(fxArr.length)
@@ -254,40 +254,51 @@ export const createStageManager = root => {
       }
     }
     
+    stage.destroyLastBlanks = _ => {
+      while (fxArr.length > 1) {
+        const lastIx = fxArr.length - 1
+        if (fxArr[lastIx].getName() === 'Blank') {
+          destroyLastFx()
+          continue
+        }
+        break
+      }
+    }
+    
     stage.loadState = async fxStates => {
-      /* stage.deactivate()
-      beeFx.debug.dump('before decompose (deactivated)')
-      await adelay(15000) */
-
+      //: was: deactivate stage
       stage.decompose()
-      beeFx.debug.dump('after decompose')
-      
-      /* stage.reset()
-      beeFx.debug.dump('after reset')
-      await adelay(15000) */
-      
       destroyLastFxsAfter(fxStates.length)
       
       for (let ix = 0; ix < fxStates.length; ix++) {
         const fxState = fxStates[ix]
         fxArr[ix]?.isFixed ||
           void changeFxLow({ix, type: wassert(fxState.fxName)})?.restoreFullState(fxState)
+          stage.uiStage.fxPanelObjArr[ix].isActive = fxArr[ix].isActive
+          root.ui.refreshFxPanelActiveStateByStageIx(nuIx, ix)
+          //+THIS IS BAD.
       }
-      beeFx.debug.dump('afterc chg')
-      console.log('chged', stage.fxArr)
-      
       stage.compose()
-      beeFx.debug.dump('after compose (deactivated)')
-
-      /* stage.activate()
-      beeFx.debug.dump('after compose (activated)') */
+      //: was: activate stage
     }
     
     stage.rebuild = _ => {
       const state = stage.saveState()
-      console.log(JSON.stringify(state))
-      getStageById('A').loadState(state) //:DEBUG!
-      stage.loadState(state)
+      iterateStages(istage => {
+        if (istage !== stage) {
+          istage.loadState(state)
+        }
+      })
+    }
+        
+    stage.clone = _ => {
+      const state = stage.saveState()
+      console.log('this state will be cloned:', state)
+      iterateStandardStages(istage => {
+        if (istage !== stage) {
+          istage.loadState(state)
+        }
+      })
     }
     
     stageMan.dump()
