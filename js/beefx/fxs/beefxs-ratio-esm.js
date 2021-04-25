@@ -10,6 +10,8 @@ const {undef, nop, no, yes, isArr} = Corelib // eslint-disable-line
 const {wassert} = Corelib.Debug
 const {max} = Math
 
+//8#b49 Lots of debug logs yet here - but lots of bugs too.
+
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr} = BeeFX(waCtx)
   
@@ -19,7 +21,7 @@ onWaapiReady.then(waCtx => {
   const glog = (...args) => logRatio && console.group(...args)
   const hlog = _ => logRatio && console.groupEnd()
   
-  const ratioFx = { //8#666 ------- ratio -------
+  const ratioFx = { //8#666 ------- ratio (linked gains with a fix sum of 1(ish)) -------
     def: {
       solo: {defVal: 'off', type: 'cmd', name: 'Solo'},
       same: {defVal: 'off', type: 'cmd', name: '==='},
@@ -154,9 +156,9 @@ onWaapiReady.then(waCtx => {
         for (const chainFx of shared.activeChainArr) {
           fx !== chainFx && chainFx.modifyGain(factor)
         }
-        hlog() //: groupEnd
+        hlog() //: Don't remove: groupEnd
       }
-      hlog()
+      hlog() //: Don't remove: groupEnd
       shared.isWarModeOn--
     }
     
