@@ -1,10 +1,12 @@
-/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, valid-typeof, 
-   object-curly-spacing, no-trailing-spaces, quotes, no-return-assign */
+/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, valid-typeof, no-unused-vars, 
+   object-curly-spacing, no-trailing-spaces, quotes, no-return-assign, indent */
 
 const {OfflineAudioContext} = window
 
-export const detectBPMj = buffer => {
+export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
   const bpm = {}
+    
+  const {duration, length, numberOfChannels, sampleRate} = buffer
 
   function getPeaks (data) {
     // What we're going to do here, is to divide up our audio into parts.
@@ -13,11 +15,53 @@ export const detectBPMj = buffer => {
     // Each part is 0.5 seconds long - or 22,050 samples.
     // This will give us 60 'beats' - we will only take the loudest half of those.
     // This will allow us to ignore breaks, and allow us to address tracks with a BPM below 120.
-  
-    const partSize = 22050
-    const parts = data[0].length / partSize
+    const len = data[0].length
+    const le = data[0]
+    const ri = data[1]
+    const vol = new Array(len)
+    for (let i = 0; i < len; i++) {
+      vol[i] =  Math.max(Math.abs(le[i]), Math.abs(ri[i]))
+    }
+    // BeeFx modifications to the original:
+    // We don't want to detect the edges of parts as they are most probably false ones and
+    // this gives us a lot of false 120 bpm hints (if the parts are 1/2 sec long).
+    // So we first detect local peaks (ie the left and right frames are both lower that that).
+    // Also we use shorter samples, so we need more peaks, so we use smaller parts (1/4 sec).
+    const partSize = sampleRate / 4
+    const parts = len / partSize
     const peaks = []
   
+    for (let i = 0; i < parts; i++) {
+      let ix = i * partSize
+      
+      const localPeaks = []
+      for (let p = 1; p < partSize - 1; p++, ix++) {
+        if (vol[ix - 1] < vol[ix] && vol[ix] > vol[ix + 1]) {
+          // We could check here the distance from the previous peak (and throw away the lower
+          // one if the distance is too small). LATER.
+          localPeaks.push({pos: ix, p, vol: vol[ix]})
+        }
+      }
+      if (!localPeaks.length) { // It's possible a silent part (all 0s). 
+        console.warn(`No local peaks found`, {localPeaks})  
+        continue
+      }   
+      let max = {
+        position: 0,
+        volume: 0
+      }
+      for (const {pos, vol, p} of localPeaks) {
+        if (vol > max.volume) {
+          max = {
+            // p, // p was stored to check for edges, but it's not needed now.
+            position: pos,
+            volume: vol
+          }
+        }
+      }
+      peaks.push(max)
+    }
+    /*  original code
     for (var i = 0; i < parts; i++) {
       var max = 0
       for (var j = i * partSize; j < (i + 1) * partSize; j++) {
@@ -30,10 +74,10 @@ export const detectBPMj = buffer => {
         }
       }
       peaks.push(max)
-    }
+    } */
     peaks.sort((a, b) => b.volume - a.volume) 
-    // We then sort the peaks according to volume...take the loudest half of those...
-    // ...and re-sort it back based on position.
+    // We then sort the peaks according to volume, take the loudest half of those
+    // and re-sort it back based on position.
   
     return peaks.splice(0, peaks.length * 0.5).sort((a, b) => a.position - b.position)
   }
@@ -48,12 +92,17 @@ export const detectBPMj = buffer => {
   
     peaks.forEach(function (peak, index) {
       for (var i = 1; (index + i) < peaks.length && i < 10; i++) {
+        // This check is important only if we use overlapping parts:
+        if (peaks[index + i].position === peak.position) { 
+          continue
+        }
         var group = {
           tempo: (60 * 44100) / (peaks[index + i].position - peak.position),
+          volume: peaks[index + i].volume,
           count: 1
         }
-  
-        while (group.tempo < 90) {
+        
+        while (group.tempo < minBpm) { // was 90, but must be a parameter
           group.tempo *= 2
         }
   
@@ -74,7 +123,7 @@ export const detectBPMj = buffer => {
   }
   
   const detectj = _ => new Promise(resolve => {
-    var offlineContext = new OfflineAudioContext(2, 30 * 44100, 44100)
+    var offlineContext = new OfflineAudioContext(numberOfChannels, duration * sampleRate, sampleRate)
     const source = offlineContext.createBufferSource()
     source.buffer = buffer
 
@@ -103,18 +152,16 @@ export const detectBPMj = buffer => {
     highpass.connect(offlineContext.destination)
 
     // Start the source, and render the output into the offline conext.
-
     source.start(0)
     offlineContext.startRendering()
     
     offlineContext.oncomplete = function (e) {
-      var buffer = e.renderedBuffer
-      var peaks = getPeaks([buffer.getChannelData(0), buffer.getChannelData(1)])
-      var groups = getIntervals(peaks)
+      const buffer = e.renderedBuffer
+      const peaks = getPeaks([buffer.getChannelData(0), buffer.getChannelData(1)])
+      const groups = getIntervals(peaks)
+      //console.table(groups)
       
-      var candidates = groups.sort(function (intA, intB) {
-        return intB.count - intA.count
-      }).splice(0, 10)
+      const candidates = groups.sort((intA, intB) => intB.count - intA.count).slice(0, 20)
       bpm.capture({candidates, groups, peaks})
       
       console.log(bpm)
