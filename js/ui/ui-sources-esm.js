@@ -60,10 +60,6 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     isMocked: false
   }))]
   
-  /* const sourcesUi = {
-    sourceUis
-  } */
-  
   const init = _ => {
     set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, sourceIxArr.map(ix => 
       sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
