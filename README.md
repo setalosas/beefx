@@ -2,7 +2,7 @@
 
 beeFX is a collection of filters, audio effects, visualisers and other fun stuff for the Web Audio API.
 
-![image](https://github.com/setalosas/beefx/blob/main/readme/dem8.jpg)
+![image](https://github.com/setalosas/beefx/blob/main/doc/dem8.jpg)
 
 # The components of beeFX
 
