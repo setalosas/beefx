@@ -4,6 +4,12 @@
 
 const {floor, round} = Math
 
+const dateOrNow = date => typeof date === 'undefined' ? Date.now() : date
+
+const uZone = d => new Date(dateOrNow(d) - new Date().getTimezoneOffset() * 6E4).toISOString().split('T')
+
+export const dateToHumanDateTime = date => uZone(date).join(' ').substr(0, 19)
+
 const hms2str = (h, m, s) => {
   const lastPad2 = u => ('0' + u).slice(-2)
   return (h ? lastPad2(h) + ':' : '') + lastPad2(m) + ':' + lastPad2(s)
