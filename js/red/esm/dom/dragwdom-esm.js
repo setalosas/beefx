@@ -83,7 +83,7 @@ const createDragWithDOM = _ => {
   }
   const postDrop = (event, dst$, callback) => {
     set$(dst$, {declass: 'dragover dragovermod'})
-    callback(ddrag.draggedData, ddrag.lastMod)
+    callback(ddrag.draggedData, ddrag.lastMod, event)
   }
   
   const draggableHandler = (event, item$, data) => {
