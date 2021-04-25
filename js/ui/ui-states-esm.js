@@ -15,7 +15,7 @@ const {div$, leaf$, set$, setClass$, q$, q$$, haltEvent} = DOMplusUltra
 const {addDraggable, addDragTarget} = DragWithDOM
 const {round, abs} = Math
 
-//8#49f --------------------------States ui --------------------------
+//8#49f -------------------------- States ui (Stage slots & projects) --------------------------
 
 export const extendUi = ui => {
   const {root, pg} = ui
@@ -34,18 +34,18 @@ export const extendUi = ui => {
       const srcSlot = parseInt(letter)
       root.stateManager.onSlotToSlotDrop({dstSlot, srcSlot})
     }
-    buildStagePresetList(true)
+      ui.onStageSlotsToggled(true)
   }
   
-  const buildStagePresetList = on => {
-    void ui.stagePresetList$?.remove()
+  ui.onStageSlotsToggled = on => {
+    void ui.stageSlots$?.remove()
     
     if (on) {
       const {slots} = root.stateManager
       wassert(slots.length)
 
-      ui.stagePresetList$ = div$(ui.frame$, {class: 'state-stagelist-frame'}, 
-        div$({class: 'st-stagelist-inframe'}, [
+      ui.stageSlots$ = div$(ui.stageSlotStrip$, {class: 'state-stageslots-frame'}, 
+        div$({class: 'st-stageslots-inframe'}, [
           div$(),
           ...slots.map((state, slot) => {
             const fxs = state.fxarr?.map(fx => pg.getFxType(fx.fxName).name).join(' ◻️ ')
@@ -58,6 +58,29 @@ export const extendUi = ui => {
         ]))
     }
   }
-  
-  ui.onStagePresetsToggled = buildStagePresetList
+  ui.onProjListToggled = on => {
+    void ui.projMatrix$?.remove()
+    
+    if (on) {
+      const projects = root.stateManager.getProjectListExtended()
+      console.log(`got projects`, projects)
+
+      ui.projMatrix$ = div$(ui.projStrip$, {class: 'state-projlist-frame'}, 
+        div$({class: 'st-projlist-inframe'}, [
+          div$(),
+          ...projects.map(({projName, projDesc, versions, lastSavedAt}) => {
+            return div$({
+              class: 'st-proj',
+              html: [
+                `<strong>${projDesc}</strong>`,
+                `${projName} (${versions})`,
+                `<em>${lastSavedAt}</em>`
+              ].join(`<br>`),
+              attr: {drid: projName},
+              click: _ => pg.reloadWithProject(projName)
+            })
+          })
+        ]))
+    }
+  }
 }
