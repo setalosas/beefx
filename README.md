@@ -57,7 +57,7 @@ This repo itself is the playground at this moment, but I plan to put the compone
 
 VID
 
-## The beeFX Chrome Extension for youtube
+## The beeFX Chrome Extension for Youtube
 
 The playground as a site has limits in the use of copyrighted music - of course I cannot include real songs with it. There is no much fun trying out a complex effect pipeline with free music or singing through the microphone, so from the beginning there was an option for upload and use any user files (mp3 or wav). However, not too many users have mp3s on their computer these days. So it seemed natural to use Youtube videos as audio sources - but here comes a wall again: embedded youtube iframes are closed, there is no way to access their audio output. Except of course if the playground runs on the youtube.com domain.
 
@@ -75,16 +75,18 @@ Note: **no dependencies**, so you don't have to install anything. No external li
 
 # Performance
 
-The Web Audio API is quite effective, audio graphs consisting of more than 1000 nodes are running without problem on the playground. Of course there are problematic filters using ScriptProcessorNode or AudioWorkletNode (e.g. Recorder, BPM detector, Sampler), but most of the effects are surprisingly cheap in CPU.
+The Web Audio API is quite effective, audio graphs consisting of more than 1000 nodes are running without problem on the playground. Of course complex filters can be implemented badly and there are a few problematic, especially the ones using ScriptProcessorNode or AudioWorkletNode (e.g. Recorder, BPM detector, Sampler) or the Convolver, but most of the effects are surprisingly cheap in CPU.
 
-I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute. There must be a better way than comparing the CPU graph screenshots. 
+For the playground of course the DOM is the bottleneck in most cases.
+
+I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots. 
 
 # Browsers
 
-The playground runs on Chrome and for now I don't plan support other browsers. Still:
+The playground is intented to run in Chrome and for now I don't plan test other browsers. However:
 * It works in Firefox but the UI controls are ugly.
-* It works on Edge, but a few effects have some sound artifacts.
-* It works on Android Chrome on phones too if someone has quite small fingers.
+* It works in Edge, but a few effects have some sound artifacts. (I will find out why as Edge is more comfortable for development than Chrome as it's much faster.)
+* It works in Android Chrome on phones too if someone has quite small fingers.
 
 # Acknowledgments
 
