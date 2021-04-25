@@ -26,6 +26,8 @@ In the wiki there is (or soon will be) a detailed desciption of how to create, c
 
 ## The beeFX Playground
 
+![image](https://github.com/setalosas/beefx/blob/main/doc/golem.jpg)
+
 Starting as a testing tool, the playground grew into an application where the user can define different audio sources and chains of effects for them in different channels (stages), something like a mixer board with effect modules.
 
 The UI elements are not part of the core effect modules, they are generated automatically from the effects definition data (so the definition data containes properties which are only useful for the user interface, but this part is very thin).
