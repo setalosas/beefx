@@ -6,11 +6,11 @@
    
 import * as Im from '../improxy-esm.js'
 
-const {Corelib, DOMplusUltra, StagesUi, FxUi, PlayersUi, SourcesUi, MixerUi, StatesUi} = Im
+const {Corelib, DOMplusUltra} = Im
 const {Ø, undef, yes, no, isNum, isFun, nop, clamp} = Corelib // eslint-disable-line
 const {wassert, brexru} = Corelib.Debug
 const {schedule} = Corelib.Tardis
-const {div$, leaf$, set$, setClass$, q$$, canvas$} = DOMplusUltra
+const {div$, leaf$, set$, setClass$, q$$} = DOMplusUltra
   
 export const createUI = (root, exroot) => {
   const {body} = document
@@ -21,15 +21,23 @@ export const createUI = (root, exroot) => {
     root,
     flags: {
       isGrabOn: false,
-      isListActive: false,
-      isStagePresetListActive: false,
+      isListOn: false,
+      isStageSlotsOn: false,
       isAutoplayOn: false,
       isAutostopOn: false,
       isMixerOn: false,
-      isSyncOn: false
+      isAuxOn: false,
+      isProjOn: false,
+      isProjListOn: false,
+      isSyncOn: false,
+      isRedreshOn: false, //: redresh=reduced refesh, I'm apologizing.
+      syncSources: false
     },
     refreshPlayerControl: earlyCall(false),
-    refreshSourcesUi: earlyCall(false)
+    refreshSourcesUi: earlyCall(false),
+    bars: {},
+    toggleCmds: {},
+    cmds: {}
   }
   
   //8#79c Utilities, primitives, config
@@ -43,38 +51,10 @@ export const createUI = (root, exroot) => {
   }
   ui.set = ui.setHost(ui)
   
-  ui.toggleCmd = (host, node$ = brexru(), key, onChange = nop) => (on = !host[key]) => {
-    if (on !== host[key]) {
-      host[key] = on
-      setClass$(node$, host[key], 'act')
-      onChange(on)
-    }
-  }
-  
   ui.insertAudioPlayerInto = (node$, url, title = 'no title') => 
     leaf$('audio', node$, {attr: {src: url, controls: '', title}}) 
   
-  ui.insertAudioPlayer = (url, title = 'no title') => {
-    void ui.player?.remove()
-    
-    set$(ui.top$, {css: {__title: '"' + title + '"'}}, 
-      ui.player$ = leaf$('audio', {attr: {src: url, startVolume: .2, controls: '', title}}))  
-      
-    return ui.player$
-  }
-  
-  ui.insertVideoPlayer = src => { //+repalce is kell!!
-    void ui.player?.remove()
-    
-    set$(ui.top$, {}, 
-      ui.player$ = leaf$('video', {
-        attr: {width: '640', height: '360', preload: 'auto', controls: '', playsinline: ''}
-      }, leaf$('source', {attr: {src, type: 'video/youtube'}})))  
-      
-    return ui.player$
-  }
-  
-  //8#393 DOM framework building (cold init)
+  //8#393 DOM framework building (cold init, skeleton)
   
   const init = _ => {  
     if (root.killEmAll) {
@@ -82,16 +62,24 @@ export const createUI = (root, exroot) => {
       for (const node of [...q$$('script[nonce]'), ...q$$('dom-module')]) {
         node.remove()
       }
-      //: more things could be eliminated from head
+      //: more things could be eliminated from youtube's head
     }
     const extracc = (root.onYoutube ? ' u2' : '') + (root.killEmAll ? ' nu2' : '')
     ui.frame$ = div$(body, {class: 'beebody' + extracc}, [
-      ui.top$ = div$({class: 'bfx-top'}),
       ui.bigmid$ = div$({class: 'bfx-bigmid off'}, [
-        ui.mainmenu$ = div$({class: 'bfx-horbar bfx-mainmenu'}),
-        ui.sourceStrip$ = div$(), //: for SourcesUi
-        ui.mixermenu$ = div$({class: 'bfx-horbar bfx-mixermenu off'}),
-        ui.auxmenu$ = no && div$({class: 'bfx-horbar mixer-frame'}, [
+        ui.mainmenuBar$ = div$({class: 'bfx-horbar bfx-mainmenu'}),
+        ui.auxmenuBar$ = div$({class: 'bfx-horbar bfx-auxmenu off'}),
+        ui.projmenuFrame$ = div$({class: 'off'}, [
+          ui.projmenuBar$ = div$({class: 'bfx-horbar bfx-projmenu'}),
+          ui.projStrip$ = div$({class: 'strip off'})
+        ]),
+        ui.stageSlotStrip$ = div$({class: 'strip off'}),
+        //:sources menu can be put exactly here
+        ui.sourceStrip$ = div$({class: 'strip'}),
+        
+        //: oldies from here (deprecated)
+        ui.mixermenuBar$ = div$({class: 'bfx-horbar bfx-mixermenu off'}),
+        ui.exauxmenu$ = div$({class: 'bfx-horbar mixer-frame off'}, [
           ui.bpmbar$ = div$({class: 'bfx-bpmbar mbar'}),
           ui.syncbar$ = div$({class: 'bfx-syncbar mbar'})
         ]),
@@ -100,99 +88,127 @@ export const createUI = (root, exroot) => {
             ui.playerLeft$ = div$({class: 'player-frame left-player mixer-inframe'}),
             ui.fader$ = div$({class: 'fader-frame mixer-inframe'}),
             ui.playerRight$ = div$({class: 'player-frame right-player mixer-inframe'})
-          ]),
-          no && div$({class: 'dispatcher-frame'})
+          ])
         ]),
+        //: end of the oldies section
+        
         ui.mid$ = div$({class: 'bfx-mid'})
-      ])
+      ]),
+      ui.factoryFrame$ = div$({class: 'factory-frame off'})
     ])
-    ui.videoGrabCanvas$ = canvas$(body, {class: 'videograb'})
   }
   
   //8#37c Warm init: we have playground now
   
-  ui.start = playground => {
+  ui.start = async playground => {
     ui.pg = playground
-    populateMainMenu()
-    populateMixerMenu()
     
-    StagesUi.extendUi(ui)
-    FxUi.extendUi(ui)
-    PlayersUi.extendUi(ui)
-    SourcesUi.extendUi(ui)
-    MixerUi.extendUi(ui)
-    StatesUi.extendUi(ui)
-    //ui.startMixer()
-    initCommandHandlers()
-    ui.toggleAutoplay()
-    ui.toggleAutostop()
+    Im.StagesUi.extendUi(ui)
+    Im.FxUi.extendUi(ui)
+    Im.PlayersUi.extendUi(ui)
+    await Im.SourcesUi.extendUi(ui)
+    Im.StatesUi.extendUi(ui)
+    
+    populateMenus()
+    ui.setFlag('autoplay', true)
+    ui.setFlag('autostop', true)
   }
   
   ui.finalize = _ => {
-    wassert(ui.pg)
-    ui.finalizeMixer()
-    ui.finalizeSources() //: stages - de ezt az ui-sources hivja meg
+    ui.finalizeSources() //: createInputDispatchers (->stages)
   }
-  
-  const populateMainMenu = _ => {
-    const {pg} = ui
-    const mItems = []
-    //mItems.push(div$({class: 'mitem', text: 'Equalize ratios', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: 'Reset', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: 'Sample', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: 'Random', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: 'Save to video', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: 'Presets', click: pg.equalRatios}))
-    //mItems.push(div$({class: 'mitem', text: '1 (led)... etc.', click: pg.equalRatios}))
-    mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
-    /*
-    mItems.push(div$({class: 'mitem rt', text: 'BPM/Speed...', 
-      click: _ => toggleClass$(ui.bpmbar$, 'off')}))
-    mItems.push(div$({class: 'mitem rt', text: 'Sync...', 
-      click: _ => toggleClass$(ui.syncbar$, 'off')}))      */
-    mItems.push(ui.grabCmd$ = div$({class: 'mitem rt', text: 'Grab!', click: _ => ui.toggleGrab()}))
-    mItems.push(ui.listCmd$ = 
-      div$({class: 'mitem rt', text: 'Sources...', click: _ => ui.toggleList()}))
-    mItems.push(ui.stagePresetCmd$ = 
-      div$({class: 'mitem rt', text: 'Stage slots...', click: _ => ui.toggleStagePresets()}))
-    mItems.push(ui.mixerCmd$ = 
-      div$({class: 'mitem rt', text: 'Mixer...', click: _ => ui.toggleMixer()}))
-    mItems.push(ui.syncCmd$ = 
-      div$({class: 'mitem rt', text: 'Sync...', click: _ => ui.toggleSync()}))
-    mItems.push(ui.autoplayCmd$ = 
-      div$({class: 'mitem rt', text: 'Autoplay', click: _ => ui.toggleAutoplay()}))
-    mItems.push(ui.autostopCmd$ = 
-      div$({class: 'mitem rt', text: 'Autostop', click: _ => ui.toggleAutostop()}))
 
-    set$(ui.bigmid$, {declass: 'off'})
-    set$(ui.mainmenu$, {}, mItems) 
-  }
-  
-  const populateMixerMenu = _ => {
-    const {pg} = ui
-    const mItems = []
-    mItems.push(div$({class: 'mitem', text: 'Master', click: _ => pg.setSenderStage()}))
-    set$(ui.mixermenu$, {}, mItems) 
-  }
-  
-  //+ uistate kene mixer helyett v barmi
-  
-  const initCommandHandlers = _ => {
-    ui.toggleAutoplay = ui.toggleCmd(ui.flags, ui.autoplayCmd$, 'isAutoplayOn')
-    ui.toggleAutostop = ui.toggleCmd(ui.flags, ui.autostopCmd$, 'isAutostopOn')
-    ui.toggleList = ui.toggleCmd(ui.flags, ui.listCmd$, 'isListActive', ui.onVideoListToggled)
-    ui.toggleStagePresets = 
-      ui.toggleCmd(ui.flags, ui.stagePresetCmd$, 'areStagePresetsActive', ui.onStagePresetsToggled)
-    
-    ui.toggleGrab = ui.toggleCmd(ui.flags, ui.grabCmd$, 'isGrabOn', ui.onGrabToggled)
-    ui.toggleMixer = ui.toggleCmd(ui.flags, ui.mixerCmd$, 'isMixerOn', on => {
-      setClass$(ui.mixermenu$, !on, 'off')
+  const createInput = baseClass => ({cc, onInput = nop} = {}) => {
+    const node$ = leaf$('input', {
+      class: baseClass + ' ' + cc, 
+      attr: {type: 'text'}, 
+      on: {
+        keyup: event => event.key === 'Enter' && onInput(node$.value)
+      }
     })
-    ui.toggleSync = ui.toggleCmd(ui.flags, ui.syncCmd$, 'isSyncOn', 
-      on => setClass$(ui.syncFrame$, !on, 'off'))
+    return node$
+  }
+  
+  const createToggleCmd = (baseClass, isToggle = true) => (name, text, pars = {}) => {
+    const togg = ui.toggleCmds[name] = {name}
+    
+    const toggle = (on = !togg.on) => {
+      if (on !== togg.on) {
+        togg.on = on
+        setClass$(togg.node$, on, 'act')
+        for (const linked of togg.linkeds) {
+          setClass$(ui[linked], !on, 'off')
+        }
+        on && togg.focus && ui[togg.focus + '$'].focus()
+        void togg.onChg?.(on)
+      }
+    }
+    const defOnClick = isToggle ? toggle : nop
+        
+    const {cc = '', click = defOnClick, onChg = nop, link = '', focus, on = false} = pars
+    const ccExtra = on ? 'act' : ''
+    const cclass = [baseClass, cc, ccExtra].join(' ')
+    const nodeKey = name + 'Cmd$'
+    const node$ = div$({cclass, text, click: _ => click()})
+    ui[nodeKey] = node$ //+ temporary for debug
+    const linkeds = link.split(',').filter(a => a).map(link => link + '$')
+    togg.capture({node$, nodeKey, on, click, toggle, linkeds, focus, onChg})
+    console.log('toggleCmd created', togg)
+    return ui[nodeKey] = node$
+  }
+  ui.setFlag = (name, on) => ui.toggleCmds[name]?.toggle(on)
+  
+  ui.getFlag = name => ui.toggleCmds[name]
+    ? ui.toggleCmds[name].on
+    : console.warn('unknown flag', name)
+    
+  const createBar = (name, node$, pars, items = []) => {
+    ui.bars[name] = {node$}
+    set$(node$, {}, items)
+  }
+  
+  const populateMenus = _ => {
+    const {pg} = ui
+    const togg = createToggleCmd('mitem', true)
+    const cmd = createToggleCmd('mitem', false)
+    const inp = createInput('minput')
+    const label = (name, text) => ui[name + '$'] = div$({class: 'mlabel', text})
+    createBar('mainmenu', ui.mainmenuBar$, {}, [
+      togg('mixer', 'Mixer...', {link: 'mixermenuBar'}),
+      togg('sync', 'Sync...', {link: 'syncFrame'}),
+      togg('sourceList', 'Sources...', {onChg: ui.onVideoListToggled}),
+      togg('stageSlots', 'Stage slots...', {link: 'stageSlotStrip', onChg: ui.onStageSlotsToggled}),
+      togg('proj', 'Projects..', {link: 'projmenuFrame'}),
+      togg('fxfactory', 'Factory..', {link: 'factoryFrame', onChg: ui.onFactoryToggled}),
+      togg('aux', 'More...', {link: 'auxmenuBar'}),
+      togg('grab', 'Grab!', {cc: 'rt', onChg: ui.onGrabToggled}),
+      togg('autoplay', 'Autoplay', {cc: 'rt'}),
+      togg('autostop', 'Autostop', {cc: 'rt'}),
+      togg('syncSources', 'Sync sources', {cc: 'rt'})
+    ])
+    createBar('auxmenu', ui.auxmenuBar$, {}, [
+      togg('redresh', 'Reduce refresh', {onChg: ui.toggleRefresh}),
+      togg('nospectrum', 'No bottom spectrums (reload!)', {onChg: ui.toggleRefresh}),
+      cmd('noblanks', 'Remove bottom blanks', {click: pg.destroyLastBlanks}),
+      cmd('dump', 'Dump to console', {cc: 'rt', click: _ => pg.beeFx.debug.dump()})
+    ])
+    createBar('projmenu', ui.projmenuBar$, {}, [
+      togg('projCreate','Create new project', {link: 'newProjectInput', focus: 'newProjectInput'}),
+      ui.newProjectInput$ = inp({cc: 'off', onInput: txt => {
+        pg.createNewProject(txt)
+        ui.setFlag('projCreate', false)
+      }}),
+      togg('projList','List projects...', {link: 'projStrip', onChg: ui.onProjListToggled}),
+      label('projActive', 'Active: -'),
+      cmd('projSave','Save version', {click: _ => pg.saveProject()}) //: full call: def par!
+    ])
+    createBar('mixermenu', ui.mixermenuBar$, {}, [
+      cmd('mixermaster', 'Master', {click: _ => pg.setSenderStage()})
+    ])
+    set$(ui.bigmid$, {declass: 'off'})
   }
 
-  ui.createSideList = cclass => {
+  ui.createSideList = cclass => { //: not used atm
     const frame$ = div$(body, {class: 'side-frame ' + cclass})
     
     const refresh = itemArr => {
