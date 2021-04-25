@@ -2,13 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, DOMplusUltra, Store} from './improxy-esm.js'
+import {Corelib, DOMplusUltra, Store} from './improxy-esm.js'
 
-const {s_a, undef, isFun, isNum, getRnd, hashOfString, ascii} = Corelib
-const {wassert, weject} = Corelib.Debug
-const {schedule, adelay, NoW, since, startEndThrottle} = Corelib.Tardis
+const {undef} = Corelib
+const {wassert} = Corelib.Debug
+const {dateToHumanDateTime} = Corelib.DateHumanizer
+const {schedule} = Corelib.Tardis
 const {div$, set$} = DOMplusUltra
 
 const store = Store.createStore('beeFX')
@@ -40,7 +41,16 @@ const stagePresets = { //: These compressed defs are ugly, but it's easier to ov
   preset2xb: {AB: 'b'},
   preset3xb: {ABC: 'b'},
   preset4xb: {ABCD: 'b'},
+  preset5xb: {ABCDE: 'b'},
+  preset6xb: {ABCDEF: 'b'},
+  preset7xb: {ABCDEFG: 'b'},
+  preset8xb: {ABCDEFGH: 'b'},
+  preset9xb: {ABCDEFGHI: 'b'},
+  preset10xb: {ABCDEFGHIJ: 'b'},
+  preset11xb: {ABCDEFGHIJK: 'b'},
+  preset12xb: {ABCDEFGHIJKL: 'b'},
   preset2sampler: {AB: 'b,sampler,scope'},
+  preset4xbScope: {ABCD: 'b,scope'},
   preset3rec: {A: 'osc,sampler,scope', B: 'osc,recorder,scope', C: 'osc,sampler,scope'},
   preset2xpitch: {AB: 'b,pitchShifterNote,scope'},
   prTakeFive: {
@@ -125,7 +135,8 @@ export const create = root => {
     
   const stateManager = {
     stagePresets,
-    slots: [{}]
+    slots: [{}],
+    actProject: ''
   }
   const maxSlots = 40
 
@@ -156,7 +167,8 @@ export const create = root => {
           const stages = setupObj.propertiesToArr()
           const html = stages.map(stage => stage + ': ' + setupObj[stage].join(' / ')).join('<br>')
           return div$({class: 'preset-item', text: presetName, click: event => {
-            store.save('actPreset', presetName)
+            store.save('onStartup', {type: 'actPreset', presetName})
+            window.location.href = window.location.href // eslint-disable-line no-self-assign
             set$(presets$, {css: {__reload: '" (reload needed!)"'}})
             resolve(setupObj)
           }}, div$({class: 'preset-preview', html}))
@@ -165,13 +177,83 @@ export const create = root => {
     }
     if (name) {
       if (name === 'last') {
-        const lastStored = store.load('actPreset')
-        lastStored && resolve(setupHash[lastStored])
+        const startup = store.load('onStartup') || {type: 'actPreset', presetName: 'presets4xb'}
+        if (startup.type === 'actPreset') {
+          const lastStored = startup.presetName
+          resolve({actPreset: setupHash[lastStored]})
+        } else if (startup.type === 'actProject') {
+          resolve({actProject: startup.projName})
+        }
       } else {
         resolve(wassert(setupHash[name]))
       }
     }
   })
+  
+  //8#67a Project storage
+  
+  stateManager.setActProject = (actProject, projDesc = '') => {
+    stateManager.actProject = actProject
+    ui.set('projActive', {html: `Active: <strong>${projDesc}</strong> (${actProject})`})
+    store.save('onStartup', {type: 'actProject', projName: actProject})
+  }
+  stateManager.getActProject = _ => stateManager.actProject
+  
+  const readProject = projName => store.load('project#' + projName)
+  
+  const writeProject = (projName, project) => store.save('project#' + projName, project)
+  
+  const addProjectRevision = (fullProject, project) => {
+    fullProject.revisions = fullProject.revisions || {}
+    const timeStamp = dateToHumanDateTime()
+    fullProject.revisions[timeStamp] = fullProject.lastSaved = project
+    fullProject.lastSavedAt = timeStamp
+    console.log(`Project '${fullProject.projName}' rev ${timeStamp} added!`, fullProject)
+  }
+  
+  stateManager.saveProject = (project, projName = stateManager.getActProject()) => {
+    wassert(projName)
+    const fullProject = readProject(projName) || {projName}
+    project.projDesc = project.projDesc || fullProject.lastSaved.projDesc
+    addProjectRevision(fullProject, project)
+    writeProject(projName, fullProject)
+    stateManager.setActProject(projName, project.projDesc)
+  }
+  stateManager.loadProject = (projName, timeStamp = '') => {
+    const fullProject = readProject(projName)
+    if (fullProject) {
+      stateManager.setActProject(projName, fullProject.lastSaved.projDesc)
+      return fullProject.revisions?.[timeStamp] || fullProject.lastSaved
+    } else {
+      return undef
+    }
+  }
+  stateManager.getProjectTimeStamps = projName => {
+    const fullProject = readProject(projName)
+    if (fullProject) {
+      return fullProject.revisions.propertiesToArr() || []
+    } else {
+      return []
+    }
+  }
+  stateManager.getProjectList = _ => {
+    const ret = []
+    store.iterateKeys('project#', projName => ret.push(projName.split('project#')[1]))
+    return ret
+  }
+  stateManager.getProjectListExtended = _ => 
+    stateManager.getProjectList().map(projName => {
+      const {lastSavedAt, revisions, lastSaved} = readProject(projName) || {}
+        const {projDesc = ''} = lastSaved
+      return {
+        projName,
+        projDesc,
+        versions: revisions.propertiesToArr().length,
+        lastSavedAt
+      }
+    })
+  
+  //8#4a9 Stage slots storage
   
   const fixSlots = slots => {
     while (slots.length < 5 || (slots.length < maxSlots && slots.slice(-1)[0].fxarr.length)) {
