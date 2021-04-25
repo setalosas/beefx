@@ -81,13 +81,16 @@ I don't know how to make an exact performance test with audio graphs, the curren
 
 # Browsers
 
-The playground runs on Chrome and for now I don't plan tests on other browsers. (It works on Android Chrome on phones too if someone has quite small fingers.)
+The playground runs on Chrome and for now I don't plan support other browsers. Still:
+* It works in Firefox but the UI controls are ugly.
+* It works on Edge, but a few effects have some sound artifacts.
+* It works on Android Chrome on phones too if someone has quite small fingers.
 
 # Acknowledgments
 
 The main goal of this project is not to find out how to compute the coefficients of a stable IIR filter (although accidentally it happened), but to collect and standardize the many audio effects and useful things available in the open source. There are lots of sources and the list grows day by day, the most important ones are:
 
-* Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed most of the ideas and algorithms.
+* Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed many ideas and algorithms.
 * Chris Wilson [cwilso](https://github.com/cwilso) (Google), who created countless Web Audio demos and examples.
 * Raymond Toy (rtoy) ([webaudio-hacks](https://github.com/rtoy/webaudio-hacks))
 * José M. Pérez ([JMPerez](https://github.com/JMPerez)) original implementation of the [BPM detection](https://github.com/JMPerez/beats-audio-api)
