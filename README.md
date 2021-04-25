@@ -22,6 +22,25 @@ Currently the beeFX library has over 60 effects or other Web Audio gadgets. Thes
 
 The current goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
 
+Just a few examples of the current elements:
+
+Core:
+* Basic WAU filters
+* IIR filters
+* Equalizers
+* Comvolvers (from impulse and reverb)
+* BBC Ring Modulator
+* Compressor
+* etc.
+
+Extensions:
+* BPM detector
+* Recorder
+* Sampler
+* Oscilloscope
+* Spectrum
+* etc.
+
 In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control a beeFX filter, it's basically works the same way as for every similar library.
 
 ## The beeFX Playground
