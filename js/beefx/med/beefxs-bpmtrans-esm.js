@@ -6,7 +6,9 @@
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
+const {nop} = Corelib
 const {wassert} = Corelib.Debug
+const {startEndThrottle} = Corelib.Tardis
 const {round, PI, log} = Math
 
 onWaapiReady.then(waCtx => {
@@ -14,41 +16,43 @@ onWaapiReady.then(waCtx => {
 
   const bpmTransformerFx = { //8#e74 ------- bpmTransformer -------
     def: {
-      bpmOriginal: {defVal: 120, min: 0, max: 300, subType: 'skipui'},
-      bpmModified: {defVal: 120, min: 100, max: 140}, //+ int 
-      playbackRate: {defVal: 1, min: 0.33, max: 3, subType: 'skipui'},
-      media: {defVal: null, type: 'object', subType: 'skipui'},
-      offset: {defVal: 0, min: -1, max: 1, subType: 'skipui'},//+vagy nem is kell
-      pitchCorrection: {defVal: false, type: 'boolean'}
+      reset: {defVal: 'on', type: 'cmd'},
+      bpmOriginal: {defVal: 120, type: 'box', width: 24}, //: for disp only, int.bpmIn is the var
+      bpmDec: {defVal: '>>', type: 'box', width: 20},
+      bpmAdjusted: {defVal: 120, type: 'box', width: 30}, //: for disp only, int.bpmOut is the var
+      decBpm: {defVal: 'on', type: 'cmd', name: '-1'},
+      incBpm: {defVal: 'on', type: 'cmd', name: '+1'},
+      autoTune: {defVal: 'off', type: 'cmd'},
+      pitch: {defVal: 100, min: 100 - 16 * 2, max: 100 + 16 * 2, unit: '%', name: 'Pitch Adj.'},
+      bpmModifier: {defVal: 0, min: -30, max: 30, readOnly: true, subType: 'skipui'},
+      controller: {defVal: null, type: 'object', subType: 'skipui'},
+      pitchCorrection: {defVal: false, type: 'boolean', subType: 'skipui'}
     }
   }
+  //: atm:
+  //:  - pitch ~100
+  //:  - bpmModifier + 3.2
+   //: - bpmOriginal (70#set)
+   //: - bpmAdjusted (76#mod)
+  //: int:
+  //:  - controller (media)
+  //:  - bpmIn (70)
+  //:  - bpmOut (76)
+  //:  - offset (pitchshifter)
+  //:  - isPitchShifterOn (control flag)
+  //:  - pitchShifter (fx)
   
-  bpmTransformerFx.setValue = (fx, key, value, {int} = fx) => ({
-    bpmOriginal: _ => {
-      int.bpmOriginal = value
-      fx.setValue('bpmModified', value) //: will call  recalcOnChange
-    },
-    bpmModified: _ => {
-      int.bpmModified = value
-      int.recalcOnChange(key)
-    },
-    playbackRate: _ => {
-      int.playbackRate = value
-      int.media && (int.media.playbackRate = value)
-      int.media && console.log('playbackrate modified', value)
-    },
-    media: _ => int.media = value,
-    offset: _ => {
-      int.offset = value
-      int.recalcOnChange(key) //: read only! this branchh is not valis
-    },
-    pitchCorrection: _ => {
-      int.pitchCorrection = value
-      int.recalcOnChange(key)
-    }
-  }[key])
+  bpmTransformerFx.setValue = (fx, key, value, {int, atm} = fx) => ({
+    pitch: _ => fx.pitchChanged(value),
+    bpmOriginal: _ => fx.bpmOrigChanged(value), // 123#set -> 123
+    bpmModifier: _ => fx.bpmModChanged(value),
+    log: nop,
+    autoTune: _ => fx.recalcPitchShift(),
+    controller: _ => int.controller = value,
+    pitchCorrection: _ => fx.recalcPitchShift()
+  }[key] || (_ => fx.cmdProc(value, key))) //: all commands sent to cmdProc
 
-  bpmTransformerFx.construct = (fx, pars, {int} = fx) => {
+  bpmTransformerFx.construct = (fx, pars, {int, atm} = fx) => {
     int.pitchShifter = newFx('fx_pitchShifter') //: def params = no shift
     fx.start.connect(fx.output)
     
@@ -58,7 +62,6 @@ onWaapiReady.then(waCtx => {
         fx.start.disconnect()
         fx.start.connect(int.pitchShifter)
         int.isPitchShifterOn = true
-        console.log('pitch inserted')
       }
     }
     const removePitchShifter = _ => {
@@ -67,28 +70,54 @@ onWaapiReady.then(waCtx => {
         fx.start.connect(fx.output)
         int.pitchShifter.disconnect()
         int.isPitchShifterOn = false
-        console.log('pitch removed')
       }
     }
-    int.recalcOnChange = src => { //: offset: man, bpmmod: do it, pitchCorr: do it
-      fx.setValue('playbackRate', int.bpmModified / int.bpmOriginal)
-
-      if (int.pitchCorrection && int.playbackRate !== 1) {
+    fx.recalcPitchShift = _ => { //: offset: man, bpmmod: do it, pitchCorr: do it
+      if (atm.pitchCorrection && atm.pitch !== 100) {
         insertPitchShifter()
-        const ratio = log(int.bpmModified) / log(int.bpmOriginal)
+        const ratio = log(int.bpmOut) / log(int.bpmIn)
         const newOffset = ratio - 1
-        if (src !== 'offset') {
-          fx.setValue('offset', newOffset) //:prevent endless loop
-        }
-        console.log('bpmtrans mod', newOffset)
         int.pitchShifter.setValue('offset', newOffset)
       } else {
         removePitchShifter()
-        console.log('bpmtrans mod', 0)
         int.pitchShifter.setValue('offset', 0)
       }
     }
+    const lazySetSpeed = startEndThrottle(_ => int.controller?.speed(atm.pitch / 100), 100)
+    
+    //: pitch, bpm and bpm mod, they each affect the other two. So the recalc is a bit tricky.
+    
+    fx.setAdjustedDisp = _ => 
+      fx.setValue('bpmAdjusted', int.bpmOut.toFixed(1) + (int.hasBpmSet ? '#mod' : ''))
+    
+    fx.pitchChanged = pitch => { //: mod remains, bpmOut will change
+      int.bpmOut = int.bpmIn * pitch / 100
+      lazySetSpeed()
+      fx.setAdjustedDisp()
+      fx.recalcPitchShift()
+    }
+    fx.bpmOrigChanged = value => { //: pitch remains, bpmMod & bpmOut will change
+      const [bpm, state] = value.split?.('#') ?? [value]
+      state === 'set' && (int.hasBpmSet = true)
+      int.bpmIn = parseInt(bpm)
+      int.bpmOut = int.bpmIn * atm.pitch / 100
+      fx.setValue('bpmModifier', int.bpmOut - int.bpmIn)
+      fx.setAdjustedDisp()
+    }
+    fx.bpmModChanged = modifier => { //: bpmIn remains, pitch will change -> then bpmOut
+      fx.setValue('pitch', 100 * (modifier + int.bpmIn) / int.bpmIn)
+    }
+    fx.cmdProc = (fire, mode) => {
+      if (fire === 'fire') {
+        const action = {
+          incBpm: _ => fx.setValue('bpmModifier', atm.bpmModifier + 1),
+          decBpm: _ => fx.setValue('bpmModifier', atm.bpmModifier - 1),
+          reset: _ => fx.setValue('bpmModifier', 0)
+        }[mode]
+        void action?.()
+        fx.setValue(mode, 'on')
+      }
+    }
   }
-  
   registerFxType('fx_bpmTransformer', bpmTransformerFx)
 })
