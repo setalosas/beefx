@@ -35,5 +35,14 @@ export const createStore = name => {
     
   store.remove = key => store.storage.removeItem(ext(key))
   
+  store.iterateKeys = (pattern, iteraFun) => {
+    const filterString = store.nameDot + pattern
+    const flen = filterString.length
+    const nlen = store.nameDot.length
+    for (const key in store.storage) {
+      key.substr(0, flen) === filterString && iteraFun(key.substr(nlen))
+    }
+  }
+      
   return store
 }
