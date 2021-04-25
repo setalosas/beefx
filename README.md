@@ -23,6 +23,8 @@ In the wiki there is detailed desciption of how to create, connect and control a
 
 ## The beeFX Playground
 
+![image](https://github.com/setalosas/beefx/blob/main/readme/dem8.jpg)
+
 Starting as a testing tool, the Playground grew into an application where the user can define different audio sources and chains of effects for them in different channels (stages).
 
 VID
