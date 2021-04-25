@@ -6,7 +6,7 @@ beeFX is a collection of filters, audio effects, visualisers and other fun stuff
 
 # The components of beeFX
 
-The original goal was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing / experimenting bed with lots of Ui elements and attached components.
+The original goal was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
 
 Although many parts of beeFX are implemented (and working), the project itself is in development phase. Thus the final architecture can change, but here are thr components of the current concept:
 
@@ -32,7 +32,7 @@ The UI elements are not part of the core effect modules, they are generated auto
 
 The playground also contains infrastructure elements for building a multi-stage audio chain with sources (and players). This is not needed at all when using the effect library, just an option.
 
-This repo itself is the playground at this moment, I plan to put the components into different repos after the first development phase.
+This repo itself is the playground at this moment, but I plan to put the components into different repos after the first development phase.
 
 VID
 
@@ -43,3 +43,13 @@ The playground as a site has limits in the use of copyrighted music - of course 
 So as a simple solution it can run on the youtube.com domain. This repo is also a Chrome extension - you have to load into Chrome with the 'Load unpacked' option on the chrome://extensions page.
 
 There is a normal mode when you click on the bee in the bottom left corner and a full takeover mode if you click with the Shift key held down. This is useful because it kills the complete youtube page (it needs quite a lot resources).
+
+So currently the playground can be used with local audio files, youtube videos and also with STEMs (parallel tracks for a song).
+
+# Installation
+
+This is an unreleased library, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use it as a Chrome extension on Youtube.
+
+Note: no dependencies, so you don't have to install anything. No external libraries of frameworks used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
+
+.
