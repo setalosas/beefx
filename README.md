@@ -77,6 +77,9 @@ Note: no dependencies, so you don't have to install anything. No external librar
 
 The main goal of this project is not to find out how to compute the coefficients of a stable IIR filter (although accidentally it happened), but to collect and standardize the many audio effects and useful things available in the open source. There are lots of sources and the list grows day by day, the most important ones are:
 
-* Oskar Eriksson (Theodeus), the creator of Tuna, from who I borrowed most of the ideas and algorithms.
-* Chris Wilson (Google), who created countless Web Audio demos and examples.
+* Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed most of the ideas and algorithms.
+* Chris Wilson [cwilso](https://github.com/cwilso) (Google), who created countless Web Audio demos and examples.
+* José M. Pérez ([JMPerez](https://github.com/JMPerez)) who implementation the BPM detection
+** [Detecting tempo of a song using browser's Audio API](https://jmperezperez.com/bpm-detection-javascript/)   
+** [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
 * [khoin](https://github.com/khoin) for the implementation of Jon Dattorro's reverb algorithm
