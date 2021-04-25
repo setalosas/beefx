@@ -23,8 +23,8 @@ export const createGraphBase = waCtx => {
     const halfWidth = width / 2
     const halfHeight = height / 2
     const cc = canvas$.getContext('2d')
-    const canvasHeight = ~~window.getComputedStyle(canvas$, null).height
-    const canvasWidth = ~~window.getComputedStyle(canvas$, null).width
+    //const canvasHeight = ~~window.getComputedStyle(canvas$, null).height
+    //const canvasWidth = ~~window.getComputedStyle(canvas$, null).width
 
     const {     //: these defaults are overrideable(?) from graphDesc
       graphType,
@@ -540,7 +540,7 @@ export const createGraphBase = waCtx => {
         graph.renderer.render(...pars)
         graphDesc.postRender && graphDesc.postRender({fx, cc, ccext})
       } else {
-        console.warn(`no renderer!!!!!!!`)
+        console.warn(`no renderer!!!!!!!`, graph)
       }
     }  
     return graph
