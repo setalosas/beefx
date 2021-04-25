@@ -34,7 +34,7 @@ void (_ => { //: init the Youtube iframe api asap
 
 //8#49f -------------------------- Sources ui --------------------------
 
-export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
+export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   const {root, pg} = ui
   const {stageMan, players, sources} = pg
   const {getStage, iterateStages, iterateStandardStages} = stageMan
@@ -51,6 +51,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     frame$: undef,
     media$: undef,
     ctrl$: undef,
+    stage$: undef,
     dragBar$: undef, 
     info$: undef,
     ui$: undef,
@@ -59,19 +60,29 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     isMocked: false
   }))]
   
-  const sourcesUi = {
+  /* const sourcesUi = {
     sourceUis
-  }
+  } */
   
   const init = _ => {
     set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, sourceIxArr.map(ix => 
       sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
+        sourceUis[ix].info$ = div$({class: 'src-info'}),
         sourceUis[ix].media$ = div$({class: 'src-media'}),
-        sourceUis[ix].ctrl$ = div$({class: 'src-ctrl'})
+        sourceUis[ix].ctrl$ = div$({class: 'src-ctrl'}),
+        sourceUis[ix].stage$ = div$({class: 'src-stage'})
     ])))
   }
   
   init()
+  
+  ui.getSourceUi = sourceIx => sourceUis[sourceIx]
+  
+  ui.iterateSourceUis = callback => {
+    for (const sourceUi of sourceUis) {
+      sourceUi.sourceIx && callback(sourceUi)
+    }
+  }
   
   ui.finalizeSources = _ => {
     ui.createInputDispatchers(sourceIxArr)
@@ -149,10 +160,10 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   //: If we are on Youtube as an extension, root.onYoutube is true.
   //: .source-strip
   //:   .source-frame
+  //:     .src-info
   //:     .src-media
   //:       iframe (<- div) youtube destroys this target div replacing it with its iframe
   //:     .src-ctrl
-  //:     .src-info
   //:     .src-mock-holder
   //:   .source-frame::after  
   //: If we are not on youtube, have to mock the videos as we can't access their sound :-(
@@ -184,14 +195,15 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
       iframe$: undef,
       video$: undef,
       audio$: undef,
-      stop: nop,
-      play: nop,
+      hasControls: false,
+      //stop: nop,
+      //play: nop,
       // etc
       refreshPlayer: nop
     })
     set$(sourceUi.frame$, {deattr: {type: ''}})
-    set$(sourceUi.media$, {html: ''},
-      sourceUi.info$ = div$({class: 'src-info'}))
+    set$(sourceUi.media$, {html: ''})
+      //sourceUi.info$ = div$({class: 'src-info'}))
       
     return sourceUi
   }
@@ -200,8 +212,8 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     ui.recreateSourcePlayer(sourceUi)
   }
   
-  ui.autoPlaySource = sourceIx => ui.flags.isAutoplayOn && sourceUis[sourceIx].play()
-  ui.autoStopSource = sourceIx => ui.flags.isAutostopOn && sourceUis[sourceIx].stop()
+  ui.autoPlaySource = sourceIx => ui.getFlag('autoplay') && sourceUis[sourceIx].play()
+  ui.autoStopSource = sourceIx => ui.getFlag('autostop') && sourceUis[sourceIx].stop()
   
   const insertYoutubeIframe = (node$, sourceUi, videoId)  => new Promise(resolve => {
     const YT = wassert(window.YT)
@@ -210,19 +222,41 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     })
   })
   
-  //8#7a7 All possible cases from here (audio, mock, video, buffer, master)
+  //8#7a7 All possible cases for playback media creation (audio, mock, video, buffer, master)
   
-  const changeSourcesWithSTEM = _ => {
+  //: This is for testing at the moment, so we don't expect errors and a few things are fixed.
+  //: If we select a stem-like audio file for upload, the other stems will be loaded too.
+  //: They must be in the /au/stems directory with 'stem*?.mp3' filenames. (?=1..8 or max)
+  //: We look for bg images with the same filename (.mp3 -> .png) but that's not important at all.
+  //: (Note: if we select the stem*4.mp3 filename, only stems 1-4 will be loaded.)
+  
+  ui.changeSourcesWithStems = file => { //: stems must be mp3 and in theix fixed dir
+    const preFix = `//beefx.tork.work/au/stems/`
+    const stemName = file.split('.mp3')[0]
+    const toSrc = parseInt(stemName.slice(-1)[0])
+    const stemRoot = stemName.slice(0, -1)
+    //sources.autoFloodOnFirst = false //: not a must, but less switching
+    ui.setFlag('autoplay', false)
+    ui.setFlag('autostop', false)
+    ui.setFlag('syncSources', true)
+    for (let sourceIx = 1; sourceIx <= toSrc; sourceIx++) {
+      const src = preFix + stemRoot + sourceIx + '.mp3'
+      const backgroundImage = `url(${src.split('.mp3')[0] + '.png'})`
+      ui.changeAudioSource(sourceIx, {src, title: stemRoot + sourceIx, bg: backgroundImage})
+      sources.changeStageSourceIndex(sourceIx - 1, sourceIx)
+    }
   }
-  ui.changeAudioSource = (sourceIx, {src, title, videoId}) => {//8#2b2 [audio]
+  ui.changeAudioSource = (sourceIx, {src, title, bg}) => {//8#2b2 [audio]
     const sourceUi = prepareSourceChange(sourceIx)
-    const audio = ui.insertAudioPlayerInto(sourceUi.media$, src, title)
-    sourceUi.audio$ = audio
+    sourceUi.request = {method: 'changeAudioSource', sourceIx, par: {src, title, bg}}
     sourceUi.isAudio = true
     set$(sourceUi.frame$, {attr: {type: 'audio'}})
     set$(sourceUi.info$, {text: title})
+    sourceUi.audio$ = ui.insertAudioPlayerInto(sourceUi.media$, src, title)
     finalizeSourceChange(sourceUi)
-    sources.changeSource(sourceIx, {audio})
+    sources.changeSource(sourceIx, {audio: sourceUi.audio$})
+    //: this is for STEM testing (waveform images):
+    bg && set$(sourceUis[sourceIx].media$, {css: {backgroundImage: bg}})
   }
   ui.changeVideoElementSource = (sourceIx, video$) => {//8#2b2 [master]
     const sourceUi = prepareSourceChange(sourceIx)
@@ -230,18 +264,21 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     sourceUi.isMaster = true
     set$(sourceUi.frame$, {attr: {type: 'master'}})
     set$(sourceUi.info$, {text: 'Master video'})
+    set$(sourceUi.media$, {}, sourceUi.masterThumb$ = div$({class: 'masterthumb'}))
     finalizeSourceChange(sourceUi)
     sources.changeSource(sourceIx, {video: video$})
   }
   ui.changeVideoSource = (sourceIx, {videoId, title, src}) => {//8#2b2 [mock / video]
     const sourceUi = prepareSourceChange(sourceIx)
+    sourceUi.request = {method: 'changeVideoSource', sourceIx, par: {videoId, title, src}}
     const mediaHolder$ = sourceUi.media$
     set$(mediaHolder$, {html: ''}, div$({}))
+    set$(sourceUi.frame$, {attr: {type: 'master-or-mock'}})
       
     insertYoutubeIframe(mediaHolder$.children[0], sourceUi, videoId)
       .then(_ => {
         clog(`📀ChangeVideoSource: Youtube iframe created and loaded.`, mediaHolder$)
-        const iframe$ = mediaHolder$.children[0]
+        const iframe$ = mediaHolder$.children[0] //: this child is different from the above
         if (iframe$?.tagName === 'IFRAME') {
           sourceUi.iframe$ = iframe$
           try {
@@ -260,12 +297,12 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
             clog(`📀ChangeVideoSource: error accessing video tag:`, err)
             if (!root.onYoutube) {
               clog(`📀ChangeVideoSource: mocking failed video with audio`)
-              const audio = mockVideoInStripWithAudio(sourceUi.media$, videoId)
               sourceUi.isMocked = true
               set$(sourceUi.frame$, {attr: {type: 'mock'}})
-              sourceUi.audio$ = audio
+              set$(sourceUi.info$, {text: title})
+              sourceUi.audio$ = mockVideoInStripWithAudio(sourceUi.media$, videoId)
               finalizeSourceChange(sourceUi)
-              sources.changeSource(sourceIx, {audio})
+              sources.changeSource(sourceIx, {audio: sourceUi.audio$})
             }
           }
         } else {
@@ -295,21 +332,27 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   const buildVideoList = on => { //: the videolist works both on Youtube and on the demo site
     void ui.u2list$?.remove()
     
-    //+ localstorage!!!!!! on youtube only
+    if (root.onYoutube) {
+    //: load from localstorage with pg-states (todo)
+    }
     
     if (on) {
       ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'}, [
         div$({class: 'thumb-head'}, [
           div$({class: 'bee-cmd', attr: {state: 'alert'}, text: 'Close', 
-            click: _ => ui.onVideoListToggled(false)}),
+            click: _ => ui.setFlag('sourceList', false)}),
           div$({text: 'Hold shift to add src 5-8!'})  
         ]),
         div$({class: 'thumb-upload'}, [1, 2, 3, 4].map(ix =>
           leaf$('input', {class: 'ss s' + ix, attr: {type: 'file', accept: 'audio/*'}, on: {
             change: event => {
               const file = event.target.files[0]
-              const fileUrl = window.URL.createObjectURL(file)
-              ui.changeAudioSource(ix, {src: fileUrl, title: file.name.split('.mp3')[0]})
+              if (file.name.beginS('stem.')) {
+                ui.changeSourcesWithStems(file.name)
+              } else {
+                const fileUrl = window.URL.createObjectURL(file)
+                ui.changeAudioSource(ix, {src: fileUrl, title: file.name.split('.mp3')[0]})
+              }
             }
           }}))
         ),
@@ -321,7 +364,7 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
             class: 'emulated au', 
             attr: {id: 'thumbnail', videoId, src, title},
             css: {backgroundImage}
-          }, div$({class: 'audiv', html}))
+          }, div$({class: 'thtitle', html}))
         })
       ])
     }
@@ -330,14 +373,14 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   ui.onVideoListToggled = on => {
     buildVideoList(on)
     if (on) {
-      ui.toggleGrab(false) //: this will call ui.ongrabToggled() (after changing the cmd state)
-      ui.toggleGrab(true)
+      ui.setFlag('grab', false)
+      ui.setFlag('grab', true) //: this will call ui.ongrabToggled() (by chging the cmd state)
     }
   }
   
   ui.onGrabToggled = on => {
     if (on) {
-      root.onYoutube || ui.toggleList(true)
+      root.onYoutube || ui.setFlag('sourceList', true)
       const thumbs = []
       if (root.onYoutube) {
         for (const thumb of q$$('a#thumbnail')) {
@@ -393,4 +436,6 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
       ui.setStageInputState(stageIx, sourceIx)
     })
   }
+  
+  await ytApi.isReady
 }
