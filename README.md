@@ -28,7 +28,7 @@ Core:
 * Basic WAU filters
 * IIR filters
 * Equalizers
-* Comvolvers (from impulse and reverb)
+* Convolvers (from impulse and sample)
 * BBC Ring Modulator
 * Compressor
 * etc.
@@ -74,3 +74,9 @@ This is an unreleased library, there is no npm package yet, you can download the
 Note: no dependencies, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
 
 # Acknowledgments
+
+The main goal of this project is not to find out how to compute the coefficients of a stable IIR filter (although accidentally it happened), but to collect and standardize the many audio effects and useful things available in the open source. There are lots of sources and the list grows day by day, the most important ones are:
+
+* Oskar Eriksson (Theodeus), the creator of Tuna, from who I borrowed most of the ideas and algorithms.
+* Chris Wilson (Google), who created countless Web Audio demos and examples.
+* [khoin](https://github.com/khoin) for the implementation of Jon Dattorro's reverb algorithm
