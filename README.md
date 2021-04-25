@@ -22,7 +22,7 @@ Currently the beeFX library has over 60 effects or other Web Audio gadgets. Thes
 
 The current goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
 
-Just a few examples of the current elements:
+So the separation is something like:
 
 Core:
 * Basic WAU filters
