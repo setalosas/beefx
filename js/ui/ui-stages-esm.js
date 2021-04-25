@@ -34,7 +34,8 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     stageHash[stageIx] || console.warn(`Invalid stage index: ${stageIx}`)
   
   ui.addStage = (stage, parent$ = ui.mid$, pars = {}) => {//+bena ez az opcionalis parent
-    const {stageIx, letter, isStandardStage, hasEndSpectrum} = stage
+    const {stageIx, letter, isStandardStage, hasEndSpectrum, isSourceStage} = stage
+    isSourceStage && (parent$ = ui.getSourceUi(stage.sourceStageIx).stage$)
     
     const stageObj = {
       stage,
@@ -47,13 +48,13 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     
     //+LETTER-re kene atirni classokat is meg mindent
     
-    const cc = 'bfx-stage bfx-st' + (stageIx + 1) + ' bfx-st-' + letter + (hasEndSpectrum ? '' : ' noendspectrum')
+    const cc = 'bfx-stage bfx-st' + (stageIx + 1) + ' bfx-st-' + letter + (hasEndSpectrum ? '' : ' noendspectrum') + (isSourceStage ? ' sourcestage' : '')
             
     set$(parent$, {}, 
       stageObj.frame$ = div$({class: cc}, [
         stageObj.inputSelector$ = isStandardStage && div$({class: 'input-selector'}),
         stageObj.ramas$ = div$({class: 'bfx-ramas'}),
-        stageObj.bottomFrame$ = !stageObj.hasNoBottom && div$({class: 'st-bottomframe'}, [
+        stageObj.bottomFrame$ = isStandardStage && div$({class: 'st-bottomframe'}, [
           stageObj.endRatio$ = div$({class: 'bfx-rama isEndRatio'}),
           stageObj.spectrama$ = hasEndSpectrum && div$({class: 'st-spectrum huerot'},
             stageObj.spectcanv$ = canvas$())
@@ -71,35 +72,32 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
     if (isStandardStage) {
       //console.log('found a stage to dispatch to', stageIx, stageObj)
       const chg = sourceIx => _ => sources.changeStageSourceIndex(stageIx, sourceIx)
-      stageObj.inputCmd$ = []
       set$(stageObj.inputSelector$, {class: 'blue'}, [
         div$({class: 'input-selbg huerot'}),
         div$({class: 'input-label', text: 'Input:'}),
-        div$({class: 'input-cmd bee-cmd', text: 'M'}),
-        ...sourceIxArr.map((sourceIx, ix) => 
-          stageObj.inputCmd$[ix] = div$({class: 'input-cmd bee-cmd', text: 'In ' + sourceIx,
-            attr: {sourceIx, state: 'off'}, click: chg(sourceIx)}))
+        ...stageObj.inputCmd$$ = [0, ...sourceIxArr].map(sourceIx => div$({
+          class: 'input-cmd bee-cmd', 
+          text: sourceIx > 0 ? 'In ' + sourceIx : 'M',
+          attr: {sourceIx, state: sourceIx > -1 ? 'off' : 'on'}, 
+          click: chg(sourceIx)
+        }))
       ])
     }
   })
 
   ui.setStageInputState = (stageIx, sourceIx) => {
     const stageObj = ui.getStageObj(stageIx)
-    if (stageObj?.inputCmd$?.length) {
-      for (const inCmd$ of stageObj.inputCmd$) {
-        const inputSourceIx = iAttr(inCmd$, 'sourceIx')
-        if (sources.getSource(inputSourceIx)) {
-          set$(inCmd$, {attr: {state: sourceIx === inputSourceIx ? 'active' : 'on'}})
-        } else {
-          weject(sourceIx === inputSourceIx)
-          set$(inCmd$,{attr: {type: 'off'}})
-        }
+    for (const inCmd$ of stageObj.inputCmd$$ || []) {
+      const inputSourceIx = iAttr(inCmd$, 'sourceIx')
+      if (sources.getSource(inputSourceIx) || inputSourceIx < 1) {
+        set$(inCmd$, {attr: {state: sourceIx === inputSourceIx ? 'active' : 'on'}})
+      } else {
+        weject(sourceIx === inputSourceIx)
+        set$(inCmd$,{attr: {state: 'off'}})
       }
-    } else {
-      //console.warn(`ui.setStageInputState called too early`)
     }
   }
-    
+      
   const init = _ => {
   }
   
