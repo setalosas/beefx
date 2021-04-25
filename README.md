@@ -79,7 +79,8 @@ The main goal of this project is not to find out how to compute the coefficients
 
 * Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed most of the ideas and algorithms.
 * Chris Wilson [cwilso](https://github.com/cwilso) (Google), who created countless Web Audio demos and examples.
-* José M. Pérez ([JMPerez](https://github.com/JMPerez)) who implementation the BPM detection
-** [Detecting tempo of a song using browser's Audio API](https://jmperezperez.com/bpm-detection-javascript/)   
-** [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
+* José M. Pérez ([JMPerez](https://github.com/JMPerez)) original implementation of the [BPM detection](https://github.com/JMPerez/beats-audio-api)
+  * [Detecting tempo of a song using browser's Audio API](https://jmperezperez.com/bpm-detection-javascript/)   
+  * [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
+* [The Scientist and Engineer's Guide to Digital Signal Processing By Steven W. Smith, Ph.D.](http://www.dspguide.com/) - Chebyshev-filter coefficient algorithm
 * [khoin](https://github.com/khoin) for the implementation of Jon Dattorro's reverb algorithm
