@@ -562,6 +562,7 @@ body::after {
   left: 0;
   content: '';
   backdrop-filter: blur(2px);
+  z-index: -1;
 }
 .bfx-mainmenu {
   background: #4d4d4d;
