@@ -210,7 +210,7 @@ const createBeeFX = waCtx => {
   window.beedump = debug.dump
   beeFx.capture({debug})
   
-  //8#845 ------------- Bee debug EBN -------------
+  //8#845 ------------- Bee debug END -------------
     
   const pepper = 'zholger'
   let uid = 1
@@ -299,7 +299,7 @@ const createBeeFX = waCtx => {
       if (fx.atm[key] !== value && value !== 'fire') {
         console.warn(`fx.valueChanged: mismatch on second setting:`, {fx, key, value})
       //: We should not set the state AGAIN. This second one must be eliminated.
-        fx.atm[key] = value
+        //fx.atm[key] = value
       //: So this is temporary now.
       }
       callListenerArray(fx.listenersByKey[key])
@@ -504,8 +504,6 @@ const createBeeFX = waCtx => {
       return null
     }
     const fx = newFxBase(type)
-    console.log(`beeFx.newFx:`, type)
-    //debugger
     const {optional = {activate: true}} = pars
     fx.exo = fxHash[type]       //: exo = {..., def, construct, ...}
     fx.initPars(pars)           //: changes or creates pars.initial
