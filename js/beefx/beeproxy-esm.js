@@ -28,15 +28,13 @@ import './fxs/beefxs-ringmod-esm.js'
 import './ext/beext-oscillator-esm.js'
 import './ext/beext-oscilloscope-esm.js'
 import './ext/beext-spectrum-esm.js'
-import './ext/beext-recorder-esm.js'
-import './ext/beext-sampler-esm.js'
+import './ext/beext-recmulti-esm.js'
 
 import './med/beefxs-bpmtrans-esm.js'
-import { detectBPMa } from './med/bpma-esm.js'
 import { detectBPMj } from './med/bpmj-esm.js'
 import * as BPM from './med/bpm-auditor-esm.js'
 
 export {
   Corelib, DOMplusUltra,
-  onWaapiReady, BeeFX, Chebyshev, detectBPMa, detectBPMj, BPM, Visualizer, createGraphBase
+  onWaapiReady, BeeFX, Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
 }
