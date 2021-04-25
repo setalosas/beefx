@@ -9,15 +9,22 @@ import {Corelib} from './improxy-esm.js'
 const {Ø, s_a, yes, no, undef, clamp, nop, isNum, getRnd, getIncArray} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {schedule, adelay, NoW, since, startEndThrottle, post} = Corelib.Tardis
-const {AudioNode} = window
+const {AudioNode, MediaElementAudioSourceNode} = window
   /*
   Sources management - each Stage in the playground can have different sources.
-  The source manager keeps track of each source and handles their connections into stages.
-  Sources can have different sources (i'e' 'types'):
+  The source manager keeps track of each source and manages their connections into stages.
+  Sources can have different "sources" (ie types):
   - MediaElement (AUDIO or VIDEO)
-  - AudioBuffer (ASBN) - this needs a player, but it's not yet implemented.
-  - Any AudioNode (DAN) - or in a special case: a lots of audiobuffers (output from a multi-channel sequencer for example. This needs special care: simultaneous play/pause of the tracks 
-    as they must be in sync.
+  - AudioBuffer (ASBN) - this needs a player, but it's not yet implemented. (SUPER EASY! :D)
+  - Any AudioNode (DAN) - or in a special case: a lots of audiobuffers (output from 
+    a multi-channel sequencer for example. 
+    
+  Sometimes we need to keep the sources in sync, that means simultaneous play/pause/speed
+  control of the tracks. There are two cases for this:
+  - A sequencer feeds us with AudioNodes as input (DAN). In this case the sequencer 
+    will take care of the sync.
+  - We loaded a series of audios (STEMs) as tracks of the same song. This is the case
+    we have to address (this is done in ui-players).
     
   Any source mediaElement will be disconnected (we don't want to hear their original sound),
   but also will be immediately connected to a dummy mute AudioNode. The reason for this is that
@@ -25,13 +32,14 @@ const {AudioNode} = window
   
   Player interface
   - Adapter to play / control the different sources.
-  - One of the main tasks: generating events on playback. (Could be synced with a remote player.)
-  - It's in a separate module, but referred from here. Responsibilities are not clear yet.
+  - One of the main tasks: generating events on playback. (Can be synced with a remote player.)
+  - It's in a separate module, but referred from here. Responsibilities are not quite clear yet.
   - Any source can have a Player interface (except the direct AudioNodes).
-  - If a source has a Player interface, it also has a special Player stage.
-  - Player stage consists of controls like speed, bpmDetector, play, stop, etc.
+  - If a source has a Player interface, it also has a special Player stage (but we call this a
+    source stage, sources and players are way too interconnected).
+  - Player/source stage consists of controls like speed, bpmDetector, play, stop, etc.
   - A Player can be remote (two browser windows side by side). The good news is that this makes lots of issues more complex.
-  - Question: all non DAN sources will automatically get a Player interface?
+  - Question: all non DAN sources will automatically get a Player interface? (Yes.)
   
   There are many special cases (like a Youtube video in an iframe to which we have audio access 
   or not (not if it's not on the youtube.com site.) In the latter case there can be a mock audio
@@ -39,7 +47,7 @@ const {AudioNode} = window
   extension every time.)
   
   Sources are displayed in a separate strip on the top, but it's in a separate module (sources-ui).
-  Responsibility division between sources and sources-ui must be defined.
+  Again, responsibility division between sources and sources-ui is mixed.
   
   Main methods: 
   - changeSource: adds a new source.
@@ -48,20 +56,25 @@ const {AudioNode} = window
   Rules of thumb:
   - Any source can be connected to many (or zero) stages.
   - Any stage can have one source only. (This can or cannot be zero, we will see it.)
-  - If there is no primary source, we are in a bit of trouble. Have to implement this.
+  - There can be no sources. Only the dummy (muting) one.
   
   Sources are numbered from 1 to maxSource (from config).
-  (Until recently the primary source had index 0, so we'll facing lots of bugs of this change :-))
+  There is also a dummy source 0 for muting (this is in development).
+  Starting source indexes for every stage are -1.
+  (Until recently the (now deprecated) primary source had index 0, so we'll facing lots of 
+  bugs of this change :-))
   At this point, most of this module is debug check or log.
   */
 
 export const createSources = (playground, root) => {
-  const {waCtx, ui} = root
-  const {iterateStages, iterateStandardStages, getStage} = playground.stageMan //+ ORIASI PFUJ
+  const {waCtx, ui, beeFx} = root
+  
+  //+ NOOOOOOOOOO
+  const {iterateStages, iterateStandardStages, getStage, createStage} = playground.stageMan
   
   //8#a48 ------------ Debug primitives ------------
   
-  const crumb = 'aschne'
+  const crumb = 'aschne'  //: V-2
   
   const logSources = false
   
@@ -102,11 +115,11 @@ export const createSources = (playground, root) => {
       }
     }
   }
-  const dbgCheckIx = sourceIx => wassert(sourceIx && sourceIx <= maxSources)
+  const dbgCheckIx = sourceIx => wassert(sourceIx > -1 && sourceIx <= maxSources)
   
   const dbgDump = startEndThrottle(_ => console.table(sourceArr), 500)
   
-  //const dummyInput = waCtx.createGain()
+  const dummyInput = waCtx.createGain()
     
   const {maxSources = 8} = root.config
   const sourceIxArr = getIncArray(1, maxSources)
@@ -129,11 +142,35 @@ export const createSources = (playground, root) => {
   const mutedNode = waCtx.createGain()
   mutedNode.gain.value = 0
   mutedNode.connect(waCtx.destination)
+  beeFx.debug.markNode(mutedNode, `sources.mutedNode`)
   
   sources.getValidSourcesCnt = _ => sourceIxArr.filter(ix => sourceArr[ix]).length
   
   sources.getSource = ix => sourceArr[ix]
   
+  sources.getSourceNode = ix => sourceArr[ix]?.sourceNode //: player needs for bpm detection
+  
+  //8#a6a Source stages. Maybe not the final resting place for them.
+  
+  const sourceStageArr = []
+
+  const createSourceStage = sourceIx => { //: destroy and recreate if exists
+    if (!sourceStageArr[sourceIx]) {
+      const sourceStageParams = {isSourceStage: true, hasUi: true, sourceStageIx: sourceIx}
+      const stage = createStage({letter: 'S' + sourceIx}, sourceStageParams)
+      stage.changeFx({ix: 0, type: 'fx_bpmTransformer', params: {isFixed: true}})
+      
+      sourceStageArr[sourceIx] = {
+        stage,
+        bpmFx: stage.fxArr[0]
+      }
+    } else {sourceStageArr[sourceIx].stage.output.disconnect()
+    }
+    return sourceStageArr[sourceIx]
+  }
+  
+  sources.getSourceStage = ix => sourceStageArr[ix]
+
   //8#c39 In the beginning, there was Jack, and Jack had a source.
   
   const createSource = (sourceIx, paramExternalSource, destStageIxArr) => {
@@ -158,15 +195,26 @@ export const createSources = (playground, root) => {
       
       if (newSource.isAudio || newSource.isVideo) {
         newSource.isMediaElement = true
-        newSource.mediaElement = paramExternalSource
-        newSource.externalSourceNode = waCtx.createMediaElementSource(newSource.mediaElement)
+        const mediaElement = newSource.mediaElement = paramExternalSource
+        newSource.externalSourceNode = new MediaElementAudioSourceNode(waCtx, {mediaElement})
         newSource.externalSourceNode.connect(mutedNode)
       } else {
         console.error(`💦💦Invalid external source`)
         newSource.isInvalid = true
       }
     }
-    newSource.isInvalid || newSource.externalSourceNode.connect(newSource.sourceNode)
+    beeFx.debug.markNode(newSource.sourceNode, `source[${sourceIx}].sourceNode`)
+    beeFx.debug.markNode(newSource.externalSourceNode, `source[${sourceIx}].mediaEASN`)
+    
+    const {stage: sourceStage, bpmFx} = createSourceStage(sourceIx)
+    
+    if (!newSource.isInvalid) {
+      //newSource.externalSourceNode.connect(newSource.sourceNode)
+      newSource.externalSourceNode.connect(sourceStage.input)
+      sourceStage.output.connect(newSource.sourceNode)
+    }
+    //+ mar eleve a ikntrollt se kell letrehoz\ni ha nincs media, de ez csak ASBN-nel erdekes, future
+    newSource.mediaElement && bpmFx.setValue('controller', ui.getSourceUi(sourceIx)) // newSource.mediaElement)
 
     return sourceArr[sourceIx] = newSource
   }
@@ -235,10 +283,10 @@ export const createSources = (playground, root) => {
     const stage = getStage(stageId)
     const {stageIx, sourceIx: oldSourceIx} = stage
     
-    if (!sourceArr[newSourceIx]) { //: no such valid source
+    if (newSourceIx > 0 && !sourceArr[newSourceIx]) { //: no such valid source
       return console.warn(`There is no source[${newSourceIx}] for stage ${stageId}`)
     }
-    const isAlreadyConnected = !isFirst && oldSourceIx !== -1
+    const isAlreadyConnected = !isFirst && oldSourceIx !== -1 //: it should be the same
     
     if (isAlreadyConnected) { //:there must be a current source (debug only, kill it later)
       if (oldSourceIx === newSourceIx) {
@@ -254,15 +302,17 @@ export const createSources = (playground, root) => {
     connectSource(newSourceIx, stage) //: stable again
     dbgCheckConsistency()
     ui.refreshSourcesUi()
+    playground.stageMan.dump()
   }
   
-  //:8#597 --------------- sources methods ---------------
+  //:8#2b3 --------------- sources' main methods for connect / disconnect ---------------
   
   const connectSource = (sourceIx, stage) => {
-    /* if (!sourceIx) {
+    if (!sourceIx) {
       dummyInput.connect(stage.input)
+      stage.sourceIx = 0
       return
-    } */
+    }
     dbgCheckIx(sourceIx)
     const currSource = sourceArr[sourceIx]
     const {stageIx, input} = stage
@@ -277,10 +327,10 @@ export const createSources = (playground, root) => {
   }
   
   const disconnectSource = (sourceIx, stage) => {
-    /* if (!sourceIx) {
+    if (!sourceIx) {
       dummyInput.disconnect(stage.input)
       return
-    } */
+    }
     dbgCheckIx(sourceIx)
     const currSource = sourceArr[sourceIx]
     const {stageIx, input} = stage
