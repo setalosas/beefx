@@ -17,27 +17,33 @@ export const createUI = (root, exroot) => {
   
   const earlyCall = doStop => _ => console.warn('Too early call to ui.', doStop && brexru())
   
+  root.flags = {  //: flags must/will be moved into playground or into a global state module
+    autoplay: false,
+    autostop: false,
+    syncSources: false
+    
+    /* isGrabOn: false, //: this list of flags is not valid anymore, have to refresh it
+    isListOn: false, //: flags are like 'autostop' now, not isAutostopOn etc.
+    isStageSlotsOn: false,
+    isMixerOn: false,
+    isAuxOn: false,
+    isProjOn: false,
+    isProjListOn: false,
+    isSyncOn: false,
+    isRedreshOn: false //: redresh=reduced refesh, I'm apologizing. */
+  }
   const ui = {
     root,
-    flags: {
-      isGrabOn: false,
-      isListOn: false,
-      isStageSlotsOn: false,
-      isAutoplayOn: false,
-      isAutostopOn: false,
-      isMixerOn: false,
-      isAuxOn: false,
-      isProjOn: false,
-      isProjListOn: false,
-      isSyncOn: false,
-      isRedreshOn: false, //: redresh=reduced refesh, I'm apologizing.
-      syncSources: false
-    },
     refreshPlayerControl: earlyCall(false),
     refreshSourcesUi: earlyCall(false),
     bars: {},
     toggleCmds: {},
     cmds: {}
+  }
+  
+  const dbgDumpFlags = msg => {
+    console.log(msg)
+    console.table(root.flags)
   }
   
   //8#79c Utilities, primitives, config
@@ -134,18 +140,20 @@ export const createUI = (root, exroot) => {
     
     const toggle = (on = !togg.on) => {
       if (on !== togg.on) {
-        togg.on = on
+        togg.on = root.flags[name] = on
         setClass$(togg.node$, on, 'act')
         for (const linked of togg.linkeds) {
           setClass$(ui[linked], !on, 'off')
         }
         on && togg.focus && ui[togg.focus + '$'].focus()
         void togg.onChg?.(on)
+        dbgDumpFlags('toggle ' + name)
       }
     }
     const defOnClick = isToggle ? toggle : nop
         
-    const {cc = '', click = defOnClick, onChg = nop, link = '', focus, on = false} = pars
+    const {cc = '', click = defOnClick, onChg = nop, link = '', focus} = pars
+    const {on = root.flags[name] ?? false} = pars
     const ccExtra = on ? 'act' : ''
     const cclass = [baseClass, cc, ccExtra].join(' ')
     const nodeKey = name + 'Cmd$'
@@ -153,14 +161,14 @@ export const createUI = (root, exroot) => {
     ui[nodeKey] = node$ //+ temporary for debug
     const linkeds = link.split(',').filter(a => a).map(link => link + '$')
     togg.capture({node$, nodeKey, on, click, toggle, linkeds, focus, onChg})
-    console.log('toggleCmd created', togg)
+    isToggle && toggle(root.flags[name] = on)
     return ui[nodeKey] = node$
   }
-  ui.setFlag = (name, on) => ui.toggleCmds[name]?.toggle(on)
-  
-  ui.getFlag = name => ui.toggleCmds[name]
-    ? ui.toggleCmds[name].on
-    : console.warn('unknown flag', name)
+  ui.setFlag = (name, on) => ui.toggleCmds[name]
+    ? ui.toggleCmds[name].toggle(on)
+    : root.flags[name] = on //: kind of fallback for flags without toggleCmd (or @load before ui)
+    
+  ui.getFlag = name => root.flags[name] ?? console.warn('unknown flag', name)
     
   const createBar = (name, node$, pars, items = []) => {
     ui.bars[name] = {node$}
@@ -177,16 +185,17 @@ export const createUI = (root, exroot) => {
       togg('mixer', 'Mixer...', {link: 'mixermenuBar'}),
       togg('sync', 'Sync...', {link: 'syncFrame'}),
       togg('sourceList', 'Sources...', {onChg: ui.onVideoListToggled}),
-      togg('stageSlots', 'Stage slots...', {link: 'stageSlotStrip', onChg: ui.onStageSlotsToggled}),
       togg('proj', 'Projects..', {link: 'projmenuFrame'}),
       togg('fxfactory', 'Factory..', {link: 'factoryFrame', onChg: ui.onFactoryToggled}),
       togg('aux', 'More...', {link: 'auxmenuBar'}),
       togg('grab', 'Grab!', {cc: 'rt', onChg: ui.onGrabToggled}),
       togg('autoplay', 'Autoplay', {cc: 'rt'}),
       togg('autostop', 'Autostop', {cc: 'rt'}),
-      togg('syncSources', 'Sync sources', {cc: 'rt'})
+      togg('syncSources', 'Sync sources', {cc: 'rt'}),
+      togg('syncBPM', 'Sync BPM', {cc: 'rt'})
     ])
     createBar('auxmenu', ui.auxmenuBar$, {}, [
+      togg('stageSlots', 'Stage slots...', {link: 'stageSlotStrip', onChg: ui.onStageSlotsToggled}),
       togg('redresh', 'Reduce refresh', {onChg: ui.toggleRefresh}),
       togg('nospectrum', 'No bottom spectrums (reload!)', {onChg: ui.toggleRefresh}),
       cmd('noblanks', 'Remove bottom blanks', {click: pg.destroyLastBlanks}),
