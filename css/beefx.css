@@ -173,7 +173,7 @@ body::after {
   display: block;
 }
 .emu-frame {
-  position: fixed;
+  position: absolute;
   left: 0;
   bottom: 0;
   z-index: 99;
@@ -398,7 +398,7 @@ body::after {
   z-index: 9999;
   font-size: 14px;
   font-weight: 400;
-  padding: 2p 4px 2px 2pxx;
+  padding: 2px 4px 2px 2px;
   border-radius: 8px;
   transform: translatey(calc(50vh - 50%));
   background: rgba(38, 64, 115, 0.5);
@@ -459,10 +459,59 @@ body::after {
   background-blend-mode: color-burn;
   background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
 }
+.beetrigger {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 9999;
+  padding: 12px 6px;
+  border-radius: 40% 90% 50% 0;
+  box-shadow: 2px 0 3px 1px #000000, 1px -2px 6px 2px #000000;
+  filter: saturate(0);
+  cursor: pointer;
+  color: #ffe000;
+  background-color: rgba(0, 0, 0, 0.5);
+  background-blend-mode: color-burn;
+  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
+  font: 400 11px roboto condensed;
+  font-size: 14px;
+  font-weight: 400;
+  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
+}
+.beetrigger.hasvideo {
+  filter: none;
+}
+.beetrigger:hover {
+  transform-origin: 10% 90%;
+  transform: scale(5);
+  transition: transform 1s 0s ease-out;
+}
+.beebody.u2:not(.nu2) {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px 8px 0 0;
+  bottom: 0;
+  top: unset;
+  width: auto;
+  height: auto;
+  z-index: 999999;
+}
+.beebody.u2:not(.nu2)::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  content: '';
+  backdrop-filter: blur(2px);
+  z-index: -1;
+}
 .bfx-bigmid {
   position: relative;
   margin: auto;
   width: fit-content;
+}
+.bfx-bigmid.factoryon {
+  margin-left: 4px;
 }
 .bfx-horbar {
   position: relative;
@@ -767,6 +816,7 @@ body::after {
   background-size: 100%;
   background-repeat: no-repeat;
 }
+.source-strip .source-frame .src-media .masterthumb,
 .source-strip .source-frame .src-media iframe {
   border-radius: 8px;
   transform: scale(0.79);
@@ -834,7 +884,14 @@ body::after {
 .source-strip .source-frame .src-ctrl .bee-cmd[state=calc] {
   color: #000000;
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.4), 0 0 3px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.4);
-  background: #d44;
+  background: #f94;
+  pointer-events: none;
+  user-select: none;
+}
+.source-strip .source-frame .src-ctrl .bee-cmd[state=calcx] {
+  color: #000000;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.4), 0 0 3px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.4);
+  background: #e44;
   pointer-events: none;
   user-select: none;
 }
@@ -897,7 +954,7 @@ body::after {
   left: 0;
   top: 0;
   margin: 0px 0 -1px;
-  min-height: 69px;
+  min-height: 55px;
 }
 audio {
   width: 240px;
@@ -1238,43 +1295,6 @@ body {
 }
 .bfx-stage.sourcestage .bfx-rama {
   background: linear-gradient(157deg, hsl(var(--hue), var(--sat1), var(--lit1)), hsl(var(--hue), var(--sat2), var(--lit2)));
-}
-.beetrigger {
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  z-index: 9999;
-  padding: 12px 6px;
-  border-radius: 40% 90% 50% 0;
-  box-shadow: 2px 0 3px 1px #000000, 1px -2px 6px 2px #000000;
-  filter: saturate(0);
-  cursor: pointer;
-  color: #ffe000;
-  background-color: rgba(0, 0, 0, 0.5);
-  background-blend-mode: color-burn;
-  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
-  font: 400 11px roboto condensed;
-  font-size: 14px;
-  font-weight: 400;
-  text-shadow: 0 0 1px #000000, 0 0 3px #000000, 0 0 6px #000000;
-}
-.beetrigger.hasvideo {
-  filter: none;
-}
-.beetrigger:hover {
-  transform-origin: 10% 90%;
-  transform: scale(5);
-  transition: transform 1s 0s ease-out;
-}
-.beebody.u2:not(.nu2) {
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(2px);
-  border-radius: 8px 8px 0 0;
-  bottom: 0;
-  top: unset;
-  width: auto;
-  height: auto;
-  z-index: 9999;
 }
 .led-fx {
   width: 16px;
