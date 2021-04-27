@@ -13,24 +13,15 @@ const {round, pow, max} = Math
 const toExp = val => pow(Math.E, val)
 const fromExp = val => Math.log(val)
 
-const shortenProps = {
-  followerFilterType: 'followerFilter',
-  followerFrequency: 'followerFreq',
-  baseModulationFrequency: 'baseModFreq',
-  feedbackRight: 'fbackRight',
-  baseFrequency: 'baseFreq',
-  excursionOctaves: 'excursionOct',
-  pitchCorrection: 'autoTune'
-}
-
 const fxNames = []
 
 const createBeeFX = waCtx => {
   const config = {
-    useSetTargetForDelayTime: true //: this is not evident
+    useSetTargetForDelayTime: true //: this is not evident (linearRamp should be included too)
   }
   const fxHash = {}
-    const resMap = {}
+  const resMap = {}
+  const globalListeners = {}
   const beeFx = {
     fxHash,
     namesDb: {
@@ -280,7 +271,24 @@ const createBeeFX = waCtx => {
       
     fx.setDelayTime = (node, sec) =>   
       fx.int[node].delayTime.linearRampToValueAtTime(sec, waCtx.currentTime + .2)  
-      
+  
+    //8#39c------ Fx listeners for global pars --------    
+    
+    fx.addFxListeners = _ => {
+      for (const listener of fx.exo.listen) {
+        const [global, local] = listener.split(':')
+        globalListeners[global] || (globalListeners[global] = [])
+        globalListeners[global].push({fx, local})
+      }
+    }
+    
+    fx.addMeta = metaObj => {
+      fx.meta = fx.meta || {}
+      for (const key in metaObj) {
+        fx.meta[key] = metaObj[key]
+      }  
+    }
+          
     //8#34c------ Parameter change listeneres --------
     
     fx.onValueChange = (key, callback) => {
@@ -465,6 +473,8 @@ const createBeeFX = waCtx => {
     return tmp
   }
   
+  //+ This is messy yet (the second url should be /)
+  
   beeFx.getRootPath = _ => //: full url 'cause of youtube
     window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '//beefx.mork.work/' //  '/'
   
@@ -509,6 +519,9 @@ const createBeeFX = waCtx => {
     fx.initPars(pars)           //: changes or creates pars.initial
     fx.exo.construct(fx, pars)  //: not using return value
     fx.setWithPars(pars.initial)
+    if (fx.exo.listen?.length) {
+      fx.addFxListeners()
+    }
     
     fx.activate(optional.activate)
     
@@ -520,6 +533,23 @@ const createBeeFX = waCtx => {
   beeFx.getFxType = fxname => fxHash[fxname]
   
   beeFx.onReady = _ => Promise.all(beeFx.readyPromises)
+  
+  beeFx.globalChanged = (global, value, metaFilter) => {
+    if (globalListeners[global]) {
+      for (const {fx, local} of globalListeners[global]) {
+        let isValid = true
+        if (metaFilter) {
+          for (const key in metaFilter) {
+            if (metaFilter[key] !== fx.meta?.[key]) {
+              isValid = false
+            }
+          }
+        }
+        isValid && fx.setValue(local, value)
+        //console.log({isValid, local, value, fx})
+      }
+    }
+  }
   
   beeFx.registerFxType = (fxName, fxObj) => {
     if (fxHash[fxName]) {
@@ -548,7 +578,7 @@ const createBeeFX = waCtx => {
           const newDef = {...par, arrayKey: key, ix}
           fxObj.def[key + `[${ix}]`] = newDef
         }
-        par.subType = 'skipui'
+        par.skipUi = true
       } else if (hasArray) {
         delete fxObj.def[key]
         fxObj.def[key] = par
@@ -558,7 +588,7 @@ const createBeeFX = waCtx => {
       const par = fxObj.def[key]
       par.type = par.type || 'float'
       par.name = par.name || key
-      par.short = par.uiLabel || shortenProps[par.name] || par.name
+      par.short = par.uiLabel || par.name
       if (par.subType === 'exp') {
         par.isExp = true
         par.linMin = fromExp(par.min)
@@ -624,81 +654,3 @@ const createBeeFX = waCtx => {
 let beeFx
 
 export const BeeFX = waCtx => beeFx || (beeFx = createBeeFX(waCtx))
-
-/*
-beefx-basic
-  - blank
-  - gain
-  - delay
-  - biquad (kimehetne egy filtersbe)
-beefx-ratio
-  - ratio
-beefxs-amp
-  - amp
-  - ampEx  
-beefxs-delays
-  - sima delay tunabol es ha van, wilsobol
-  - pingPongDelayA /cw
-  - pingPongDelayB /Tuna
-  - Delay /Tuna
-beefxs-noise
-  - noiseConvolver /nh
-  - pinking /nh
-  - bitcrusher /Tuna (script)
-beefxs-reverb
-  - ures, ide jonnek a convoluciok
-beefxs-lfo
-  - LFO /Tuna (script)
-  - tremoloLFO /Tuna
-  - phaserLFO /Tuna
-beefxs-chorus
-  - chorusLFO /Tuna
-  - chorusOsc /cw
-beefxs-osc
-  - pitchShifter /cw
-  - moog2 /cw
-  - vibrato /cw
-  - autoWah /cw
-  - wahBass /cw // nem igazan mukodik
-beefxs-bpmtrans
-  - bpmtransformer  
-beefxs-env
-  - enveloperFollower /Tuna (script)
-  - wahWahEF /Tuna
-  - gain
-beefxs-reverb
-  - convolver /Tuna  
-  - convolverGen /cw
-  - reverb /cw
-  - cabinet /Tuna
-beefxs-compressor
-  - compressor /Tuna 
-beefxs-overdrive
-  - overdrive  
-  - overdriveWAC 
-beefxs-ringmod
-  - bbcRingModulator
-  - simpleRingModulator  
-tunx (all OK)
-  - FixGain
-  - Blank
-  - PitchShifter
-  - NoiseConvolver
-  - Pinking
-  - Moog2
-  - Vibrato
-  - AutoWah 
-  - PingPongDelayCW 
-  - WahBass
-  - MyPanner
-cw
-  - Delay
-  - Distortion
-  - Telephone
-  - LFO
-  - Chorus (mono & stereo?)
-  - Flanger (mono & stereo?)
-  - DelayChorus?
-  - NoiseGate
-  - Apollo
-*/
