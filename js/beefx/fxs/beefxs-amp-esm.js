@@ -2,51 +2,74 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
-
-const {nop, no, yes, isArr, getRnd, getRndFloat} = Corelib
+import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 onWaapiReady.then(waCtx => {
   const {connectArr, registerFxType, dB2Gain} = BeeFX(waCtx)
   
-  const createAmpControl = ({subType = 'exp', name}) => { //8#48d ------- ampControl -------
+  const createAmpControl = ({skipUi = false, name}) => { //8#48d ------- ampControl -------
     const ampFx = {
       def: {
         hi: {defVal: 0, min: -25, max: 25, unit: 'dB'},
-        hiCutOffFreq: {defVal: 2400, min: 800, max: 4800, unit: 'Hz', subType}, //:exp/skipui
+        hiCutOffFreq: {defVal: 2400, min: 800, max: 4800, unit: 'Hz', subType: 'exp', skipUi},
         lo: {defVal: 0, min: -25, max: 25, unit: 'dB'},
-        loCutOffFreq: {defVal: 600, min: 200, max: 1200, unit: 'Hz', subType}, //:exp/skipui
+        loCutOffFreq: {defVal: 600, min: 200, max: 1200, unit: 'Hz', subType: 'exp', skipUi},
         pan: {defVal: 0, min: -.5, max: .5},
-        vol: {defVal: 0, min: -24, max: 6, unit: 'dB'},
+        vol: {defVal: 0, min: -24, max: 6, unit: 'dB'}, //: pan&vol could be graph'd too
         multiGraph: {type: 'graph', subType: 'multi'}
       },
-      midi: {pars: ['hi,lo', 'hiCutOffFreq,loCutOffFreq', 'pan,vol']},
+      midi: {pars: ['hi,lo', skipUi ? '' : 'hiCutOffFreq,loCutOffFreq', 'pan,vol']},
       name,
-      graphs: {}
+      graphs: {
+        multiGraph: [{ //: this is a double graph, ie two graphs on the same canvas
+          graphType: 'freq',
+          filter: 'loNode',
+          minDb: -27,
+          maxDb: 33,
+          diynamic: .8,
+          customRenderer: {
+            pre: ({fx, cc, ccext, freq}) => { //: vol/pan visual in the bg
+              const mid = ccext.width / 2
+              const {height} = ccext
+              const [y1, hi] = [height / 5 + 5,  height * 2 / 3]
+              const panPt = (fx.atm.pan + .5) * 100
+              const volPt = dB2Gain(fx.atm.vol) * 50
+              const right = Math.min(50, panPt) * volPt / 100
+              const left = Math.min(50, 100 - panPt) * volPt / 100
+              const leftx = mid - left * 8
+              const rightx = mid + right * 8
+              const gradientLeft = cc.createLinearGradient(leftx, 0, mid, 0)
+              gradientLeft.addColorStop(0, `hsla(200,75%,50%,.25)`)
+              gradientLeft.addColorStop(1, `hsla(200,75%,50%,.5)`)
+              const gradientRight = cc.createLinearGradient(mid, 0, rightx, 0)
+              gradientRight.addColorStop(0, `hsla(0,75%,50%,.5)`)
+              gradientRight.addColorStop(1, `hsla(0,75%,50%,.25)`)
+              
+              cc.fillStyle = gradientLeft
+              cc.fillRect(leftx, y1, mid - leftx, hi)
+              cc.fillStyle = gradientRight
+              cc.fillRect(mid, y1, rightx - mid, hi)
+            }
+          },
+          phaseCurveColor: `hsla(120, 99%, 80%, .5)`,
+          curveColor: ({xpt}) => `hsla(120, 90%, 55%, ${transExp(xpt)})`
+        }, {
+          graphType: 'freq',
+          filter: 'hiNode',
+          renderSet: {doClear: false, doGrid: false, doGraph: true},
+          minDb: -27,
+          maxDb: 33,
+          diynamic: .8,
+          phaseCurveColor: `hsla(20, 99%, 80%, .5)`,
+          curveColor: ({xpt}) => `hsla(20, 99%, 65%, ${transExp(1 - xpt)})`
+        }]
+      }
     }
 
     const transExp = xpt => (1 - Math.pow(1 * xpt, 3)).toFixed(2)
     
-    ampFx.graphs.multiGraph = [{
-      graphType: 'freq',
-      filter: 'loNode',
-      minDb: -27,
-      maxDb: 33,
-      diynamic: .8,
-      phaseCurveColor: `hsla(120, 99%, 80%, .5)`,
-      curveColor: ({xpt}) => `hsla(120, 90%, 55%, ${transExp(xpt)})`
-    }, {
-      graphType: 'freq',
-      filter: 'hiNode',
-      renderSet: {doClear: false, doGrid: false, doGraph: true},
-      minDb: -27,
-      maxDb: 33,
-      diynamic: .8,
-      phaseCurveColor: `hsla(20, 99%, 80%, .5)`,
-      curveColor: ({xpt}) => `hsla(20, 99%, 65%, ${transExp(1 - xpt)})`
-    }]
     ampFx.setValue = (fx, key, value) => ({
       pan: _ => fx.setAt('panNode', 'pan', value),
       hi: _ => fx.setAt('hiNode', 'gain', value),
@@ -67,6 +90,6 @@ onWaapiReady.then(waCtx => {
     }
     return ampFx
   }
-  registerFxType('fx_amp', createAmpControl({name: 'Amp controls', subType: 'skipui'}))
+  registerFxType('fx_amp', createAmpControl({name: 'Amp controls', skipUi: true}))
   registerFxType('fx_ampExt', createAmpControl({name: 'Amp controls (extended)'}))
 })
