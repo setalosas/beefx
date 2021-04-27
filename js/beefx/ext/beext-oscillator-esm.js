@@ -2,7 +2,7 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
@@ -15,8 +15,7 @@ onWaapiReady.then(waCtx => {
     ['sine', 'Sine'],
     ['square', 'Square'],
     ['sawtooth', 'Sawtooth'],
-    ['triangle', 'Triangle'],
-    ['custom', 'Custom (~sine)']
+    ['triangle', 'Triangle']
   ]
   
   const oscillatorFx = { //8#b0c ------- oscillator with built-in WA-waveforms------
@@ -38,9 +37,11 @@ onWaapiReady.then(waCtx => {
     fx.rebuild = _ => {
       if (fx.isActive) {
         if (!int.isValid) {
-          int.oscillator = waCtx.createOscillator()
-          connectArr(int.oscillator, fx.output)
           int.isValid = true
+          int.oscillator = waCtx.createOscillator()
+          int.oscillator.frequency.value = atm.frequency
+          fx.regen()
+          connectArr(int.oscillator, fx.output)
         }
         atm.on && fx.goLive()
       }
@@ -97,9 +98,11 @@ onWaapiReady.then(waCtx => {
     fx.rebuild = _ => {
       if (fx.isActive) {
         if (!int.isValid) {
-          int.oscillator = waCtx.createOscillator()
-          connectArr(int.oscillator, fx.output)
           int.isValid = true
+          int.oscillator = waCtx.createOscillator()
+          int.oscillator.frequency.value = atm.frequency
+          fx.regen()
+          connectArr(int.oscillator, fx.output)
         }
         atm.on && fx.goLive()
       }
@@ -136,9 +139,7 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_waveGenerator', waveGeneratorFx)
   
-  //+ waveTables should be merged with waveGenerator
-  
-  const wavePresets = [
+  const wavePresets = [ //: this collections is from mohayonao
     'Bass',
     'BassAmp360',
     'BassFuzz',
@@ -196,8 +197,6 @@ onWaapiReady.then(waCtx => {
   
   const getFullWaveTablePath = conv => waveTablePrefix + conv + '.json'
   
-  //+ egy kozos fetch kene mert van tobb is, de hova? beefx nem biztos h jo, de az van ez meg a konvolver alatt vegulis
-  
   const loadWaveTable = (value, {onBufferReady}) => fetch(getFullWaveTablePath(value))
     .then(response => {
        if (!response.ok) {
@@ -215,6 +214,8 @@ onWaapiReady.then(waCtx => {
       normalize: {defVal: true, type: 'boolean'}
     }
   }
+  //: todo: add a piano to this
+  
   waveTablesFx.setValue = (fx, key, value, {int} = fx) => ({
     waveTable: _ => loadWaveTable(value, int),
     frequency: _ => int.isValid && fx.setAt('oscillator', 'frequency', value),
@@ -235,7 +236,7 @@ onWaapiReady.then(waCtx => {
         atm.on && fx.goLive()
       }
     }
-    fx.destroy = _ => {//+ kell egy oscillatorframe erre a mechanizmusra
+    fx.destroy = _ => {
       if (int.isValid) {
         if (int.isLive) {
           int.oscillator.stop()
@@ -301,16 +302,15 @@ onWaapiReady.then(waCtx => {
   pwmOscillatorFx.onActivated = oscillatorFx.onActivated //: it's the same, we steal it
   
   pwmOscillatorFx.construct = (fx, pars, {int, atm} = fx) => {
-  /* 
-    Oscillator Fxs have extremely ugly constructors as Web Audio API is not able to restart
-     an oscillator, so we have to destroy and rebuild everything every time the user
-      clicks the 'on' checkbox Also we have to restore the previous state.
+  /* Oscillator Fxs have extremely ugly constructors as Web Audio API is not able to restart
+     an oscillator, so we have to destroy and rebuild everything every time the user clicks 
+     the 'on' checkbox Also we have to restore the previous state.
        1. Luckily it's the same in init and restore, as BeeFx calls the constructor with 
-        an already valid public state.
-         2. Not so luckily that also means destroying and rebuilding other nodes too.
-          Imagine that you have to destroy and recreate a Youtube player iframe every time
-           the user clicks pause! This is exactly the same situation.
-    */
+       an already valid public state.
+       2. Not so luckily that also means destroying and rebuilding other nodes too.
+     It's like you had to destroy and recreate a Youtube player iframe every time
+     the user clicks on the pause button. */
+           
     fx.rebuild = _ => {
       if (fx.isActive) {
         if (!int.isValid) {
