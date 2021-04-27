@@ -22,9 +22,30 @@ Currently the beeFX library has over 60 effects or other Web Audio gadgets. Thes
 
 The current goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
 
-In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control a beeFX filter, it's basically works the same way as for every similar library.
+So the separation is something like:
+
+Core:
+* Basic WAU filters
+* IIR filters
+* Equalizers
+* Convolvers (from impulse and sample)
+* BBC Ring Modulator
+* Compressor
+* etc.
+
+Extensions:
+* BPM detector
+* Recorder
+* Sampler
+* Oscilloscope
+* Spectrum
+* etc.
+
+In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control beeFX filters, it's basically works the same way as for every similar library.
 
 ## The beeFX Playground
+
+![image](https://github.com/setalosas/beefx/blob/main/doc/golem.jpg)
 
 Starting as a testing tool, the playground grew into an application where the user can define different audio sources and chains of effects for them in different channels (stages), something like a mixer board with effect modules.
 
@@ -36,7 +57,7 @@ This repo itself is the playground at this moment, but I plan to put the compone
 
 VID
 
-## The beeFX Chrome Extension for youtube
+## The beeFX Chrome Extension for Youtube
 
 The playground as a site has limits in the use of copyrighted music - of course I cannot include real songs with it. There is no much fun trying out a complex effect pipeline with free music or singing through the microphone, so from the beginning there was an option for upload and use any user files (mp3 or wav). However, not too many users have mp3s on their computer these days. So it seemed natural to use Youtube videos as audio sources - but here comes a wall again: embedded youtube iframes are closed, there is no way to access their audio output. Except of course if the playground runs on the youtube.com domain.
 
@@ -50,6 +71,35 @@ So currently the playground can be used with local audio files, youtube videos a
 
 This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use it as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements.
 
-Note: no dependencies, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
+Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
+
+# Performance
+
+The Web Audio API is quite effective, audio graphs consisting of more than 1000 nodes are running without problem on the playground. Of course complex filters can be implemented badly and there are a few problematic, especially the ones using ScriptProcessorNode or AudioWorkletNode (e.g. Recorder, BPM detector, Sampler) or the Convolver, but most of the effects are surprisingly cheap in CPU.
+
+For the playground of course the DOM is the bottleneck in most cases.
+
+I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots. 
+
+# Browsers
+
+The playground is intented to run in Chrome and for now I don't plan test other browsers. However:
+* It works in Firefox but the UI controls are ugly.
+* It works in Edge, but a few effects have some sound artifacts. (I will find out why as Edge is more comfortable for development than Chrome as it's much faster.)
+* It works in Android Chrome on phones too if someone has quite small fingers.
 
 # Acknowledgments
+
+The main goal of this project is not to find out how to compute the coefficients of a stable IIR filter (although accidentally it happened), but to collect and standardize the many audio effects and useful things available in the open source. There are lots of sources and the list grows day by day, the most important ones are:
+
+* Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed many ideas and algorithms.
+* Chris Wilson [cwilso](https://github.com/cwilso) (Google), who created countless Web Audio demos and examples.
+* Raymond Toy (rtoy) ([webaudio-hacks](https://github.com/rtoy/webaudio-hacks))
+* [mohayonao](https://github.com/mohayonao) - [wave-tables](https://github.com/mohayonao/wave-tables)
+* José M. Pérez ([JMPerez](https://github.com/JMPerez)) original implementation of the [BPM detection](https://github.com/JMPerez/beats-audio-api)
+  * [Detecting tempo of a song using browser's Audio API](https://jmperezperez.com/bpm-detection-javascript/)   
+  * [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
+* [The Scientist and Engineer's Guide to Digital Signal Processing By Steven W. Smith, Ph.D.](http://www.dspguide.com/) - Chebyshev-filter coefficient algorithm
+* [khoin](https://github.com/khoin) - implementation of Jon Dattorro's reverb algorithm
+* Reverb impulse responses are from [Voxengo](https://www.voxengo.com/impulses/)
+* [BBC](https://github.com/bbc/webaudio.prototyping.bbc.co.uk/blob/master/src/ring-modulator.coffee) - Ring modulator
