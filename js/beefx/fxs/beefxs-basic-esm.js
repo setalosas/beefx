@@ -2,21 +2,21 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 onWaapiReady.then(waCtx => {
   const {connectArr, registerFxType} = BeeFX(waCtx)
   
-  const blankFx = { //8#bbb ------- blank -------
+  const blankFx = { //8#bbb ------- blank (there won't be any simpler Fx than this) -------
     def: {}
   }
   blankFx.construct = fx => fx.start.connect(fx.output)
 
   registerFxType('fx_blank', blankFx)
   
-  const gainFx = { //8#a00 ------- gain -------
+  const gainFx = { //8#a00 ------- WAU gain -------
     def: {
       gain: {defVal: 1, min: 0, max: 4, name: 'gain'}
     },
@@ -32,13 +32,14 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_gain', gainFx)
 
-  const delayWAFx = { //8#a0a ------- delay WA-------
+  const delayWAFx = { //8#a0a ------- WAU delay -------
     def: {
       delayTime: {defVal: 0, min: 0, max: 2, unit: 's'}
     },
     midi: {pars: ['delayTime']}
   }
   delayWAFx.setValue = (fx, key, value) => ({
+    //: This is unsolved issue: what is the best way to set the delay? (it clicks like H).
     //delayTime: _ => fx.setDelayTime('delay', value)
     delayTime: _ => fx.int.delay.delayTime.linearRampToValueAtTime(value, waCtx.currentTime, .05)
   }[key])
@@ -49,7 +50,7 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_delayWA', delayWAFx)
   
-  const biquadOptions = [ //8#48d ------- biquadFilter -------
+  const biquadOptions = [ //8#48d ------- WAU biquadFilter -------
     ['lowpass', 'lowpass [no gain]'],
     ['highpass', 'highpass [no gain]'],
     ['bandpass', 'bandpass [no gain]'],
@@ -79,7 +80,7 @@ onWaapiReady.then(waCtx => {
     maxDb: 53,
     diynamic: .8
   }
-  const detuneFactor = Math.log(2) / 1200
+  //: const detuneFactor = Math.log(2) / 1200
   //: const hz = Math.pow2(detune / 1200)
   //: const detune = Math.log(hz) / Math.log(2) * 1200
   //: const detune = Math.log(hz) / detuneFactor
