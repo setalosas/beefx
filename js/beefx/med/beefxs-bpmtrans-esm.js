@@ -16,7 +16,7 @@ onWaapiReady.then(waCtx => {
 
   const bpmTransformerFx = { //8#e74 ------- bpmTransformer -------
     def: {
-      reset: {defVal: 'on', type: 'cmd'},
+      reset: {defVal: 'on', type: 'cmd', name: 'Reset'},
       bpmOriginal: {defVal: 120, type: 'box', width: 24}, //: for disp only, int.bpmIn is the var
       bpmDec: {defVal: '>>', type: 'box', width: 20},
       bpmAdjusted: {defVal: 120, type: 'box', width: 30}, //: for disp only, int.bpmOut is the var
@@ -24,10 +24,11 @@ onWaapiReady.then(waCtx => {
       incBpm: {defVal: 'on', type: 'cmd', name: '+1'},
       autoTune: {defVal: 'off', type: 'cmd'},
       pitch: {defVal: 100, min: 100 - 16 * 2, max: 100 + 16 * 2, unit: '%', name: 'Pitch Adj.'},
-      bpmModifier: {defVal: 0, min: -30, max: 30, readOnly: true, subType: 'skipui'},
-      controller: {defVal: null, type: 'object', subType: 'skipui'},
-      pitchCorrection: {defVal: false, type: 'boolean', subType: 'skipui'}
-    }
+      bpmModifier: {defVal: 0, min: -30, max: 30, readOnly: true, skipUi: true},
+      controller: {defVal: null, type: 'object', skipUi: true},
+      pitchCorrection: {defVal: false, type: 'boolean', skipUi: true}
+    },
+    midi: {pars: ['pitch']}
   }
   //: atm:
   //:  - pitch ~100
@@ -92,6 +93,8 @@ onWaapiReady.then(waCtx => {
     
     fx.pitchChanged = pitch => { //: mod remains, bpmOut will change
       int.bpmOut = int.bpmIn * pitch / 100
+      atm.bpmModifier = int.bpmOut - int.bpmIn
+      //fx.setValue('bpmModifier')
       lazySetSpeed()
       fx.setAdjustedDisp()
       fx.recalcPitchShift()
@@ -104,9 +107,14 @@ onWaapiReady.then(waCtx => {
       fx.setValue('bpmModifier', int.bpmOut - int.bpmIn)
       fx.setAdjustedDisp()
     }
-    fx.bpmModChanged = modifier => { //: bpmIn remains, pitch will change -> then bpmOut
+    fx.bpmModChanged = modifier =>  //: bpmIn remains, pitch will change -> then bpmOut
       fx.setValue('pitch', 100 * (modifier + int.bpmIn) / int.bpmIn)
+
+    fx.setPitchToBpm = bpm => {
+      console.warn('fix dpm set', bpm, atm.pitch, int.bpmIn, 100 * bpm / int.bpmIn)
+      fx.setValue('pitch', 100 * bpm / int.bpmIn)
     }
+
     fx.cmdProc = (fire, mode) => {
       if (fire === 'fire') {
         const action = {
