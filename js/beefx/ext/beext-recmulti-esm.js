@@ -19,19 +19,16 @@ onWaapiReady.then(waCtx => {
   const clog = (...args) => logOn && console.log(...args)
   
   //: Off and on AudioWorklets are subject of unsolicited caching.
-  //: Even full reload or 'Disable cache' in devtools network tab won't help)
+  //: Even full reload or 'Disable cache' in devtools network tab won't help.
   //: Also they are not shown at all in the devtools network tab which is extra helpful.
   //: The only thing that worked here is to add some garbage to the end of the filename :-((
   //: (This method isn't foolproof, but we still can pray for the reload. ymmv.)
   
-  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js?dkdfk'))
+  const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/ext/recorderWorker.js?d'))
 
   auWorkletPromise
     .then(_ => console.log(`Recorder audioWorklet loaded.`))
-    .catch(err => {
-      console.error(`Recorder audioWorklet failed to load.`, err)
-      //debugger
-    })
+    .catch(err => console.error(`Recorder audioWorklet failed to load.`, err))
   
   const drawBpmDia = fx => {
     const {int} = fx
@@ -230,17 +227,18 @@ onWaapiReady.then(waCtx => {
     const isRecorder = variant === 'recorder' // eslint-disable-line no-unused-vars
     const isBpm = variant === 'bpm'
     const fxName = isBpm
-      ? `Dev mRec BPM detector`
+      ? `BPM detector`
       : isRecorder
-        ? `Dev mRec Recorder`
-        : `Dev mRec Sampler` + (usePitchShift ? ' + piano' : '')
+        ? `Recorder`
+        : `Sampler` + (usePitchShift ? ' (note)' : '')
+    const sampName = isSampler ? 'Sampler' : isRecorder ? 'Stop' : 'Playback'
 
     const recMultiExt = { //8#aa8 -------loop -------
       def: {
         log: {defVal: '-', type: 'info'},
         modeBypass: {defVal: 'active.ledon', type: 'cmd', subType: 'led', color: 140, name: 'Bypass'},
         modeRecord: {defVal: 'on', type: 'cmd', subType: 'led', color: 0, name: 'Record'},
-        modeSampler: {defVal: 'off', type: 'cmd', subType: 'led', color: 180, name: isSampler ? 'Sampler' : 'Playback'},
+        modeSampler: {defVal: 'off', type: 'cmd', subType: 'led', color: 180, name: sampName},
         useScriptProc: {defVal: 'on', type: 'cmd', subType: 'led', name: 'scriptProcessor (slow)'},
         useWorklet: {defVal: 'off', type: 'cmd', subType: 'led', name: 'audioWorklet (slow)'},
         wave: {type: 'graph'},
@@ -254,8 +252,8 @@ onWaapiReady.then(waCtx => {
           sampleLoop: {defVal: 'off', type: 'cmd', subType: 'led', color: 80, name: 'Loop sample'},
           sampleStop: {defVal: 'off', type: 'cmd', name: 'Stop loop'}
         } : {
-          startMod: {defVal: 0, min: -1, max: 1, unit: 's', subType: 'skipui'},
-          endMod: {defVal: 0, min: -1, max: 1, unit: 's', subType: 'skipui'}
+          startMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true},
+          endMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true}
         }),
         ...(isBpm ? {
           bpm10: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 20, name: 'BPM 10s'},
@@ -266,7 +264,7 @@ onWaapiReady.then(waCtx => {
         } : {}),
         ...(usePitchShift ? {piano: {defVal: 'Cm', type: 'piano'}} : {})
       },
-      promises: [auWorkletPromise],
+      promises: isBpm ? [auWorkletPromise] : [], //: beeFx waits until this promise is resolved
       midi: {pars: isSampler ? ['startMod', 'endMod'] : []} ,
       name: fxName,
       graphs: {
@@ -276,7 +274,7 @@ onWaapiReady.then(waCtx => {
         },
         bpmGraph: {
           graphType: 'custom',
-          canvasSize: 120,
+          canvasSize: 120, //: I hoped that this will solve the canvas-antialias issues, but nope.
           onInit: ({cc,  width, height, fx, ccext}) => fx.int.bpmDia = {cc, width, height, ccext}
         }
       }
@@ -292,20 +290,20 @@ onWaapiReady.then(waCtx => {
     recMultiExt.onActivated = (fx, isActive) => isActive || fx.shutdownRecorder() //: cleanup!
     
     recMultiExt.construct = (fx, pars, {int, atm} = fx) => {
-      const recorded = {}     //: this is fix
+      const recorded = {}     //: this is the full recorded sample
       const trim = {}         //: trim from the start and the end (in theory it's reversible)
       const sample = {}       //: can be changed with trim
       const final = {}        //: sample modified with startMod/endMod (sliders)
-      const disp = {}           //: graph display interval
+      const disp = {}         //: graph display interval (sometimes we zoom)
       int.capture({final, disp, recorded}) //: as we will need these in the graph redraw
       int.capture({isSampler, isRecorder, isBpm})
         
       const initFx = _ => {
-        int.chMax = isBpm ? 2 : 2
+        int.chMax = isBpm ? 2 : 2 //: Can be 1 for Bpm, more tests needed.
         int.isRAFOn = false
         int.useScriptProcessor = false
         int.procFrames = 4096
-        int.muteInputOn = true //: so the next line will have a real effect
+        int.muteInputOn = true    //: so the next line will have a real effect
         muteInput(false)
         setMainMode('modeBypass')
         setScriptProcMode(int.useScriptProcessor)
@@ -329,7 +327,7 @@ onWaapiReady.then(waCtx => {
       const setRAF = on => {
         if (on && !int.isRAFOn) {
           RAF(_ => drawWaveOverview(fx)) //: could be called directly, but RAF gives a bit time gap
-        }                              //: + this is called by onaudioprocess, cannot touch the DOM
+        }                         //: + this is called by onaudioprocess, better not touch the DOM
         int.isRAFOn = on
       }
       const relativize = interval => {
@@ -367,7 +365,7 @@ onWaapiReady.then(waCtx => {
         disp.zoom = disp.frames / int.width
 
         setRAF(true)
-        post(updateLog) //: we can be in onaudiprocess, so we'll post it
+        post(updateLog) //: we can be in onaudioprocess, so we'll post it (not sure this works...)
         int.trimmable = int.mode === 'modeSampler' && sample.len > 2
         if (int.mode === 'modeSampler') { //: we cannot be in audioprocess if in sampler mode
           if (isSampler) {
@@ -411,9 +409,8 @@ onWaapiReady.then(waCtx => {
           int.scriptNode = int.scriptNode || 
             waCtx.createScriptProcessor(int.procFrames, int.chMax, int.chMax)
           int.scriptNode.onaudioprocess = data => appendBuffer(data.inputBuffer, int.procFrames)
-          
-          //+ pattogas nem szunik meg ha dest?
-          connectArr(fx.start, int.scriptNode, fx.output) //, waCtx.destination)//+teszt ha ez nincs
+          //: should be checked whether it gives less clicks on the destination
+          connectArr(fx.start, int.scriptNode, fx.output) //, waCtx.destination)
         } else {                      //8#43a Rec w/ AudioWorklet. Slow, complex & unstable.
           const pars = {outputChannelCount: [int.chMax]}
           int.recorder = int.recorder || new AudioWorkletNode(waCtx, 'Recorder', pars)
@@ -438,7 +435,6 @@ onWaapiReady.then(waCtx => {
             transferAudio: true,
             debug: fx.zholger
           }
-          console.log('sending params to worker', params)
           int.recorder.port.postMessage({op: 'params', params})
           int.recorder.port.postMessage({op: 'rec'})
         }
@@ -523,7 +519,7 @@ onWaapiReady.then(waCtx => {
       }
       
       const setMainMode = mode => {
-        if (int.mode !== mode) { //: only if changed
+        if (int.mode !== mode) {
           void (exitBypassMode(), exitRecordMode(), exitSamplerMode())
           mode === 'modeBypass' && enterBypassMode()
           mode === 'modeRecord' && enterRecordMode()
@@ -553,7 +549,7 @@ onWaapiReady.then(waCtx => {
           int.inBpmSec = calcSec
           int.bpmAuditor = int.bpmAuditor || BPM.createBPMAuditor(waCtx)
           const {candidates, error, peaks, groups} = await int.bpmAuditor.detect(int.audioBuffer)
-          console.log({candidates, error, peaks})
+          console.log({candidates, error, peaks}) //: we still need this, WIP
           const [cand1, cand2] = candidates || []
           const [tempo1, tempo2] = [cand1.tempo, cand2.tempo]
           const [count1, count2] = [cand1.count, cand2.count]
@@ -646,11 +642,11 @@ onWaapiReady.then(waCtx => {
           //: (This didn't matter until we started to clone the state of one fx to another.)
           //: So we will reset it at the end of this processing step.
           //: Automatization can fail from this, the human interface is ok.
-          //: (The cmd handling needs refaktoring. -> It's done.)
+          //: (The cmd handling needs refaktoring. -> It's done. This can be deleted now.)
           const cmdValue = atm[mode]
           if (cmdValue !== 'fire') {
             console.log(`will set instead of fire:`, mode, cmdValue)
-            post(_ => fx.setValue(mode, cmdValue))
+            //post(_ => fx.setValue(mode, cmdValue))
           }
         }
       }
