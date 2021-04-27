@@ -246,6 +246,7 @@ export const extendUi = ui => {
     
   ui.onFactoryToggled = on => {
     set$(ui.factoryFrame$, {html: ''})
+    set$(ui.bigmid$, {declass: 'factoryon'})
     const {fxHash} = pg.beeFx
     
     //: The categorization of the FXs is TODO, in the beginning there were a few, now
@@ -265,7 +266,7 @@ export const extendUi = ui => {
       generator: {catName: 'Generator', arr: [], cc: 'half', hue: 45},
       distortion: {catName: 'Distortion', arr: [], cc: '', hue: 0},
       complex: {catName: 'Complex', arr: [], cc: '', hue: 15},
-      device: {catName: 'Device', arr: [], cc: 'half', hue: 240},
+      device: {catName: 'Device', arr: [], cc: '', hue: 240},
       visual: {catName: 'Visual', arr: [], cc: 'half', hue: 300},
       misc: {catName: 'Misc', arr: [], cc: 'half', hue: 90}
     }
@@ -287,19 +288,21 @@ export const extendUi = ui => {
       match('scope,spectr', 'visual')
       match('blank,gain,ratio', 'basic')
       match('conv,reverb,cabi', 'convolver')
-      match('lfo,ef,wah,vib','eflfo')
+      match('lfo,ef,wahwah','eflfo')
       match('ring,over', 'distortion')
       match('dela', 'delay')
       match('wave,oscilla', 'generator')
       match('eq', 'equalizer')
       match('noise,crush,pink', 'noise')
       match('samp,rec,bpm', 'device')
+      match('wahbass,autowah,vibr', 'misc')
       cats[cat].arr.push(fxname)
     }
     const catArr = cats.propertiesToArr()
     console.log(cats)
     
     if (on) {
+      set$(ui.bigmid$, {class: 'factoryon'})
       div$(ui.factoryFrame$, {class: 'factory-inner'}, catArr.map(catKey =>
         div$({class: 'fact-fxcat', css: {__hue: cats[catKey].hue}}, [
           div$({class: 'fact-catname ' + cats[catKey].cc, text: cats[catKey].catName}), 
