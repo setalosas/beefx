@@ -2,17 +2,17 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady, Chebyshev} from '../beeproxy-esm.js'
-import {chebyDsp, isFilterStable} from './chebyshev-math-esm.js'
 
-const {Ø, nop, no, isArr, getRnd, getRndFloat, clamp} = Corelib
+const {nop} = Corelib
 const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
+const {startEndThrottle, post} = Corelib.Tardis
+const {chebyDsp, isFilterStable} = Chebyshev
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr} = BeeFX(waCtx)
+  const {registerFxType, connectArr} = BeeFX(waCtx)
 
   const iirPresets = [
     ['MDN_200Hz', {
@@ -104,17 +104,17 @@ onWaapiReady.then(waCtx => {
         ...(variant === 'manual' ? {
           preset: {defVal: iirPresetNames[0][1], type: 'strings', subType: iirPresetNames},
           a: {defVal: .99, min: coeffMinA, max: coeffMaxA, arrayIx: [0, coeffCnt - 1], unit: '🔸'},
-          b: {defVal: .01, min: coeffMinB, max: coeffMaxB, arrayIx: [0, coeffCnt - 1], unit: '🔹'}
+          b: {defVal: .01, min: coeffMinB, max: coeffMaxB, arrayIx: [0, coeffCnt - 1], unit: '🔹', color: 95}
         } : {
           filterType: {defVal: 'lowpass', type: 'strings', subType: filterTypeNames},
           cutOffFreq: {defVal: .025, min: 0, max: .5}, //.025 -> 500hz
           ripplePt: {defVal: 5, min: .1, max: 49},
           aMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 2], unit: '🔸%'},
-          bMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 1], unit: '🔹%'}
+          bMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 1], unit: '🔹%', color: 180}
         }),
         log: {defVal: '-', type: 'info'},
         previewGraph: {type: 'graph'},
-        autoGen: {defVal: 'off', type: 'cmd'},
+        autoGen: {defVal: 'off', type: 'cmd', subType: 'led', color: 325},
         reGenerate: {defVal: 'off', type: 'cmd'}, // go live!
         exTerminate: {defVal: 'off', type: 'cmd'}, // omg, kill it fast!
         liveGraph: {type: 'graph'}
@@ -222,7 +222,7 @@ onWaapiReady.then(waCtx => {
       fx.toggleAutoGen = _ => {
         int.isAutoGenOn = !int.isAutoGenOn
         console.log('toggle sets autogen to', int.isAutoGenOn ? 'active' : 'off')
-        fx.setValue('autoGen', int.isAutoGenOn ? 'active' : 'off')
+        fx.setValue('autoGen', int.isAutoGenOn ? 'active.ledon' : 'off')
         int.isAutoGenOn && fx.regenerateLiveIfStable()
       }
       
@@ -255,11 +255,10 @@ onWaapiReady.then(waCtx => {
         fx.loadFromPreset = name => {
           fx.regeneratePreview()
           const iirPreset = wassert(iirPresetHash[name])
-          const {frequency, feedforward, feedback} = iirPreset[1]
+          const {feedforward, feedback} = iirPreset[1]
           fx.setValueArray('a', feedback)
           fx.setValueArray('b', feedforward)
           fx.coeffsChanged()
-          console.log(`IIR loaded`, {frequency, feedforward, feedback, int})
         }
         post(_ => fx.loadFromPreset(initial.preset))
       } else {
@@ -278,14 +277,12 @@ onWaapiReady.then(waCtx => {
     
         fx.chebyshevParsChanged = _ => {
           if (atm.cutOffFreq && atm.filterType && atm.ripplePt) {
+            //: this a b exchange is weird... somewhere I mixed up the arrays
             const {a: b, b: a} = chebyDsp(atm.cutOffFreq, atm.filterType, atm.ripplePt, poles)
-            //+ ez az a b csere miez?
             int.feedforwardChebyshev = b.filter(b => b)
             int.feedbackChebyshev = a.slice(1).filter(a => a)
-            
-            console.log('regenChebyBase', atm.cutOffFreq, atm.filterType, atm.ripplePt, {a, b})
+            //console.log('regenChebyBase', atm.cutOffFreq, atm.filterType, atm.ripplePt, {a, b})
           }
-          //+ lehet ilyenkor le kene nullazni (1-ezni a modokat?)
           fx.regenCoeffs()
         }  
       }
