@@ -151,17 +151,15 @@ const createPlayground = async root => {
   }
   
   pg.loadProjectOnStart = async projName => {
+    console.log('project load START')
     const project = root.stateManager.loadProject(projName)
     if (project) {
       const {stageLetters, stages, sourceRequests = [], flags = {}} = project
-      const {
-        isAutoplayOn = ui.getFlag('autoplay'),
-        isAutostopOn = ui.getFlag('autostop'),
-        syncSources = ui.getFlag('syncSources')
-      } = flags
-      ui.setFlag('autoplay', isAutoplayOn)
-      ui.setFlag('autostop', isAutostopOn)
-      ui.setFlag('syncSources', syncSources)
+      console.log('flags loaded:', {flags})
+
+      for (const key in flags) {
+        key.slice(-2) === 'On' || ui.setFlag(key, flags[key])
+      }
       
       for (const {method, sourceIx, par} of sourceRequests) {
         void ui[method]?.(sourceIx, par)
@@ -186,6 +184,7 @@ const createPlayground = async root => {
     } else {
       console.warn(`No such project in storage:`, projName)
     }
+    console.log('project load END')
   }
   
   pg.saveProject = (projName, projDesc = '') => {
@@ -199,11 +198,8 @@ const createPlayground = async root => {
     ui.iterateSourceUis(sourceUi => {
       sourceUi.request && sourceRequests.push(sourceUi.request)
     })
-    const flags = {
-      isAutoplayOn: ui.getFlag('autoplay'),
-      isAutostopOn: ui.getFlag('autostop'),
-      syncSources: ui.getFlag('syncSources')
-    }
+    const {flags} = root
+    console.log('flags saved:', {flags})
     const project = {projDesc, stageLetters, stages, sourceRequests, flags}
     root.stateManager.saveProject(project, projName)    
   }
@@ -264,6 +260,7 @@ export const runPlayground = async root => { //: we may have a mediaElement in r
 
       ui.finalize()
 
+      //: this should work delayed too (no video on non-watch youtbe pages in the first 10 sec)
       root.onYoutube
         ? root.mediaElement && ui.changeVideoElementSource(1, root.mediaElement)
         : playground.sources.getValidSourcesCnt() || ui.setFlag('sourceList', true)//if no sources
