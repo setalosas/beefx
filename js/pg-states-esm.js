@@ -185,10 +185,21 @@ export const create = root => {
           resolve({actProject: startup.projName})
         }
       } else {
-        resolve(wassert(setupHash[name]))
+        resolve({actPreset: wassert(setupHash[name])})
       }
     }
   })
+  
+  //8#a67 Youtube video list
+  
+  const loadYoutubeVideoList = _ => root.youtubeVideoList = store.load('youtubevideolist') || {}
+
+  root.onYoutube && loadYoutubeVideoList()
+    
+  stateManager.addToYoutubeVideoList =  videoId => {
+    root.youtubeVideoList[videoId] = true
+    store.save('youtubevideolist', root.youtubeVideoList)
+  }
   
   //8#67a Project storage
   
