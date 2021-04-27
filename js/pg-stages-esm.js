@@ -207,6 +207,7 @@ export const createStageManager = root => {
       
       fxArr[ix] = newFx(type)
       beeFx.debug.addStage(fxArr[ix], letter + ix)
+      fxArr[ix].addMeta({stageId: letter})
       
       if (fxArr[ix]) { //: create ui for the fx if the stage has one
         stage.uiStage && root.ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], params)
