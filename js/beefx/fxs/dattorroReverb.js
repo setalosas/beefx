@@ -8,7 +8,8 @@ THE AUTHOR(S) SHALL NOT BE LIABLE FOR ANYTHING, ARISING FROM, OR IN
 CONNECTION WITH THE SOFTWARE OR THE DISTRIBUTION OF THE SOFTWARE.
 */
 
-class DattorroReverb extends AudioWorkletProcessor {
+class DattorroReverb extends AudioWorkletProcessor { 
+  // https://khoin.github.io/DattorroReverbNode/
 	
 	static get parameterDescriptors() {
 		return [
@@ -115,7 +116,7 @@ class DattorroReverb extends AudioWorkletProcessor {
 				dp   = 1 - parameters.damping[0]         ,
 				ex   = parameters.excursionRate[0]   / sampleRate        ,
 				ed 	 = parameters.excursionDepth[0]  * sampleRate / 1000 ,
-				we   = parameters.wet[0]             * 0.6               , // lo & ro both mult. by 0.6 anyways
+				we   = parameters.wet[0]             * 0.6, // lo & ro both mult. by 0.6 anyways
 				dr   = parameters.dry[0]                 ;
 
 		// write to predelay and dry output
@@ -140,18 +141,18 @@ class DattorroReverb extends AudioWorkletProcessor {
 			);
 		}
 
-		let i = 0|0;
+		let i = 0|0
 		while (i < 128) {
-			let lo = 0.0,
-				ro = 0.0;
+			let lo = 0.0
+			let ro = 0.0
 
 			this._lp1 += bw * (this._preDelay[(this._pDLength + this._pDWrite - pd + i)%this._pDLength] - this._lp1);
 
 			// pre-tank
-			let pre = this.writeDelay(0,             this._lp1          - fi * this.readDelay(0) );
-				pre = this.writeDelay(1, fi * (pre - this.readDelay(1)) +      this.readDelay(0) );
-				pre = this.writeDelay(2, fi *  pre + this.readDelay(1)  - si * this.readDelay(2) );
-				pre = this.writeDelay(3, si * (pre - this.readDelay(3)) +      this.readDelay(2) );
+			let pre = this.writeDelay(0, this._lp1 - fi * this.readDelay(0) );
+			pre = this.writeDelay(1, fi * (pre - this.readDelay(1)) +      this.readDelay(0) );
+			pre = this.writeDelay(2, fi *  pre + this.readDelay(1)  - si * this.readDelay(2) );
+			pre = this.writeDelay(3, si * (pre - this.readDelay(3)) +      this.readDelay(2) );
 
 			let split = si * pre + this.readDelay(3);
 
@@ -161,33 +162,33 @@ class DattorroReverb extends AudioWorkletProcessor {
 			let exc2  = ed * (1 + Math.sin(this._excPhase*6.2847)); 
 			
 			// left loop
-			let temp =  this.writeDelay( 4, split + dc * this.readDelay(11)    + ft * this.readDelayCAt(4, exc) ); // tank diffuse 1
-						this.writeDelay( 5,         this.readDelayCAt(4, exc)  - ft * temp                      ); // long delay 1
-						this._lp2      += dp * (this.readDelay(5) - this._lp2)                                   ; // damp 1
-				temp =  this.writeDelay( 6,         dc * this._lp2             - st * this.readDelay(6)         ); // tank diffuse 2
-						this.writeDelay( 7,         this.readDelay(6)          + st * temp                      ); // long delay 2
-			// right loop 
-				temp =  this.writeDelay( 8, split + dc * this.readDelay(7)     + ft * this.readDelayCAt(8, exc2)); // tank diffuse 3
-						this.writeDelay( 9,         this.readDelayCAt(8, exc2) - ft * temp                      ); // long delay 3
-						this._lp3      += dp * (this.readDelay(9) - this._lp3)                                   ; // damp 2
-				temp =	this.writeDelay(10,         dc * this._lp3             - st * this.readDelay(10)        ); // tank diffuse 4
-						this.writeDelay(11,         this.readDelay(10)         + st * temp                      ); // long delay 4
+			let temp = this.writeDelay(4, split + dc * this.readDelay(11) + ft * this.readDelayCAt(4, exc) ) // tank diffuse 1
+			this.writeDelay(5, this.readDelayCAt(4, exc)  - ft * temp) // long delay 1
+			this._lp2 += dp * (this.readDelay(5) - this._lp2) // damp 1
+			temp = this.writeDelay(6, dc * this._lp2 - st * this.readDelay(6)) // tank diffuse 2
+			this.writeDelay(7, this.readDelay(6) + st * temp) // long delay 2
+		// right loop 
+			temp = this.writeDelay(8, split + dc * this.readDelay(7) + ft * this.readDelayCAt(8, exc2)) // tank diffuse 3
+			this.writeDelay(9, this.readDelayCAt(8, exc2) - ft * temp) // long delay 3
+			this._lp3 += dp * (this.readDelay(9) - this._lp3)// damp 2
+			temp =this.writeDelay(10, dc * this._lp3 - st * this.readDelay(10)) // tank diffuse 4
+			this.writeDelay(11, this.readDelay(10) + st * temp) // long delay 4
 
-			lo =  this.readDelayAt( 9, this._taps[0])
+			lo = this.readDelayAt( 9, this._taps[0])
 				+ this.readDelayAt( 9, this._taps[1])
 				- this.readDelayAt(10, this._taps[2])
 				+ this.readDelayAt(11, this._taps[3])
 				- this.readDelayAt( 5, this._taps[4])
 				- this.readDelayAt( 6, this._taps[5])
-				- this.readDelayAt( 7, this._taps[6]);
+				- this.readDelayAt( 7, this._taps[6])
 
-			ro =  this.readDelayAt( 5, this._taps[7])
+			ro = this.readDelayAt( 5, this._taps[7])
 				+ this.readDelayAt( 5, this._taps[8])
 				- this.readDelayAt( 6, this._taps[9])
 				+ this.readDelayAt( 7, this._taps[10])
 				- this.readDelayAt( 9, this._taps[11])
 				- this.readDelayAt(10, this._taps[12])
-				- this.readDelayAt(11, this._taps[13]);
+				- this.readDelayAt(11, this._taps[13])
 
 			outputs[0][0][i] += lo * we;
 			outputs[0][1][i] += ro * we;		
