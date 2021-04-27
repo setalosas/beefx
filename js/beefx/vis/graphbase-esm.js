@@ -6,7 +6,7 @@
 import {Corelib} from '../beeproxy-esm.js'
 
 const {Ø, nop, clamp, createMaxCollector} = Corelib
-const {createPerfTimer} = Corelib.Tardis
+const {createPerfTimer, startEndThrottle} = Corelib.Tardis
 const {wassert, weject} = Corelib.Debug
 const {max, min, round, pow, log: mathlog, log2, floor, LN2, LN10, abs} = Math
 
@@ -29,6 +29,7 @@ export const createGraphBase = waCtx => {
     const {     //: these defaults are overrideable(?) from graphDesc
       graphType,
       renderSet = {doClear: true, doGrid: true, doGraph: true},
+      customRenderer = {},
       dbGridColor =  'hsla(200, 70%, 55%, 0.5)',
       dbGridColorLo = 'hsla(200, 70%, 55%, 0.3)',
       dbGridColorHi = 'hsla(200, 70%, 55%, 0.7)',
@@ -45,7 +46,7 @@ export const createGraphBase = waCtx => {
       minDb = -60, // -30  -60
       dbWidthFactor = 1,
       minMs = 0,
-      maxMs = 3000, // compressor: 0...2750
+      maxMs = 3000, // compressor: 0..2750
       msOffsetFactor = 0
     } = graphDesc
     
@@ -60,6 +61,7 @@ export const createGraphBase = waCtx => {
     const realFreqScaleX = realFreqWidth / width
     
     const scaleAndRoundFreqX = x => round(freqMarginLeft + x * realFreqScaleX)
+    //const getXFromFreQ = freq => 
     
     const dbToY = db => height - (db - minDb) * pixPerDbY
     const dbToX = db => (db - minDb) * pixPerDbX
@@ -147,7 +149,7 @@ export const createGraphBase = waCtx => {
       msdb.y = y2
     }
     
-    const ccext = {setTextStyle, setLineStyle, drawLine, drawText}
+    const ccext = {setTextStyle, setLineStyle, drawLine, drawText, width, height}
     
     //8#939 -------------- BeeFx-specific parts --------------
     
@@ -162,9 +164,14 @@ export const createGraphBase = waCtx => {
       freq.hzArr = new Float32Array(width + 1)
       freq.magResponse = new Float32Array(width + 1)
       freq.phaseResponse = new Float32Array(width + 1)
+      freq.freq2X = new Int16Array(maxNyquistFreq)
+      let freqIx = 0
      
       for (let i = 0; i <= width; i++) {
-        freq.hzArr[i] = freq.i2Hz(i)
+        const hz = freq.hzArr[i] = freq.i2Hz(i)
+        while (freqIx < hz && freqIx < maxNyquistFreq) { //: reverse array
+          freq.freq2X[freqIx++] = i
+        }
       }
       return freq
     }
@@ -252,6 +259,7 @@ export const createGraphBase = waCtx => {
       
       const render = _ => {
         initCanvas()
+        void customRenderer.pre?.({fx, cc, ccext, freq})
         if (renderSet.doGrid) {
           drawFreqGrid(freq)
           drawDbGrid({doLeft: true, doRight: true})
@@ -535,14 +543,14 @@ export const createGraphBase = waCtx => {
       console.warn('no renderer for graph!', graphType, graphDesc)
     }
     
-    graph.render = (...pars) => {
+    graph.render = (...pars) => { //: this is not throttled, be cautious when calling!
       if (graph.renderer) {
         graph.renderer.render(...pars)
         graphDesc.postRender && graphDesc.postRender({fx, cc, ccext})
       } else {
         console.warn(`no renderer!!!!!!!`, graph)
       }
-    }  
+    }
     return graph
   }
   
