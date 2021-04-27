@@ -9,11 +9,12 @@ const {AudioWorkletProcessor, registerProcessor} = globalThis
 
 //: This audioWorklet was intended to replace the scriptNodeProcessor in the main thread.
 //: As this worklet runs in a separate thred, we should get better performance with it.
-//: However, the scriptProcessor version is much faster.
+//: However, the scriptProcessor version is a bit faster.
 //: The main reason for this probably is that we send the audio to the main process while
 //: recording, although bundled, after we collected enough frames (can be set as param).
 //: So we make an extra round of unneccessary copying, still, it should be much faster.
 //: (Unfortunately I could find only near zero examples and docs on audioWorklets.)
+//: (So it still has lots of debug/log lines.)
 
 const maxChannel = 2
 //: This Recorder will record always in stereo as the Web Audio API calls our process
@@ -94,6 +95,7 @@ class Recorder extends AudioWorkletProcessor {
       this.port.postMessage({op: 'audio', channels, frames, channelData}, 
         channelData.map(arr => arr.buffer))
     }
+    //: transferCompact mode is not used any more, this can be eliminated.
     if (this.transferCompact) { //: we send only sampled first channel data for the graph
       const chData = channelData[0]
       const compactLen = frames / this.compactZoom
