@@ -10,7 +10,7 @@ const {undef, nop, no, yes, isArr} = Corelib // eslint-disable-line
 const {wassert} = Corelib.Debug
 const {max} = Math
 
-//8#b49 Lots of debug logs yet here - but lots of bugs too.
+//8#b49 Lots of debug logs yet here - but a few bugs too.
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr} = BeeFX(waCtx)
@@ -36,7 +36,7 @@ onWaapiReady.then(waCtx => {
       dbgComp: {defVal: 'off', type: 'cmd'},
       dbgAct: {defVal: 'off', type: 'cmd'}, */
       gain: {defVal: .25, min: 0.00001, max: 1.00001, name: 'Stage ratio'},
-      onCmd: {defVal: nop, subType: 'skipui'}
+      onCmd: {defVal: nop, skipUi: true}
     }
   }
   
@@ -178,7 +178,7 @@ onWaapiReady.then(waCtx => {
         int.shared.soloFx.setValue('solo', 'off')
         delete int.shared.soloFx
       }
-      console.log(`ratio ${fx.zholger} will connected (${on}), gain=${fx.atm.gain}`)
+      rlog(`🔗ratio ${fx.zholger} will connected (${on}), gain=${fx.atm.gain}`)
       on
         ? fx.input.connect(fx.start)
         : fx.input.disconnect(fx.start)

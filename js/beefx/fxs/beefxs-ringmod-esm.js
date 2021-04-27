@@ -2,21 +2,18 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
-
-const {nop, no, yes, isArr, getRnd, getRndFloat} = Corelib
+import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, dB2Gain} = BeeFX(waCtx)
+  const {connectArr, registerFxType} = BeeFX(waCtx)
+  
+  //: Diodes should have a stand-alone Fx! But this should bee rewritten anyway.
 
   // # DiodeNode
-  //
-  // This class implements the diode described in Parker's paper
-  // using the Web Audio API's
-  // [WaveShaperNode](https://webaudio.github.io/web-audio-api/#WaveShaperNode)
-  // interface.
+  // This class implements the diode described in Parker's paper using the Web Audio API's
+  // [WaveShaperNode](https://webaudio.github.io/web-audio-api/#WaveShaperNode) interface.
   
   class DiodeNode {
     constructor (waCtx) {
@@ -82,8 +79,6 @@ onWaapiReady.then(waCtx => {
     name: 'BBC Ring Modulator'
   }
 
-  const transExp = xpt => (1 - Math.pow(1 * xpt, 3)).toFixed(2)
-  
   bbcRingModulatorFx.setValue = (fx, key, value) => ({
     distortion: _ => fx.setDistortion(value),
     speed: _ => fx.setAt('vIn', 'frequency', value),
@@ -122,21 +117,15 @@ onWaapiReady.then(waCtx => {
     int.outGain = waCtx.createGain()
     int.outGain.gain.value = 4
   
-    // A small addition to the graph given in Parker's paper is a
-    // compressor node immediately before the output. This ensures that
-    // the user's volume remains somewhat constant when the distortion
-    // is increased.
+    // A small addition to the graph given in Parker's paper is a compressor node immediately
+    // before the output. This ensures that the user's volume remains somewhat constant when the
+    // distortion is increased.
     int.compressor = waCtx.createDynamicsCompressor()
     int.compressor.threshold.value = -12
-  
-    // Now we connect up the graph following the block diagram above.
-    // When working on complex graphs it helps to have a pen and paper
-    // handy!
   
     // First the Vc side,
     fx.start.connect(int.vcInverter1)
     fx.start.connect(int.vcDiode4.node)
-  
     int.vcInverter1.connect(int.vcDiode3.node)
   
     // then the Vin side.
@@ -169,7 +158,7 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_bbcRingModulator', bbcRingModulatorFx)
   
-  const simpeRingModulatorFx = { //8#05e -------RingModulator (cwilso) -------
+  const simpeRingModulatorFx = { //8#05e -------RingModulator (Chris Wilson) -------
     def: {
       speed: {defVal: 440, min: 55, max: 8000, subType: 'exp', unit: 'Hz'}
     },

@@ -2,20 +2,22 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, no, yes, undef, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
+const {nop, undef} = Corelib
+const {wassert} = Corelib.Debug //eslint-disable-line no-unused-vars
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, newFx} = BeeFX(waCtx)
+  const {registerFxType} = BeeFX(waCtx)
+  
+  const logPerfOn = false
+  const plog = (...args) => logPerfOn && console.log(...args)
   
   const drawFrame = fx => {
     const {int, atm} = fx
     const {cc, width, height, spectrum, freqData, ccext} = int
-    const {sensitivity} = atm
     
     const drawSpectrum = _ => {
       const timer = Corelib.Tardis.createPerfTimer()
@@ -46,7 +48,7 @@ onWaapiReady.then(waCtx => {
       const div = atm.laziness + 1
       
       const db = []
-      const pixPerBin = width / flen
+      //const pixPerBin = width / flen
   
       for (let x = 0; x < width; x += 6) {//:Draw the frequency domain chart.
         const xpt = x / width
@@ -68,21 +70,23 @@ onWaapiReady.then(waCtx => {
       }
       
       timer.mark('stroke&text')
-      const sum = timer.sum()
-      int.prof.push(sum.dur.sum)
-      if (int.prof.length % 110 === 105) {
-        const last = int.prof.slice(-100).map(a => parseFloat(a))
-        let agg = 0
-        for (let i = 0; i < 100; i++) {
-          agg += last[i]
+      if (logPerfOn) {
+        const sum = timer.sum()
+        int.prof.push(sum.dur.sum)
+        if (int.prof.length % 110 === 105) {
+          const last = int.prof.slice(-100).map(a => parseFloat(a))
+          let agg = 0
+          for (let i = 0; i < 100; i++) {
+            agg += last[i]
+          }
+          agg = Math.round(agg * 10)
+          plog(`###SPECTR avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
         }
-        agg = Math.round(agg * 10)
-        //console.log(`###SPECTR avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
       }
     }
     if (cc) {
       //if (int.drawCnt++ % 2) {
-        drawSpectrum()
+        drawSpectrum() //: refresh reducer!
       //}
     }
     int.rAF = window.requestAnimationFrame(_ => drawFrame(fx))
@@ -91,7 +95,7 @@ onWaapiReady.then(waCtx => {
   const spectrumExt = { //8#48d ------- hi-res spectrum -------
     def: {
       laziness: {defVal: 0, min: 0, max: 5, subType: 'int'},
-      freqDyn: {defVal: 1.5, min: 1, max: 2.5},
+      freqDyn: {defVal: 2, min: 1, max: 2.5},
       spectrogram: {type: 'graph'}
     },
     name: 'Hi-res spectrum',
@@ -120,9 +124,9 @@ onWaapiReady.then(waCtx => {
     int.spectrum.fftSize = 256
     int.freqData = new Uint8Array(int.spectrum.frequencyBinCount) //: fftSize / 2
     
-    int.cc = undef    //: baseGraph fills it with onInit
-    int.width = 600   //: baseGraph fills it with onInit
-    int.height = 300  //: baseGraph fills it with onInit
+    int.cc = undef    //: baseGraph fills these with onInit
+    int.width = 600
+    int.height = 300
     
     fx.start.connect(int.spectrum)
     fx.start.connect(fx.output)
