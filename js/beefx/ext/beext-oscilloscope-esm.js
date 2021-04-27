@@ -2,15 +2,15 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, no, yes, undef, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
+const {nop, undef} = Corelib
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, newFx} = BeeFX(waCtx)
+  const {registerFxType} = BeeFX(waCtx)
+  const {sampleRate} = waCtx
   
   const logOn = false
   const logPerfOn = false
@@ -44,7 +44,6 @@ onWaapiReady.then(waCtx => {
     const {int, atm} = fx
     const {cc, ccext, width, height, osc, freqData} = int
     const {sensitivity} = atm
-    const {sampleRate} = waCtx
     
     const drawGrid = _ => {
       cc.clearRect(0, 0, width, height)
@@ -85,7 +84,7 @@ onWaapiReady.then(waCtx => {
       const centerY = height / 2
       
       cc.lineWidth = 2.5 * 2
-      cc.strokeStyle = 'hsl(0, 100%, 80%)' // strokeStyle
+      cc.strokeStyle = 'hsl(0, 100%, 80%)'
       cc.shadowColor = 'hsl(0, 100%, 70%)'
       cc.shadowBlur = 8
       cc.shadowOffsetX = 4
@@ -93,7 +92,6 @@ onWaapiReady.then(waCtx => {
       cc.beginPath()
       cc.moveTo(0, centerY - (128 - freqData[frameIxFromZero]) * scale)
       
-      // 7 12 17 22 27 32
       let version = parseInt(fx.zholger)
       if (version < 15) {
         version = '1.6'
@@ -102,6 +100,7 @@ onWaapiReady.then(waCtx => {
       } else {
         version = '.8'
       }
+      version = 1.2
       const step = parseFloat(version)
         
       let j = 0 //: for test/debug
@@ -131,9 +130,9 @@ onWaapiReady.then(waCtx => {
         cc.fillText('FFT window too short!', txtx, height - 20)
       }
       
-      timer.mark('stroke&text')
-      const sum = timer.sum()
       if (logPerfOn) {
+        timer.mark('stroke&text')
+        const sum = timer.sum()
         int.prof.push(sum.dur.sum)
         if (version) {
           if (int.prof.length % 410 === 405) {
@@ -146,12 +145,13 @@ onWaapiReady.then(waCtx => {
             plog(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
           }
         }
+        parseInt(fx.zholger) === 7 && console.log(timer.summary())
       }
-      //parseInt(fx.zholger) === 7 && console.log(timer.summary())
     }
     if (cc) {
       //const profile = startProfile()
       //if (int.drawCnt++ % 2) {
+      //: todo: calling RAF refresh reducer
         drawGrid()
         drawXAxis()
         drawWaveform()
@@ -161,18 +161,20 @@ onWaapiReady.then(waCtx => {
     int.isRAFOn && window.requestAnimationFrame(_ => drawFrame(fx))
   }
 
-  const oscilloscopeExt = { //8#48d ------- oscilloscope -------
+  const oscilloscopeExt = { //8#48d ------- oscilloscope (mostly after Chris Wilson) -------
     def: {
       sensitivity: {defVal: 50, min: 1, max: 100},
       zoom: {defVal: 1, min: .025, max: 2, subType: 'exp'},
       fullZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x1'},
-      halfZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x2'},
-      quartZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x4'},
+      halfZoom: {defVal: 'off', type: 'cmd', name: 'Z x2'},
+      quartZoom: {defVal: 'off', type: 'cmd', name: 'Z x4'},
+      beatZoom: {defVal: 'off', type: 'cmd', name: 'Beat/2'},
       resetZoom: {defVal: 'act', type: 'cmd', name: 'No zoom'},
       freeze: {defVal: 'off', type: 'cmd', name: 'Freeze'},
-      scope: {type: 'graph'}
+      beatTime: {defVal: .25, skipUi: true}
     },
     name: 'Oscilloscope',
+    listen: ['source.beatTime:beatTime'],
     graphs: {
       scope: {
         graphType: 'custom',
@@ -180,12 +182,17 @@ onWaapiReady.then(waCtx => {
       }
     }
   }
-  oscilloscopeExt.setValue = (fx, key, value, {int} = fx) => ({
+  oscilloscopeExt.setValue = (fx, key, value, {int, atm} = fx) => ({
+    beatTime: _ => {
+      int.beatZoom = int.width / (sampleRate * atm.beatTime / 2)
+      int.beatZoomOn && fx.setValue('zoom', int.beatZoom)
+    },
     sensitivity: nop,
     zoom: _ => fx.resizeFFT(),
     fullZoom: _ => value === 'fire' && fx.setCmds('fullZoom', int.width / 16384),
     halfZoom: _ => value === 'fire' && fx.setCmds('halfZoom', int.width / 8192),
     quartZoom: _ => value === 'fire' && fx.setCmds('quartZoom', int.width / 4096),
+    beatZoom: _ => value === 'fire' && fx.setCmds('beatZoom', int.beatZoom),
     resetZoom: _ => value === 'fire' && fx.setCmds('resetZoom', 1),
     freeze: _ => value === 'fire' && (int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc())
   }[key])
@@ -241,7 +248,9 @@ onWaapiReady.then(waCtx => {
       fx.setValue('fullZoom', act === 'fullZoom' ? 'active' : 'off')
       fx.setValue('halfZoom', act === 'halfZoom' ? 'active' : 'off')
       fx.setValue('quartZoom', act === 'quartZoom' ? 'active' : 'off')
+      fx.setValue('beatZoom', act === 'beatZoom' ? 'active' : 'off')
       fx.setValue('resetZoom', act === 'resetZoom' ? 'active' : 'off')
+      int.beatZoomOn = act === 'beatZoom'
     }
   }
   
