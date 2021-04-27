@@ -8,7 +8,7 @@ import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
 const {Ø, undef, isNum, isFun, nop, clamp, s_a, getIncArray} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
-const {post, startEndThrottle} = Corelib.Tardis
+const {post, startEndThrottle, pinky} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, leaf$, set$, setClass$, q$$, haltEvent, iAttr} = DOMplusUltra
 const {round} = Math
@@ -84,85 +84,25 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     ui.createInputDispatchers(sourceIxArr)
   }
   
-  //+ kulon nogit file,  a normalban csak upload
-  
-  //8#595 Mp3 menu  for testing (not on production site of course)
-  
   root.videoIds = [
   ].join(',').split(',')
   
-  root.mp3s = [
-    [`Cascandy - Take Me Baby Reeemix SNOE`,'9PCz1KPAJ0c'],
-    [`Astrud Gilberto - Agua de Beber`, 'qZx-Z3_n4t8'], 
-    [`Nightmares on Wax - Jorge`, 'uFpwKExK9Uw'], 
-    [`The Herbaliser - The Sensual Woman`, 'UPVbcXiK4y8'], 
-    [`DJ Sensei - The Sinphony`, '94fQIqRCi4o'], 
-    [`Montefiori Cocktail - Sunny`, 'pNmX9MgM2vc'], 
-    [`Devendra Banhart - Never Seen Such Good Things - Unplugged`, '-Au0r91kCpg'], 
-    [`The Shadows - Apache (1960)`, 'EzgbcyfJgfQ'], 
-    [`Bob Azzam - Happy Birthday Cha Cha Cha`, 'DO0rbS0z09g'], 
-    [`James Brown - I Feel Good (guitar)`], 
-    [`Somerset - Мой Манекен (My Mannequin)`, 'kbkEA1sWBRI'],
-    [`Iggy Pop - Do Not Go Gentle Into That Good Night`, '5g28sOx4Gr4'], 
-    [`Demuja - Loose Legs`, 'MfN57sFEcyc'],
-    [`This Charming Man (Stars Cover)`, 'A9WEeKYID4I'],
-    [`Portishead - SOS`, 'WVe-9VWIcCo'],
-    [`Jon Hopkins - Singularity (Official Video)`, 'lkvnpHFajt0'],
-    [`The Chemical Brothers - Escape Velocity (Official Music Video)`, 'sXMhGADyMxE'],
-    [`Kollektiv Turmstrasse - Tristesse HD`, 'tyVnJjE9sDo'],
-    [`Ame - Rej (Original) [Full Length] 2006`, 'VkWg1xOQwTI'],
-    [`La Bien Querida - Muero De Amor (33)`, 'u5jP4uCHcWs'],
-    [`PAUZA - Bésame Mucho`, 'j_nuN_fN7s8'],
-    [`Fatboy Slim, Riva Starr & Beardyman - Eat Sleep Rave Repeat (Calvin Harris Remix)`, 'NIcW36J-h7Q'],
-    [`Peter Schilling - Major Tom (Coming Home)`, 'OMDbX1zksgI'],
-    [`Aly Us - Follow Me (Acapella)`, 'HU--xJbkemM'],
-    [`Victor Ruiz - Interstellar (Original Mix)`, 'TA7CKxMCR00'],
-    [`Jon Hopkins - Wintergreen`, '4_HiNxEvKTY'],
-    [`Jamie xx - Gosh`, 'hTGJfRPLe08'],
-    [`Wink - Higher State Of Consciousness (Official Video)`, 'M1ajSxBiMCY'],
-    [`Claude VonStroke - Who's Afraid of Detroit`, 'hS1pHfUP5WQ'],
-    [`Dapayk & Vars - Fire (Dirty Doering Remix)`, 'nCv9X0h1-wQ'],
-    [`Incredible Bongo Band - Apache`, 'WY-Z6wm6TMQ'],
-    [`Josh Wink vs. Public Enemy - Higher State Of Bring Da Noise`, '0fkLgZCMrK8'],
-    [`Latmun - Everybody's Dancin'`, 'TG7QwJoXeDY'],
-    [`Milk & Sugar - Let The Sun Shine 2012 (Tocadisco Remix)`, '7adlXT_AFCQ'],
-    [`Ryan Murgatroyd - Is That You (Cioz Remix)`, '92tqYOYycoE'],
-    [`Riva Starr feat. Gavin Holligan - If I Could Only Be Sure (Danny Krivit Edit)`, '7isWbvWX7Dc'],
-    [`Lycoriscoris - Shizumu (Extended Mix)`, 'o-5DftpafnE'],
-    [`Whilk & Misky - Clap Your Hands (Solomun Remix)`, '4hjOQ6_R8Fs'],
-    [`For Those I Love - I Have a Love (Overmono Remix)`, 'nJkDcmOqYWY'],
-    [`For Those I Love - I Have a Love`, 'iTz3QZNORg4'],
-    [`ОКЕАН ЕЛЬЗИ - Я ТАК ХОЧУ (TAPOLSKY & SUNCHASE REMIX)`, '7n9kIm1bBFk'],
-    [`Green Velvet - La la land`, 'NMD_cv4fM4s'],
-    [`Undercatt - Futura (Original Mix)`, 'LGvIdBzVmnY'],
-    [`Schneider TM - The Light 3000`, 'fGNH3vNl3h4'],
-    [`Jefferson Airplane - White Rabbit Ft. Wu-Tang Clan (PINEO & LOEB Remix)`, '9Vzit3fiKYY'],
-    [`STEREO TOTAL - HEROES (David Bowie Cover)`, 'R6FXRysYG1g'],
-    [`David Bowie - Heroes (PINEO & LOEB Remix)`, 'A0PlqQ6NWrM'],
-    [`Jürgen Paape - So Weit Wie Noch Nie`, '8BaY3_112yQ'],
-    [`Baxendale - I Buit This City (Michael Mayer Mix)`, 'fdfDt7mPixA'],
-    [`Claude Vonstroke - Who's Afraid Of Detroit (MockBeat Remix)`, 'dGClgGcF0KU'],
-    [`JEAN-JACQUES PERREY & AIR - 'COSMIC BIRD'`, 'Nj_APKH9qg0'],
-    [`Mama Oliver - Eastwest (stoned together)`, 'R2lr8_URqeI'],
-    [`Josh Rouse - Straight To Hell (The Clash cover)`, '79PffDsRp88']
-  ].map(a => ({
-    title: a[0],
-    src: `/au/${a[0]}.mp3`,
-    videoId: a[1] || ''
-  }))
-    
-  //8#c95 Youtube mock stuff - if we are not on Youtube, so we have to replace videos with audio
+  //8#595 Youtube/p3 menu for testing on dev site
   
-  //: If we are on Youtube as an extension, root.onYoutube is true.
-  //: .source-strip
-  //:   .source-frame
-  //:     .src-info
-  //:     .src-media
-  //:       iframe (<- div) youtube destroys this target div replacing it with its iframe
-  //:     .src-ctrl
-  //:     .src-mock-holder
-  //:   .source-frame::after  
-  //: If we are not on youtube, have to mock the videos as we can't access their sound :-(
+  root.mp3s = pinky.promise('mp3s')   //: without pinky promises this would take ~30 lines
+  
+  window.fetch('/au/add-audio-esm.js') //: private files, if not on pub site (->beeFx.getFullPath!)
+    .then(resp => resp.ok
+      ? import(resp.url)
+          .then(mod => pinky.mp3s.resolve(mod.mp3s))
+          .catch(err => pinky.mp3s.resolve([]))
+      : pinky.mp3s.resolve([])
+    )
+    .catch(err => pinky.mp3s.resolve([]))
+    
+  root.mp3s = await root.mp3s
+
+  //8#c95 Youtube mock stuff - if we are not on Youtube, so we have to replace videos with audio
   
   const searchMockAudioForVideoId = videoId => {
     for (const mp3 of root.mp3s) {
@@ -192,24 +132,29 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
       video$: undef,
       audio$: undef,
       hasControls: false,
-      //stop: nop,
-      //play: nop,
-      // etc
-      refreshPlayer: nop
+      refreshPlayer: nop,
+      play: nop,
+      pause: nop,
+      stop: nop,
+      seek: nop
     })
     set$(sourceUi.frame$, {deattr: {type: ''}})
     set$(sourceUi.media$, {html: ''})
-      //sourceUi.info$ = div$({class: 'src-info'}))
       
     return sourceUi
   }
-    
-  const finalizeSourceChange = sourceUi => {
-    ui.recreateSourcePlayer(sourceUi)
-  }
+  const finalizeSourceChange = sourceUi => ui.recreateSourcePlayer(sourceUi)
   
-  ui.autoPlaySource = sourceIx => ui.getFlag('autoplay') && sourceUis[sourceIx].play()
-  ui.autoStopSource = sourceIx => ui.getFlag('autostop') && sourceUis[sourceIx].stop()
+  //: This is ugly. We have to post autoplay/autostop as the players are not ready yet.
+  //: Why? We connect the sources first, the player is created after that.
+  //: The problem is that connectSource calls this (early) - who else?
+  //: The ui.changeXXXSource methods could call this too (after src created).
+  //: But they can't call it later as they are only used at creation time.
+  //: And we need this later too on connect/reconnect actions.
+  //: So we'll post the call a bit, it works, but makes the code fragile.
+  
+  ui.autoPlaySource = sourceIx => ui.getFlag('autoplay') && post(_ => sourceUis[sourceIx].play())
+  ui.autoStopSource = sourceIx => ui.getFlag('autostop') && post(_ => sourceUis[sourceIx].pause())
   
   const insertYoutubeIframe = (node$, sourceUi, videoId)  => new Promise(resolve => {
     const YT = wassert(window.YT)
@@ -220,61 +165,59 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   
   //8#7a7 All possible cases for playback media creation (audio, mock, video, buffer, master)
   
-  //: This is for testing at the moment, so we don't expect errors and a few things are fixed.
+  //: STEMs are for testing at the moment, so we don't expect errors and a few things are fixed.
   //: If we select a stem-like audio file for upload, the other stems will be loaded too.
   //: They must be in the /au/stems directory with 'stem*?.mp3' filenames. (?=1..8 or max)
   //: We look for bg images with the same filename (.mp3 -> .png) but that's not important at all.
   //: (Note: if we select the stem*4.mp3 filename, only stems 1-4 will be loaded.)
   
   ui.changeSourcesWithStems = file => { //: stems must be mp3 and in theix fixed dir
-    const preFix = `//beefx.tork.work/au/stems/`
+    const preFix = `//beefx.mork.work/au/stems/`
     const stemName = file.split('.mp3')[0]
     const toSrc = parseInt(stemName.slice(-1)[0])
     const stemRoot = stemName.slice(0, -1)
-    //sources.autoFloodOnFirst = false //: not a must, but less switching
     ui.setFlag('autoplay', false)
     ui.setFlag('autostop', false)
     ui.setFlag('syncSources', true)
     for (let sourceIx = 1; sourceIx <= toSrc; sourceIx++) {
       const src = preFix + stemRoot + sourceIx + '.mp3'
       const backgroundImage = `url(${src.split('.mp3')[0] + '.png'})`
-      ui.changeAudioSource(sourceIx, {src, title: stemRoot + sourceIx, bg: backgroundImage})
+      ui.changeAudioSource(sourceIx, {src, title: stemRoot + sourceIx, backgroundImage})
       sources.changeStageSourceIndex(sourceIx - 1, sourceIx)
     }
   }
-  ui.changeAudioSource = (sourceIx, {src, title, bg}) => {//8#2b2 [audio]
+  ui.changeAudioSource = (sourceIx, {src, title, backgroundImage}) => {//8#2b2 [audio]
     const sourceUi = prepareSourceChange(sourceIx)
-    sourceUi.request = {method: 'changeAudioSource', sourceIx, par: {src, title, bg}}
+    sourceUi.request = {method: 'changeAudioSource', sourceIx, par: {src, title, backgroundImage}}
     sourceUi.isAudio = true
     set$(sourceUi.frame$, {attr: {type: 'audio'}})
     set$(sourceUi.info$, {text: title})
     sourceUi.audio$ = ui.insertAudioPlayerInto(sourceUi.media$, src, title)
-    finalizeSourceChange(sourceUi)
     sources.changeSource(sourceIx, {audio: sourceUi.audio$})
+    finalizeSourceChange(sourceUi)
     //: this is for STEM testing (waveform images):
-    bg && set$(sourceUis[sourceIx].media$, {css: {backgroundImage: bg}})
+    backgroundImage && set$(sourceUis[sourceIx].media$, {css: {backgroundImage}})
   }
   ui.changeVideoElementSource = (sourceIx, video$) => {//8#2b2 [master]
     const sourceUi = prepareSourceChange(sourceIx)
     sourceUi.video$ = video$
     sourceUi.isMaster = true
     set$(sourceUi.frame$, {attr: {type: 'master'}})
-    set$(sourceUi.info$, {text: 'Master video'})
+    set$(sourceUi.info$, {text: 'Master video', attr: {master: true}})
     set$(sourceUi.media$, {}, sourceUi.masterThumb$ = div$({class: 'masterthumb'}))
-    finalizeSourceChange(sourceUi)
     sources.changeSource(sourceIx, {video: video$})
+    finalizeSourceChange(sourceUi)
   }
   ui.changeVideoSource = (sourceIx, {videoId, title, src}) => {//8#2b2 [mock / video]
     const sourceUi = prepareSourceChange(sourceIx)
     sourceUi.request = {method: 'changeVideoSource', sourceIx, par: {videoId, title, src}}
     const mediaHolder$ = sourceUi.media$
     set$(mediaHolder$, {html: ''}, div$({}))
-    set$(sourceUi.frame$, {attr: {type: 'master-or-mock'}})
       
     insertYoutubeIframe(mediaHolder$.children[0], sourceUi, videoId)
       .then(_ => {
         clog(`📀ChangeVideoSource: Youtube iframe created and loaded.`, mediaHolder$)
-        const iframe$ = mediaHolder$.children[0] //: this child is different from the above
+        const iframe$ = mediaHolder$.children[0] //: this child is different from the child above!!
         if (iframe$?.tagName === 'IFRAME') {
           sourceUi.iframe$ = iframe$
           try {
@@ -284,8 +227,8 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
               sourceUi.isVideo = true
               sourceUi.video$ = video
               set$(sourceUi.frame$, {attr: {type: 'video'}}) //: inkabb isvideo isiframe egyszerre
-              finalizeSourceChange(sourceUi)
               sources.changeSource(sourceIx, {video})
+              finalizeSourceChange(sourceUi)
             } else {
               console.warn(`📀ChangeVideoSource: cannot find video in iframe.`)
             }
@@ -297,8 +240,8 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
               set$(sourceUi.frame$, {attr: {type: 'mock'}})
               set$(sourceUi.info$, {text: title})
               sourceUi.audio$ = mockVideoInStripWithAudio(sourceUi.media$, videoId)
-              finalizeSourceChange(sourceUi)
               sources.changeSource(sourceIx, {audio: sourceUi.audio$})
+              finalizeSourceChange(sourceUi)
             }
           }
         } else {
@@ -317,6 +260,7 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     haltEvent(event)
     
     if (videoId?.length === 11 && sourceIx) {
+      root.onYoutube && root.stateManager.addToYoutubeVideoList(videoId)
       ui.changeVideoSource(sourceIx, {videoId, title, src})
     } else if (src && sourceIx) {
       ui.changeAudioSource(sourceIx, {src, title})
@@ -327,10 +271,8 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   
   const buildVideoList = on => { //: the videolist works both on Youtube and on the demo site
     void ui.u2list$?.remove()
-    
-    if (root.onYoutube) {
+    const youtubeVideoIds = root.onYoutube ? root.youtubeVideoList.propertiesToArr() : []
     //: load from localstorage with pg-states (todo)
-    }
     
     if (on) {
       ui.u2list$ = div$(ui.frame$, {class: 'emu-frame'}, [
@@ -352,16 +294,23 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
             }
           }}))
         ),
-        ...root.mp3s.map(({src, title, videoId}) => {
-          const [art, tit] = title.split(' - ') 
-          const html = `<em>${art}</em> - ${tit}`
-          const backgroundImage = videoId?.length === 11 ? `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')` : undef
-          return div$({
-            class: 'emulated au', 
-            attr: {id: 'thumbnail', videoId, src, title},
-            css: {backgroundImage}
-          }, div$({class: 'thtitle', html}))
-        })
+        ...(root.onYoutube 
+          ? youtubeVideoIds.map(videoId => div$({
+              class: 'emulated au', 
+              attr: {id: 'thumbnail', videoId},
+              css: {backgroundImage: `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')`}
+            }))
+          : root.mp3s.map(({src, title, videoId}) => {
+            const [art, tit] = title.split(' - ') 
+            const html = `<em>${art}</em> - ${tit}`
+            const backgroundImage = videoId?.length === 11 ? `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')` : undef
+            return div$({
+              class: 'emulated au', 
+              attr: {id: 'thumbnail', videoId, src, title},
+              css: {backgroundImage}
+            }, div$({class: 'thtitle', html}))
+          })
+        )
       ])
     }
   }
@@ -370,7 +319,7 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     buildVideoList(on)
     if (on) {
       ui.setFlag('grab', false)
-      ui.setFlag('grab', true) //: this will call ui.ongrabToggled() (by chging the cmd state)
+      ui.setFlag('grab', true) //: this will call ui.onGrabToggled() (by chging the cmd state)
     }
   }
   
@@ -423,8 +372,12 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     const {sourceArr, slog, tlog} = sources
     
     //: setting output marks on sources
-    sourceArr.map(({destStageIxArr}, sourceIx) => sourceIx && sourceArr[sourceIx].isMediaElement &&
-      ui.setSourceInUseInfo(sourceIx, destStr({destStageIxArr})))
+    sourceArr.map(({destStageIxArr}, sourceIx) => {
+      if (sourceIx) { //  && sourceArr[sourceIx].isMediaElement) { 
+        ui.setSourceInUseInfo(sourceIx, destStr({destStageIxArr}))
+        void sourceUis[sourceIx].sourceChanged?.()
+      }
+    })
       
     //: setting input marks on stages  
     iterateStages(({stageIx, sourceIx}) => { 
