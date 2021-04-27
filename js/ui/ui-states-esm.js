@@ -77,7 +77,7 @@ export const extendUi = ui => {
                 `<em>${lastSavedAt}</em>`
               ].join(`<br>`),
               attr: {drid: projName},
-              click: _ => pg.reloadWithProject(projName)
+              click: _ => pg.reloadWithProject(projName) //: shift -> no src (but reload kills it)
             })
           })
         ]))
