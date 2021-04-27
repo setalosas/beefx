@@ -114,12 +114,12 @@ export const createFxParControls = ui => {
         parO.input$.checked = dispVal
       },
       box: _ => {
-        const [text, state] = dispVal.split?.('#') ?? [dispVal]
+        const [text, state = ''] = dispVal.split?.('#') ?? [dispVal]
         set$(parO.control$, {text, attr: {state}})
       },
       cmd: _ => {
         if (dispVal !== 'fire') {
-          const [state, ledstate] = dispVal.split('.')
+          const [state, ledstate = ''] = dispVal.split('.')
           set$(parO.control$, {attr: {state, ledstate}})
         }
       },
@@ -128,7 +128,7 @@ export const createFxParControls = ui => {
           child$.selected = child$.value === dispVal
         } 
       },
-      graph: _ => {},
+      graph: _ => renderPanelGraphs(fxPanelObj, key, 0),
       html: _ => set$(parO.control$, {html: dispVal}),
       info: _ => set$(parO.control$, {html: dispVal})
     }
@@ -137,10 +137,10 @@ export const createFxParControls = ui => {
       ? paramUpdater()
       : console.warn('no paramUpdater for', {type, parO})
       
-    renderPanelGraphs(fxPanelObj, key)
+    fx.exo.manualGraphRefresh || renderPanelGraphs(fxPanelObj, key)
   } 
   
-  const renderPanelGraphs = (fxPanelObj, triggerKey) => schedule(20).then(_ => {
+  const renderPanelGraphs = (fxPanelObj, triggerKey, delay = 20) => schedule(delay).then(_ => {
     for (const graphName in fxPanelObj.panel.graphs) {
       renderPanelGraph(fxPanelObj, graphName, triggerKey) //: delayed as filters can have a 10ms lag
     }
@@ -192,8 +192,8 @@ export const createFxParControls = ui => {
     }
     
     for (const key in exo.def) {
-      const {defVal, type, name, size, short, subType, unit, readOnly} = exo.def[key]
-      if (subType === 'skipui') {
+      const {defVal, type, name, size, short, subType, skipUi, unit, color, readOnly} = exo.def[key]
+      if (skipUi) {
         continue
       }
       const parO = pars[key] = {type, parDef: exo.def[key]}
@@ -203,6 +203,7 @@ export const createFxParControls = ui => {
           const {val, min, max} = fx.getLinearValues(key)
           const step = subType === 'int' ? 1 : .001
           addRange(parO, dispName, startEndThrottle(onValChanged(key), 30), val, min, max, step)
+          isNum(color) && set$(parO.input$, {attr: {color}, css: {__color: color}})
           unit && set$(parO.input$, {attr: {unit}})
         },
         piano: _ => {
