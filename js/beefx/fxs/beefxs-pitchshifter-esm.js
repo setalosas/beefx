@@ -2,17 +2,16 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, undef, getRnd, getRndFloat, clamp} = Corelib
+const {nop} = Corelib
 const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
-const {max, pow, round, tanh, abs, min, sign, sqrt} = Math
+const {round} = Math
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr, dB2Gain, gainToDb} = BeeFX(waCtx)
+  const {registerFxType, newFx, connectArr} = BeeFX(waCtx)
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -110,8 +109,7 @@ onWaapiReady.then(waCtx => {
     log: nop
   }[key])
   
-  jungleFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    //int.delayTime = 0.100
+  jungleFx.construct = (fx, pars, {int, atm} = fx) => {
     int.fadeTime = 0.050
     int.bufferTime = 0.100
     
@@ -205,11 +203,10 @@ onWaapiReady.then(waCtx => {
   
   const pitchShifterFx = { //8#e74 ------- pitchShifter (Chris Wilson / jungle) -------
     def: {
-      //reset: {defVal: false, type: 'cmd'},
       offset: {defVal: 0, min: -1, max: 1, unit: 'Oct'},
       fineTune: {defVal: 0, min: -.1, max: .1, unit: 'Oct/10'},
-      realOffset: {defVal: 0, min: -1.1, max: 1.1, readOnly: true},
-      log: {defVal: '-', type: 'info'}
+      realOffset: {defVal: 0, min: -1.1, max: 1.1, readOnly: true}
+      //log: {defVal: '-', type: 'info'}
     },
     midi: {pars: ['offset,fineTune']}
   }
@@ -242,7 +239,7 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_pitchShifter', pitchShifterFx)
   
-  const pitchShifterNoteFx = { //8#e74 ------- pitchShifter with semitones -------
+  const pitchShifterNoteFx = { //8#e94 ------- pitchShifter with semitones -------
     def: {
       realOffset: {defVal: 0, min: -1.1, max: 1.1, readOnly: true},
       log: {defVal: '-', type: 'info'}, //+ ez mi?
@@ -262,7 +259,7 @@ onWaapiReady.then(waCtx => {
   pitchShifterNoteFx.construct = (fx, pars, {int, atm} = fx) => {
     int.jungle = newFx('fx_jungle')
     connectArr(fx.start, int.jungle, fx.output)
-    int.jungle.setValue('pitch', 0) // setPitchOffset(0)
+    int.jungle.setValue('pitch', 0)
     
     const updateLog = _ => {
       fx.setValue('log', [
