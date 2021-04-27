@@ -16,6 +16,9 @@ export const wassert = (assertion, fallback) => assertion || brexru(assertion) |
 wassert(globalThis)
 
 export const weject = denied => denied && brexru(denied)
+
+export const wejectNaN = num => weject(Number.isNaN(num)) || num
+
 export const sfx = (assertion, ret, ...args) => assertion === 'skip'
   ? sfx(ret, ret, ...args)
   : assertion
