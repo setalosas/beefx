@@ -195,6 +195,11 @@
 .bee-box.act {
   color: #ffb;
 }
+.bee-box[state=def] {
+  color: #8df;
+  text-shadow: 0 0 1px rgba(136, 221, 255, 0.6), 0 0 3px rgba(136, 221, 255, 0.6), 0 0 6px rgba(136, 221, 255, 0.6);
+  background: #037;
+}
 .bee-box[state=set] {
   color: #0f0;
   text-shadow: 0 0 1px rgba(0, 255, 0, 0.65), 0 0 3px rgba(0, 255, 0, 0.65), 0 0 6px rgba(0, 255, 0, 0.65);
@@ -209,6 +214,12 @@
   color: #f90;
   text-shadow: 0 0 1px rgba(255, 153, 0, 0.7), 0 0 3px rgba(255, 153, 0, 0.7), 0 0 6px rgba(255, 153, 0, 0.7);
   background: #600;
+}
+.bee-box[state=label] {
+  color: #ffffff;
+  background-color: transparent;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5), 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 0, 0, 0.5);
 }
 .bfx-rama {
   position: relative;
@@ -519,6 +530,9 @@ input[type=range]:focus::-webkit-slider-runnable-track {
 }
 input[type=range][disabled] {
   filter: saturate(0);
+}
+input[type=range][color]::-webkit-slider-thumb {
+  background: hsl(var(--color), 75%, 50%);
 }
 input[type=range]::before {
   position: absolute;
