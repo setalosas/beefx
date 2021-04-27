@@ -36,19 +36,16 @@ onWaapiReady.then(async waCtx => {
   
   const presetNames = [
     [0, 'none'],
-    [1, 'roomy'],
-    [2, 'churchy'],
-    [3, 'freezy'],
-    [4, 'ethery']
+    [1, 'room'],
+    [2, 'church'],
+    [3, 'freeze'],
+    [4, 'ether']
   ]
   
   const auWorkletPromise = waCtx.audioWorklet.addModule(getJsPath('beefx/fxs/dattorroReverb.js'))
   auWorkletPromise
     .then(_ => console.log(`Dattoro's reverb audioWorklet loaded.`))
-    .catch(err => {
-      console.error(`Dattoro's reverb audioWorklet failed to load.`, err)
-      debugger
-    })
+    .catch(err => console.error(`Dattoro's reverb audioWorklet failed to load.`, err))
     
   const dattoroReverbFx = {
     def: {
@@ -80,7 +77,7 @@ onWaapiReady.then(async waCtx => {
     preset: _ => loadPreset(fx, value)
   }[key] || (_ => fx.refreshParams()))
   
-  dattoroReverbFx.construct = (fx, {initial}, {int, atm, exo} = fx) => {
+  dattoroReverbFx.construct = (fx, pars, {int, atm, exo} = fx) => {
     int.dattorro = new AudioWorkletNode(waCtx, 'DattorroReverb', {outputChannelCount: [2]})
     
     const getPar = key => int.dattorro.parameters.get(key)

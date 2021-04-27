@@ -2,16 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
-const {round} = Math
+const {nop} = Corelib
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr} = BeeFX(waCtx)
+  const {registerFxType, connectArr} = BeeFX(waCtx)
 
   const noiseConvolverFx = { //8#978 ------- noiseConvolver (Noise Hacker) -------
     def: {}
@@ -60,7 +58,7 @@ onWaapiReady.then(waCtx => {
   const bitcrusherFx = { //8#0a4 -------bitcrusher (Tuna) -------
     def: {
       bits: {defVal: 8, min: 1, max: 16, subType: 'int'},
-      freqStep: {defVal: .01, min: .001, max: 1, subType: 'exp'}
+      freqStep: {defVal: .12, min: .001, max: 1, subType: 'exp'}
     },
     midi: {pars: ['bits,freqStep']}
   }

@@ -2,17 +2,16 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, no, yes, isArr, isNum, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
+const {nop, getIncArray} = Corelib
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, dB2Gain} = BeeFX(waCtx)
+  const {registerFxType} = BeeFX(waCtx)
   
-  const eqPresetNames = [['flat', 'flat']]
+  const eqPresetNames = [['flat', 'flat']] //: not yet
   
   const createEqualizer = ({name, variant, bands}) => { //8#482 ------equalizer type factory ------
     const eqFx = {
@@ -22,7 +21,7 @@ onWaapiReady.then(waCtx => {
           gain: {defVal: 0, min: -24, max: 24, arrayIx: [0, bands - 1], unit: 'dB'}
         } : {
           gain: {defVal: 0, min: -24, max: 24, arrayIx: [0, bands - 1], unit: 'dB'},
-          detune: {defVal: 0, min: -1200, max: 1200, arrayIx: [0, bands - 1], unit: 'cent'},
+          detune: {defVal: 0, min: -1200, max: 1200, arrayIx: [0, bands - 1], unit: 'cent', color: 120},
           Q: {defVal: 1, min: .01, max: 100, arrayIx: [0, bands - 1], subType: 'exp'}
         }),
         multiGraph: {type: 'graph'}
@@ -39,16 +38,18 @@ onWaapiReady.then(waCtx => {
       }
       return `${hue}, ${sat}%, ${lite}%`
     }
-    eqFx.graphs.multiGraph = '0'.repeat(bands).split('').map((_, ix) => ({
+    eqFx.graphs.multiGraph = getIncArray(0, bands - 1).map(ix => ({
       graphType: 'freq',
       filter: 'bandNode' + ix,
       minDb: -26,
       maxDb: 28,
       diynamic: .8,
       renderSet: {doClear: ix === 0, doGrid: ix === 0, doGraph: true},
-      phaseCurveColor: `hsla(${getColor(ix / bands, 99, 80)}, .5)`,
+      phaseCurveColor: `hsla(${getColor(ix / bands, 99, 75)}, .5)`,
       magCurveColor: `hsl(${getColor(ix / bands, 90, 55)})`
     }))
+    
+    //: That array extraction is confusing.
     
     eqFx.setValue = (fx, key, varr, {int} = fx, [ix = -1, value] = varr.map ? varr : []) => ({
       preset: nop,

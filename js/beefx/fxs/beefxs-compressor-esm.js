@@ -2,19 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
-
-const {nop, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
-const {max, pow, round} = Math
+import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr, dB2Gain} = BeeFX(waCtx)
+  const {registerFxType, dB2Gain} = BeeFX(waCtx)
 
-  const compressorFx = {//8#9a4 ----- Compressor (Tuna) -----
+  const compressorFx = {//8#9a4 ----- Compressor (source: Oskar Eriksson / Tuna) -----
     def: {
       threshold: {defVal: -20, min: -60, max: 0, unit: 'dB'},
       knee: {defVal: 5, min: 0, max: 40, unit: 'dB'},
@@ -61,15 +56,14 @@ onWaapiReady.then(waCtx => {
     autoMakeup: _ => int.recompute()
   }[key])
   
-  compressorFx.construct = (fx, {initial}, {int} = fx) => {
+  compressorFx.construct = (fx, pars, {int, atm} = fx) => {
     int.compNode = fx.start = waCtx.createDynamicsCompressor()
     int.makeupNode = waCtx.createGain()
-
     int.compNode.connect(int.makeupNode)
     int.makeupNode.connect(fx.output)
     
     int.recompute = _ => {
-      const {threshold, autoMakeup, ratio} = fx.atm
+      const {threshold, autoMakeup, ratio} = atm
       if (autoMakeup) {
         const magicCoeff = 4 //: raise if the output is too hot
         int.computingOn = true
