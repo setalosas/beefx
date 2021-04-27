@@ -2,17 +2,17 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, undef, getRnd, getRndFloat, clamp} = Corelib
+const {nop, clamp} = Corelib
 const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
-const {max, pow, round, tanh, abs, min, sign, sqrt} = Math
+const {post} = Corelib.Tardis
+const {pow, round, tanh, abs, min, sign} = Math
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr, dB2Gain, gainToDb} = BeeFX(waCtx)
+  const {registerFxType, connectArr, dB2Gain} = BeeFX(waCtx)
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -252,14 +252,14 @@ onWaapiReady.then(waCtx => {
   
   const confuseTheCurve = (n_samples, wsCurve, confuse) => {
     for (let i = 0; i < n_samples; i++) {
-      const data = wsCurve[i]
+      //const data = wsCurve[i]
       wsCurve[i] = clamp((1 + abs(confuse)) * (wsCurve[i] - confuse), -1, 1)
     }
   }
   
-  //: These two overdrive filters should be merged into two variants of one.
+  //: These two overdrive filters should be merged into two variants of one. Or not.
   
-  const overdriveFx = {//8#9a4 ----- Overdrive (Tuna) -----
+  const overdriveFx = {//8#9a4 ----- Overdrive (adapted from Tuna) -----
     def: {
       drive: {defVal: .5, min: .01, max: 1},
       autoGain: {defVal: true, type: 'boolean'},
@@ -285,14 +285,14 @@ onWaapiReady.then(waCtx => {
     postDrive: nop,
     confuse: _ => fx.rerunAlgorithm(),
     drive: _ => {
-      fx.setAt('inputDrive', 'gain', value)  //+ not used in Tuna++++++++++++++++++++
+      fx.setAt('inputDrive', 'gain', value)
       fx.updateOutputGain()
     },
     outputGain: _ => fx.updateOutputGain(),
     autoGain: _ => fx.updateOutputGain(),
     curveAmount: _ => fx.rerunAlgorithm(),
     algorithm: _ => {
-      int.algorithm = overdriveAlgorithms(parseInt(value)) // overdriveFx.algorithms(value)
+      int.algorithm = overdriveAlgorithms(parseInt(value))
       wassert(int.algorithm)
       fx.rerunAlgorithm()
     }
@@ -336,7 +336,7 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_overdrive', overdriveFx)
   
-  const overdriveWACFx = {//8#a90 ----- Overdrive (WAC) -----
+  const overdriveWACFx = {//8#a90 ----- Overdrive (from WAC) -----
     def: {
       drive: {defVal: .5, min: 0, max: 1},
       preBand: {defVal: .5, min: 0, max: 1},
@@ -384,7 +384,6 @@ onWaapiReady.then(waCtx => {
     curveAmount: _ => fx.rerunAlgorithm(),
     algorithm: _ => {
       int.algorithm = overdriveAlgorithms(parseInt(value))
-      clog('algchg', wassert(int.algorithm), value)
       fx.rerunAlgorithm()
     },
     oversampling4x: _ => int.waveshaper.oversampling = value ? '4x' : 'none'
