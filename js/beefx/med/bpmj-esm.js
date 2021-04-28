@@ -3,6 +3,20 @@
 
 const {OfflineAudioContext} = window
 
+//: Original algorithm from JMPerez (based on Joe Sullivan's article).
+//: Tweaked a lot, it's better now but it still has problems (works in most cases).
+//: Reliability depends on the length of the sample (originally it needed 30secs,
+//: now it works quite fine with 10-15s samples).
+//: There are a lot of possibilites for experimenting here.
+//: And also there is a slightly different version of this algorithm from 
+//: https://github.com/dlepaux/allegro-youtube-bpm-extension (and other different ones too).
+//: There is definitely more space to experiment with this.
+//: The main problem now is the beat window, 60-120 is too small, a 60-180 window seems 
+//: difficult to implement (this algo is limited into a x..2x window).
+//: In theory this is not an impossible problem, hardware DJ controllers are very
+//: reliable and fast with BPM detection.
+//: Of course we are limited by the sample's length - a DJ controller knows the full song.
+
 export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
   const bpm = {}
     
@@ -22,7 +36,7 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
     for (let i = 0; i < len; i++) {
       vol[i] =  Math.max(Math.abs(le[i]), Math.abs(ri[i]))
     }
-    // BeeFx modifications to the original:
+    // Modifications to the original:
     // We don't want to detect the edges of parts as they are most probably false ones and
     // this gives us a lot of false 120 bpm hints (if the parts are 1/2 sec long).
     // So we first detect local peaks (ie the left and right frames are both lower that that).
@@ -129,6 +143,8 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
 
     // Beats, or kicks, generally occur around the 100 to 150 hz range.
     // Below this is often the bassline.  So let's focus just on that.
+    
+    // This should also be tried out with different filter parameters!
 
     // First a lowpass to remove most of the song.
     const lowpass = offlineContext.createBiquadFilter()
@@ -164,7 +180,7 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
       const candidates = groups.sort((intA, intB) => intB.count - intA.count).slice(0, 20)
       bpm.capture({candidates, groups, peaks})
       
-      console.log(bpm)
+      //console.log(bpm)
       resolve(bpm)
     }
   })
