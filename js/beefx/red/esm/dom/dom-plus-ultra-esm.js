@@ -11,16 +11,6 @@ const {wassert} = Corelib.Debug
 
 export const domReady = _ => ['complete', 'interactive'].includes(document.readyState)
 
-export const onReadyStateComplete = (doc = document) => new Promise(resolve => 
-  doc.readyState ===  'complete'
-    ? resolve()
-    : doc.addEventListener('readystatechange', _ => {
-        if (doc.readyState === 'complete') {
-          resolve()
-        }
-      })
-    )
-
 export const onReadyState = (doc = document) => new Promise(resolve => doc.getElementsByTagName('head').length
     ? resolve()
     : doc.addEventListener('readystatechange', _ => {

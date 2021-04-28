@@ -6,10 +6,12 @@
 
 //: [Reduced]
 
-export const globalThis = typeof window === 'object' ? window
-  : typeof global === 'object' ? global
-  : typeof self === 'object' ?  self : console.error(`No global scope found`)
-  //:fix for shitty eslint
+export const globalThis = typeof window === 'object' 
+  ? window
+  : typeof global === 'object'
+    ? global
+    : typeof self === 'object' 
+      ?  self : console.error(`No global scope found`)//:fix for sh** eslint
   
 export const wassert = (assertion, fallback) => assertion || brexru(assertion) || fallback
 
