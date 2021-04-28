@@ -101,5 +101,5 @@ The main goal of this project is not to find out how to compute the coefficients
   * [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
 * [The Scientist and Engineer's Guide to Digital Signal Processing By Steven W. Smith, Ph.D.](http://www.dspguide.com/) - Chebyshev-filter coefficient algorithm
 * [khoin](https://github.com/khoin) - implementation of Jon Dattorro's reverb algorithm
-* Reverb impulse responses are from [Voxengo](https://www.voxengo.com/impulses/)
+* Reverb impulse response sample collection is from [Voxengo](https://www.voxengo.com/impulses/)
 * [BBC](https://github.com/bbc/webaudio.prototyping.bbc.co.uk/blob/master/src/ring-modulator.coffee) - Ring modulator
