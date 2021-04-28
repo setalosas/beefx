@@ -427,7 +427,7 @@ onWaapiReady.then(waCtx => {
             } else {
               console.log('Recorder got invalid message from worklet:', event)
             }
-          }//: recorder already loaded the worklet or this wont work
+          }
           fx.start.connect(int.recorder)
           const params = {
             frameLimit: int.procFrames, 
@@ -636,18 +636,6 @@ onWaapiReady.then(waCtx => {
           }[mode]
           void action?.()
           fx.recalcMarkers()
-          
-          //: This is a dirty one: 
-          //: After returning beeFx will set the cmd to 'fire' state although we already changed it.
-          //: (This didn't matter until we started to clone the state of one fx to another.)
-          //: So we will reset it at the end of this processing step.
-          //: Automatization can fail from this, the human interface is ok.
-          //: (The cmd handling needs refaktoring. -> It's done. This can be deleted now.)
-          const cmdValue = atm[mode]
-          if (cmdValue !== 'fire') {
-            console.log(`will set instead of fire:`, mode, cmdValue)
-            //post(_ => fx.setValue(mode, cmdValue))
-          }
         }
       }
       
