@@ -7,6 +7,7 @@
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 const {nop, undef} = Corelib
+const {round, pow} = Math
 
 onWaapiReady.then(waCtx => {
   const {registerFxType} = BeeFX(waCtx)
@@ -118,12 +119,14 @@ onWaapiReady.then(waCtx => {
       cc.stroke()
       
       const txtx = width - 12
-      const used = Math.round(100 * (frameIx - frameIxFromZero) / flen) //+ ez nem jo
+      const used = round(100 * (frameIx - frameIxFromZero) / flen)//: errrr...
       const ffts = int.fftSize + (int.fftSize === 32768 ? ' (max)' : '')
-      const msec = Math.round(1000 * (frameIx - frameIxFromZero) / sampleRate)
+      const msec = round(1000 * (frameIx - frameIxFromZero) / sampleRate)
+      const over = j < width ? width / j * msec : 0
+      const msecex = over ? ` (of ${round(over)}ms)` : ``
       ccext.setTextStyle('#aaa', 'right')
       cc.fillText(`FFT: ${used}% of ${ffts} used`, txtx, 40)
-      cc.fillText(`${msec}ms${findingZero ? ' Z' : ''}`, txtx, 80)
+      cc.fillText(`${msec}ms${msecex}${findingZero ? ' Z' : ''}`, txtx, 80)
 
       if (!findingZero && j < width) {
         ccext.setTextStyle('hsl(180, 100%, 75%)', 'right')
@@ -141,7 +144,7 @@ onWaapiReady.then(waCtx => {
             for (let i = 0; i < 400; i++) {
               agg += last[i]
             }
-            agg = Math.round(agg * 2.5)
+            agg = round(agg * 2.5)
             plog(`##OSCP ${version} avg: ${agg}ms **** `, int.prof.slice(-20).join(' / '))
           }
         }
@@ -166,12 +169,14 @@ onWaapiReady.then(waCtx => {
       sensitivity: {defVal: 50, min: 1, max: 100},
       zoom: {defVal: 1, min: .025, max: 2, subType: 'exp'},
       fullZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x1'},
-      halfZoom: {defVal: 'off', type: 'cmd', name: 'Z x2'},
-      quartZoom: {defVal: 'off', type: 'cmd', name: 'Z x4'},
-      beatZoom: {defVal: 'off', type: 'cmd', name: 'Beat/2'},
+      halfZoom: {defVal: 'off', type: 'cmd', name: 'x2'},
+      quartZoom: {defVal: 'off', type: 'cmd', name: 'x4'},
+      beatZoom: {defVal: 'off', type: 'cmd', name: 'Beat'},
+      beat2Zoom: {defVal: 'off', type: 'cmd', name: 'Beat/2'},
       resetZoom: {defVal: 'act', type: 'cmd', name: 'No zoom'},
       freeze: {defVal: 'off', type: 'cmd', name: 'Freeze'},
-      beatTime: {defVal: .25, skipUi: true}
+      beatTime: {defVal: .37, skipUi: true},
+      scope: {type: 'graph'}
     },
     name: 'Oscilloscope',
     listen: ['source.beatTime:beatTime'],
@@ -184,8 +189,10 @@ onWaapiReady.then(waCtx => {
   }
   oscilloscopeExt.setValue = (fx, key, value, {int, atm} = fx) => ({
     beatTime: _ => {
-      int.beatZoom = int.width / (sampleRate * atm.beatTime / 2)
+      int.beatZoom = int.width / (sampleRate * atm.beatTime)
       int.beatZoomOn && fx.setValue('zoom', int.beatZoom)
+      int.beat2Zoom = int.width / (sampleRate * atm.beatTime / 2)
+      int.beat2ZoomOn && fx.setValue('zoom', int.beat2Zoom)
     },
     sensitivity: nop,
     zoom: _ => fx.resizeFFT(),
@@ -193,6 +200,7 @@ onWaapiReady.then(waCtx => {
     halfZoom: _ => value === 'fire' && fx.setCmds('halfZoom', int.width / 8192),
     quartZoom: _ => value === 'fire' && fx.setCmds('quartZoom', int.width / 4096),
     beatZoom: _ => value === 'fire' && fx.setCmds('beatZoom', int.beatZoom),
+    beat2Zoom: _ => value === 'fire' && fx.setCmds('beat2Zoom', int.beat2Zoom),
     resetZoom: _ => value === 'fire' && fx.setCmds('resetZoom', 1),
     freeze: _ => value === 'fire' && (int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc())
   }[key])
@@ -223,7 +231,7 @@ onWaapiReady.then(waCtx => {
     fx.start.connect(fx.output)
     
     fx.resizeFFT = _ => {
-      const idealFFTSize = Math.round(int.width / atm.zoom * 2 * Math.pow(2, atm.zoom / 2))
+      const idealFFTSize = round(int.width / atm.zoom * 2 * pow(2, atm.zoom / 2))
       let found = 32768
       for (let fftSize = 256; fftSize < 32768; fftSize *= 2) {
         if (fftSize > idealFFTSize) {
@@ -249,8 +257,10 @@ onWaapiReady.then(waCtx => {
       fx.setValue('halfZoom', act === 'halfZoom' ? 'active' : 'off')
       fx.setValue('quartZoom', act === 'quartZoom' ? 'active' : 'off')
       fx.setValue('beatZoom', act === 'beatZoom' ? 'active' : 'off')
+      fx.setValue('beat2Zoom', act === 'beat2Zoom' ? 'active' : 'off')
       fx.setValue('resetZoom', act === 'resetZoom' ? 'active' : 'off')
       int.beatZoomOn = act === 'beatZoom'
+      int.beat2ZoomOn = act === 'beat2Zoom'
     }
   }
   
