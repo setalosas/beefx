@@ -2,17 +2,16 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 const {nop} = Corelib
-const {wassert} = Corelib.Debug
 const {startEndThrottle} = Corelib.Tardis
-const {round, PI, log} = Math
+const {log} = Math
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, newFx} = BeeFX(waCtx)
+  const {registerFxType, newFx} = BeeFX(waCtx)
 
   const bpmTransformerFx = { //8#e74 ------- bpmTransformer -------
     def: {
@@ -47,7 +46,6 @@ onWaapiReady.then(waCtx => {
     pitch: _ => fx.pitchChanged(value),
     bpmOriginal: _ => fx.bpmOrigChanged(value), // 123#set -> 123
     bpmModifier: _ => fx.bpmModChanged(value),
-    log: nop,
     autoTune: _ => fx.recalcPitchShift(),
     controller: _ => int.controller = value,
     pitchCorrection: _ => fx.recalcPitchShift()
