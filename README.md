@@ -67,11 +67,11 @@ So as a very simple solution to that problem it can run on the youtube.com domai
 
 There is a normal mode when you click on the bee in the bottom left corner and a full takeover mode if you click with the Shift key held down. This is useful because it kills the complete youtube page (it needs quite a lot resources).
 
-So currently the playground can be used with local audio files, youtube videos and also with STEMs (parallel tracks for a song). For testing there is also a mock mode when it's possible to use Youtube videos if we have locally the audio files for them - there are many online downloading sites to get this files. 
+Currently the playground can be used with local audio files, youtube videos, audio file links and also with STEMs (parallel tracks for a song). For testing there is also a mock mode when it's possible to use Youtube videos if we have locally the audio files for them - there are many online downloading sites to create these files. 
 
 # Installation
 
-This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use it as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements.
+This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use this same folder as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements.
 
 Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
 
@@ -88,7 +88,7 @@ For the playground of course the DOM is the bottleneck in most cases.
 The playground is intented to run in Chrome and for now I don't plan test other browsers. However:
 * It works in Firefox but the UI controls are ugly.
 * It works in Edge, but a few effects have some sound artifacts. (I will find out why as Edge is more comfortable for development than Chrome as it's much faster.)
-* It works in Android Chrome on phones too if someone has quite small fingers.
+* It works in Android Chrome on phones too if someone has quite small fingers (or a huge phone).
 
 # Acknowledgments
 
