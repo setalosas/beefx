@@ -2,21 +2,17 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, DOMplusUltra, createGraphBase} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, no, clamp, s_a} = Corelib
+const {Ø, isNum, isFun, clamp} = Corelib
 const {wassert} = Corelib.Debug
-const {post, startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
-//const {secToString} = Corelib.DateHumanizer
+const {startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
 const {div$, leaf$, set$, setClass$, canvas$} = DOMplusUltra
-//const {addDraggable, addDragTarget} = DragWithDOM
 const {round} = Math
   
 export const createFxParControls = ui => {
-  //const {root, pg} = ui
-
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
   
@@ -80,11 +76,52 @@ export const createFxParControls = ui => {
           ? num.toFixed(maxwi - 1) : num.toFixed(maxwi - 1)
   }
 
-  //8#2aa Parameter-specific helpers
+  //8#a2aRendering graphs
+  
+  const renderPanelGraphs = (fxPanelObj, triggerKey, delay = 20) => schedule(delay).then(_ => {
+    for (const graphName in fxPanelObj.panel.graphs) {
+      renderPanelGraph(fxPanelObj, graphName, triggerKey) //: delayed as filters can have a 10ms lag
+    }
+  })
+  
+  const renderPanelGraph = (fxPanelObj, graphName, key) => {
+    const {panel} = fxPanelObj
+    const panelGraph = wassert(panel.graphs[graphName])
+    const {graph} = panelGraph
+    if (!graph.triggerKeys || !key || graph.triggerKeys.includes(key)) { //: optimize redraw
+      panelGraph.graphInstance.render()
+    } else {
+      clog('Graph wont redraw', key)
+    }
+  }
+  
+  const addPanelGraph = (fxPanelObj, graphName) => {
+    const {panel, fx} = fxPanelObj
+    const graphObj = wassert(fx.exo.graphs[graphName])
+    const graphArr = graphObj.map ? graphObj : [graphObj]
+    const {canvasSize = CANVAS_SIZE} = graphArr[0] 
+    const width = canvasSize * 2
+    const height = canvasSize
+    const cclass = 'graph-canvas gr-' + graphName
+    const canv$ = canvas$(panel.parsFrame$, {class: cclass, attr: {width, height}})
+
+    const timer = createPerfTimer()
+    for (let ix = 0; ix < graphArr.length; ix++) {
+      const graph = graphArr[ix]
+      const panelGraph = {canvas$: canv$, width, height, graph, fx}
+      panelGraph.graphInstance = graphBase.createGraph(graph, panelGraph)
+      panel.graphs[graphName + ix] = panelGraph
+      renderPanelGraph(fxPanelObj, graphName + ix)
+    }
+    set$(panel.parsFrame$, {class: 'graph gt-' + fx.exo.fxName})
+    clog(`📈Graph added for ${fx.zholger} with ${graphArr.length} items.`, timer.summary())
+  }
+  
+  //8#2aaRendering pars
   
   const refreshDisplay = (fxPanelObj, key, assertFx) => {
     if (assertFx !== fxPanelObj.fx) {
-      return console.warn(`refreshDsiplay: fx changed in fxPanelObj, skip!`)
+      return console.warn(`refreshDisplay: fx changed in fxPanelObj, skip!`, assertFx, fxPanelObj.fx)
     }
     const {pars, fx} = fxPanelObj
     const parO = pars[key]
@@ -137,66 +174,23 @@ export const createFxParControls = ui => {
       ? paramUpdater()
       : console.warn('no paramUpdater for', {type, parO})
       
-    fx.exo.manualGraphRefresh || renderPanelGraphs(fxPanelObj, key)
+    renderPanelGraphs(fxPanelObj, key)
   } 
-  
-  const renderPanelGraphs = (fxPanelObj, triggerKey, delay = 20) => schedule(delay).then(_ => {
-    for (const graphName in fxPanelObj.panel.graphs) {
-      renderPanelGraph(fxPanelObj, graphName, triggerKey) //: delayed as filters can have a 10ms lag
-    }
-  })
-  
-  const renderPanelGraph = (fxPanelObj, graphName, key) => {
-    const {panel, fx} = fxPanelObj
-    const panelGraph = wassert(panel.graphs[graphName])
-    const {graph} = panelGraph
-    if (!graph.triggerKeys || !key || graph.triggerKeys.includes(key)) { //: optimize redraw
-      panelGraph.graphInstance.render()
-    } else {
-      clog('graph wont redraw', key)
-    }
-  }
-  
-  const addPanelGraph = (fxPanelObj, graphName) => {
-    const {panel, fx} = fxPanelObj
-    const graphObj = wassert(fx.exo.graphs[graphName])
-    const graphArr = graphObj.map ? graphObj : [graphObj]
-    const {canvasSize = CANVAS_SIZE} = graphArr[0] 
-    const width = canvasSize * 2
-    const height = canvasSize
-    const cclass = 'graph-canvas gr-' + graphName
-    const canv$ = canvas$(panel.parsFrame$, {class: cclass, attr: {width, height}})
-
-    const timer = createPerfTimer()
-    for (let ix = 0; ix < graphArr.length; ix++) {
-      const graph = graphArr[ix]
-      const panelGraph = {canvas$: canv$, width, height, graph, fx}
-      panelGraph.graphInstance = graphBase.createGraph(graph, panelGraph)
-      panel.graphs[graphName + ix] = panelGraph
-      renderPanelGraph(fxPanelObj, graphName + ix)
-    }
-    set$(panel.parsFrame$, {class: 'graph gt-' + fx.exo.fxName})
-    clog(`📈Graph added for ${fx.zholger} with ${graphArr.length} items.`, timer.summary())
-  }
   
   //8#9c0 Rebuilding the parameter-specific parts of the fx panel
 
   const createParsInPanel = (fxPanelObj) => {
     const {fx, pars, panel} = fxPanelObj
-    wassert(fx)
-    const {exo} = fx
+    const {def} = fx.exo
     
-    const onValChanged = key => val => {
-      clog('onchanged', {key, val})
-      fx.setLinearValue(key, val)
-    }
+    const onValChanged = key => val => fx.setLinearValue(key, val)
     
-    for (const key in exo.def) {
-      const {defVal, type, name, size, short, subType, skipUi, unit, color, readOnly} = exo.def[key]
+    for (const key in def) {
+      const {type, size, short, subType, skipUi, unit, color, readOnly} = def[key]
       if (skipUi) {
         continue
       }
-      const parO = pars[key] = {type, parDef: exo.def[key]}
+      const parO = pars[key] = {type, parDef: def[key]}
       const constructors = {
         float: _ => {   //8#88e ------- float --> input range -------
           const dispName = short
@@ -244,11 +238,10 @@ export const createFxParControls = ui => {
       readOnly && set$(parO.input$, {attr: {disabled: ''}})
       div$(panel.parsFrame$, {class: 'fxr-parval fxt-' + type}, parO.control$)
       refreshDisplay(fxPanelObj, key, fx) //: initial display
-      //+ fx is workaround for new fxpanel bug -> fxpanel refaktoring will correct this
       fx.onValueChange(key, _ => refreshDisplay(fxPanelObj, key, fx))
     }
 
-    void ui.root.midi?.addFpo(fxPanelObj) //: testing only, can be deleted
+    void ui.root.midi?.addFpo(fxPanelObj)
   }
   
   return {createParsInPanel, addListSelector}
