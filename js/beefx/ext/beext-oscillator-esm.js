@@ -9,7 +9,7 @@ import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 const {fetch} = window
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, getPresetPath} = BeeFX(waCtx)
+  const {connectArr, registerFxType, getPresetPath, nowa} = BeeFX(waCtx)
   
   const waveFormOptions = [
     ['sine', 'Sine'],
@@ -362,7 +362,7 @@ onWaapiReady.then(waCtx => {
     }
     fx.goLive = _ => {
       if (!int.isLive) {
-        const at = waCtx.currentTime + .05
+        const at = nowa(.05)
         int.dcOffset.start(at) 
         int.osc1.start(at) 
         int.osc2.start(at)

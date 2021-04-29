@@ -52,7 +52,7 @@ onWaapiReady.then(waCtx => {
     //: That array extraction is confusing.
     
     eqFx.setValue = (fx, key, varr, {int} = fx, [ix = -1, value] = varr.map ? varr : []) => ({
-      preset: nop,
+      preset: nop, //: fx.setValueArray!
       gain: _ => ix !== -1 && fx.setAt('bandNode' + ix, 'gain', value),
       detune: _ => ix !== -1 && fx.setAt('bandNode' + ix, 'detune', value),
       Q: _ => ix !== -1 && (int['bandNode' + ix].Q.value = value)

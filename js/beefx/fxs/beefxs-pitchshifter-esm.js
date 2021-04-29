@@ -11,7 +11,7 @@ const {wassert} = Corelib.Debug
 const {round} = Math
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr} = BeeFX(waCtx)
+  const {registerFxType, newFx, connectArr, nowa} = BeeFX(waCtx)
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -160,7 +160,7 @@ onWaapiReady.then(waCtx => {
     connectArr(fx.start, int.delay1, int.mix1, fx.output)
     connectArr(fx.start, int.delay2, int.mix2, fx.output)
     
-    int.t = waCtx.currentTime + 0.050
+    int.t = nowa(.05)
     int.t2 = int.t + int.bufferTime - int.fadeTime
     int.mod1.start(int.t)
     int.mod2.start(int.t2)
@@ -223,7 +223,7 @@ onWaapiReady.then(waCtx => {
     connectArr(fx.start, int.jungle, fx.output)
     int.jungle.setValue('pitch', 0) // setPitchOffset(0)
     
-    const updateLog = _ => {
+    const updateLog = _ => { // eslint-disable-line no-unused-vars
       const {delayTime, fadeTime, bufferTime, mult} = int.jungle.getState()
       fx.setValue('log', [
         `offset: ${atm.offset} mult: ${mult.toFixed(3)} realOffset: ${atm.realOffset.toFixed(3)}`,
