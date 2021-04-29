@@ -1,6 +1,5 @@
-/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, object-curly-spacing, 
-   no-trailing-spaces, indent, quotes, no-void, no-return-assign, 
-   object-property-newline, object-curly-newline */
+/* eslint-disable no-debugger, spaced-comment, no-multi-spaces, object-curly-spacing,
+   quotes, no-void, no-return-assign, object-property-newline, object-curly-newline */
 
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
@@ -8,13 +7,9 @@ const {undef} = Corelib
 const {div$, onDomReady} = DOMplusUltra
 const {AudioContext} = window
 
-const debug = {
-  verboseLogInit: false,
-  logInit: true
-}
+const verboseLogInit = false
 
-const ilog = (...args) => debug.verboseLogInit && console.log(...args)
-//const log = (...args) => debug.logInit && console.log(...args)
+const ilog = (...args) => verboseLogInit && console.log(...args)
 const wlog = (...args) => console.warn(...args)
 const elog = (...args) => console.error(...args)
 
@@ -31,12 +26,12 @@ export const wau = {
   ctxError: '',
   ctxOk: false,
   ctxStateOk: false,
-  checkState: _ => wau.ctxOk && (wau.ctxStateOk = wau.waCtx.state === 'running') 
+  checkState: _ => wau.ctxOk && (wau.ctxStateOk = wau.waCtx.state === 'running')
 }
 
 export const onReady = new Promise(resolve => wau.resolve = resolve)
 
-export const onRun = cb => wau.waCtx?.state === 'running' 
+export const onRun = cb => wau.waCtx?.state === 'running'
   ? cb(wau.waCtx)
   : wau.callbacksOnStart.push(cb)
 
@@ -49,12 +44,13 @@ void (_ => {
     wau.createTime = wau.waCtx.currentTime
     wau.ctxOk = true
     ilog(`🔈 🔉 🔊 waCtx created as early as possible, state:`, wau.waCtx.state, wau.waCtx)
-    
+
+    //: It's a horrible yuck hack we are forced to do here in the name of Policy.
     if (wau.waCtx.state !== 'running') {
       wau.clicker$ = div$(document.body, {class: 'clicker', click: _ => wau.waCtx.resume()})
     }
     wau.onReady = wau.waCtx.resume()
-    
+
     wau.onReady.then(_ => {
       wau.resolve(wau.waCtx)
 
@@ -66,5 +62,5 @@ void (_ => {
     })
   } else {
     wlog(`🔈 🔉 🔊 couldn't get a valid AudioContext!`)
-  }        
+  }
 })()
