@@ -5,6 +5,12 @@
 
 import {Corelib, DOMplusUltra} from '../beeproxy-esm.js'
 
+//: This module draws the spectrums ONLY at the end of each stage.
+//: The Hi-Res spectrums are handled differently.
+//: These two must be dried into one place probably (although parameters differ).
+//: So we will eliminate both and merge them into a ~spectrum-vis.js later. FUTREQ
+//: Levelmeter is also implemented here, although not used now -> later.
+
 const {Ø, undef} = Corelib
 const {wassert, weject} = Corelib.Debug
 const {set$} = DOMplusUltra
@@ -13,13 +19,13 @@ const {requestAnimationFrame} = window
 
 const visualizerState = {
   hasStarted: false,
+  redreshOn: false,
   isActive: true,       //:debuglike big OFF switch
   isSpectrumOn: true,   //:can be turned off
   isLevelMeterOn: false, //:always on
-  lowFreq: false,
-  rejSp: undef,
   visHash: {},
   pending: [],
+  frameDelay: 0,
   cnt: 0
 }
 
@@ -35,10 +41,12 @@ const addVisualizer = vis => {
   visualizerState.visHash[vis.ix] = vis
 }
 
+//: We draw every spectrum in one RAF. (And omit every second redraw if redresh is on.)
+//: This can be bad. But we have a max of 12 spectrums (in extreme case). And they are fast.
+
 const visualizerTick = async _ => {
-  visualizerState.cnt++
-  if (visualizerState.cnt % 2 === 1) {
-    if (visualizerState.isActive) {
+  if (visualizerState.isActive) {
+    if (!visualizerState.redreshOn || visualizerState.cnt++ % 2 === 1) {
       for (const visix in visualizerState.visHash) {
         const vis = visualizerState.visHash[visix]
         wassert(vis)
@@ -46,7 +54,9 @@ const visualizerTick = async _ => {
       }
     }
   }
-  setTimeout(_ => requestAnimationFrame(visualizerTick), 0)
+  visualizerState.frameDelay
+    ? setTimeout(_ => requestAnimationFrame(visualizerTick), visualizerState.frameDelay)
+    : requestAnimationFrame(visualizerTick)
 }
 
 export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix, mayday) => {
@@ -81,6 +91,12 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix,
   }
   
   vis.setActive = val => vis.isActive = val
+  
+  //: This is a method of an INSTANCE, but will set a CLASS behaviour!
+  //: (Didn't want to export another function.)
+  //: If this is called multiple times - whatever, it's cheap.
+  
+  vis.reduceRefresh = on => visualizerState.redreshOn = on
 
   vis.drawSpectrum = async _ => {
     if (!vis.isActive) {
