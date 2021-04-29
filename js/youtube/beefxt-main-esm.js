@@ -24,12 +24,12 @@ onDomReady(async _ => {
 
   const trigger$ = div$(document.body, {class: 'beetrigger', text: 'BeeeFX!'})
 
-  const videoTagWaitingTick = _ => {
+  const videoTagWaitingTick = _ => { //: Should continue if video not found? After 5-10s?
     const video = q$('video')
     if (video) {
       set$(trigger$, {class: 'hasvideo', click: event => {
         root.mediaElement = video
-        root.killEmAll = event.shiftKey //: we'll remove most of Youtube if shift was pressed
+        root.killEmAll = event.shiftKey //: we'll remove most of Youtube if Shift was pressed
         Playground.runPlayground(root)
       }})
       console.log('CromBee found video tag:', video)
