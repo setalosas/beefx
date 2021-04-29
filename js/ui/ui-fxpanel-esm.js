@@ -2,24 +2,21 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, DOMplusUltra, DragWithDOM, FxUiPars} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, no, clamp, s_a} = Corelib
+const {undef, nop, no, s_a} = Corelib
 const {wassert} = Corelib.Debug
-const {post, startEndThrottle, schedule, createPerfTimer} = Corelib.Tardis
-const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, setClass$, toggleClass$, canvas$, haltEvent} = DOMplusUltra
+const {div$, set$, setClass$, toggleClass$} = DOMplusUltra
 const {addDraggable, addDragTarget} = DragWithDOM
-const {round} = Math
 
-//: This module will refaktored as things escalated here. So no big changes, just hacks fttb.
+//: This module will be refaktored ASAP as things escalated here quickly.
+//: So no big changes, just hacks fttb.
 //: fxPanelObj will be the main object holding most methods instead of ui.
   
 export const extendUi = ui => {
   const {root, pg} = ui
-  const {body} = document
 
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -29,18 +26,16 @@ export const extendUi = ui => {
   //8#c47 fxPanelObj management
   
   const createFxPanelObj = (stageObj, ix, par = {}, {stageIx, stage} = stageObj) => ({
-    stageObj,                                        //: base object of the stage, if there is one
-    stageIx: stageIx,
-    stage,
-    ix,                                               //:vertical index        
+    stageObj, stageIx, stage,//: base object of the stage, if there is one
+    ix,                       //:vertical index        
     fxrama$: ix === -1 ? stageObj.endRatio$ : div$(stageObj.ramas$),
                          //: fxrama$ is the most external div of the fx panel
     panel: undef,        //: panel is the pars frame inside fxrama$ (also: del, chgfx, led)
     fx: undef,           //: the linked beeFx fx object (mutable)
     fxname: '',          //: name (type) of fx (mutable)
     isEndRatio: ix === -1,
-    isOnOff: true,       //: flag for the bypass led
-    isFixed: false,      //: flag for fx selector and close icon
+    isOnOff: true,       //: flag for the bypass led, can be rewritten with pars
+    isFixed: false,      //: flag for fx selector and close icon, can be rewritten with pars
     ...par
   })
   
@@ -83,13 +78,10 @@ export const extendUi = ui => {
     createParsInPanel(fxPanelObj)
   }
   
-  //+fxPanelObj legyen egy closure metodokkal!!!! ui-fxpanel-esm.js fob a dis helyett v fxob v fxo
-
   ui.refreshFxPanelActiveState = ({fxrama$, isActive}) => setClass$(fxrama$, !isActive, 'bypass')
   
-  ui.refreshFxPanelActiveStateByStageIx = (stageIx, ix) => {
+  ui.refreshFxPanelActiveStateByStageIx = (stageIx, ix) =>
     ui.refreshFxPanelActiveState(getExistingFxPanelObj(stageIx, ix))
-  }
 
   ui.setFxPanelActiveState = (fxPanelObj, on = !fxPanelObj.fx.isActive) => {
     fxPanelObj.isEndRatio 
@@ -107,27 +99,20 @@ export const extendUi = ui => {
   }  
   ui.rebuildStageFxPanel = (stageIx, ix, fx, par = {}) => {
     //: creates fxPanelObj on 1st callonly -> reuse on later calls (like changeFx())
-    
-    //+ nooooooooooooooooooooooooooooooo
-    
-    //const stageObj = wassert(ui.getStageObj(stageIx))
-    //const fxPanelObj = createFxPanelObj(stageObj, ix, par)
-    //const {hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
-    
-    //+ noooooooooooooooooooooooo fxPanels MUST be RECREATED, not reused!!
+    //: todo: fxPanels must be recreated, not reused!!
 
     const fxPanelObj = getFxPanelObj(stageIx, ix, par)
-    const {stageObj, stage, hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
+    const {stage, hasStageMark, isEndRatio, isFixed, fxrama$, isOnOff} = fxPanelObj
     
     reassignFxPanelObjFx(fxPanelObj, fx)  //: puts fx, fxname into fxPanelObj
     rebuildFxPanel(fxPanelObj)            //: puts panel into fxPanelObj
     const {fxname, panel} = fxPanelObj     //:fxname is in the 'Blank' format (not fx_blank!)
     
-    const isBlank = fxname === 'Blank'
+    const isBlank = fxname === 'Blank'    //: see?
     const isGain = fxname === 'Gain'
     const isRemoveable = !isFixed && !isBlank
     const isAlterable = !isFixed
-    const isFoldable = isRemoveable //: for now, but it can differ
+    const isFoldable = isRemoveable       //: for now, but it can be different in theory
     const isFolded = isFoldable && (fxname === 'Oscilloscope' || fxname === 'Hi-res spectrum')
     fxPanelObj.capture({isBlank, isGain, isRemoveable, isAlterable, isFoldable})
 
@@ -159,7 +144,7 @@ export const extendUi = ui => {
     
     if (isEndRatio) {
       fx.setValue('onCmd', ({op, par}) => {
-        const action = {
+        void {
           activate: _ => ui.setFxPanelActiveState(fxPanelObj, par),
           regen: _ => stage.rebuild(),
           clone: _ => stage.clone(),
@@ -171,11 +156,8 @@ export const extendUi = ui => {
           dbgChg: _ => stage.chg(),
           dbgComp: _ => stage.compose(),
           dbgAct: _ => stage.activate()
-        }[op]
-        void action?.()
-        if (op === 'activate') {
-          
-        }
+        }[op]?.()
+        //void action?.()
       })
     }
     const topmenu$ = no && isEndRatio && div$({class: 'bfx-topmenu'}, [
@@ -189,7 +171,7 @@ export const extendUi = ui => {
         click: _ => pg.setListenerStage(stageIx)}, div$({class: 'led-fx fix-on'}))
     ])
     
-    //: These handlers can be put outside the function as it doesn;t use closure vars - anyway.
+    //: These handlers can be put outside the function as they don't use closure vars - anyway.
     
     const dragDroppedOnEndRatio = dstLetter => (data, mod, event) => {
       const [source, slot] = data.split('.')
@@ -208,12 +190,12 @@ export const extendUi = ui => {
       }
     }
     const dragDroppedOnNotFixedFx = (dstLetter, dstIx) => (data, mod) => {
-      const [source, fxname] = data.split('.')
+      const [source, fxname] = data.split('.') // eslint-disable-line no-unused-vars
       console.log(`drag dropped on not fixed fx`, {data, mod, fxPanelObj})
       pg.changeFx(dstLetter, dstIx, fxname)
     }
     
-    //: we need a better stringifyable reference to the fx panels!
+    //: we need a better stringifyable reference to the fx panels
     const drid = stage.letter + '.' + fx.zholger
     set$(fxrama$, {attr: {drid}})
     
