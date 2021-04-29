@@ -6,7 +6,7 @@ beeFX is a collection of filters, audio effects, visualisers and other fun stuff
 
 # The components of beeFX
 
-The original goal was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
+The original goal of this project was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
 
 Although many parts of beeFX are implemented (and working), the project itself is in development phase. Thus the final architecture can change, but here are the components of the current concept:
 
@@ -18,7 +18,7 @@ There are a few solutions which implements filters and effects as standardized e
 
 So the most important feature goal of beeFX was the easy extensibility, new effects should be added easily as separate modules, using the common architecture of the library. Of course similar filters or variations can be grouped into one module.
 
-Currently the beeFX library has over 60 effects or other Web Audio gadgets. These effects - at least the algorithm of them - are from various sources, but they were rewritten to fit the beeFX architecture. Many effects are in test phase, as there are different implementations for each filter, I tried a few variations and made a lot of experimental ones. (It's quite easy to write bad effects. However my goal is to make an audio library, not getting a PhD in DSP.) This collection must be cut down to a more standard set for a release, but at this moment this set is not defined yet. Also have to find out how to separate the different parts - like visualizations from effects, UIs from the core. Currently (almost) all effects or other audio components can be used in headless mode (just managing them from a program without UI) except of course the visualisation things for example.
+Currently the beeFX library has over 60 effects or other Web Audio gadgets. These effects - at least the algorithm of them - are from various sources, but they were rewritten to fit the beeFX architecture (and also into ES6 Javascript from various dialects / standards / languages). Many effects are in test phase, as there are different implementations for each filter, I tried a few variations and made a lot of experimental ones. (It's quite easy to write bad effects. However my goal is to make an audio library, not getting a PhD in DSP.) This collection must be cut down to a more standard set for a release, but at this moment this set is not defined yet. Also have to find out how to separate the different parts - like visualizations from effects, UIs from the core. Currently (almost) all effects or other audio components can be used in headless mode (just managing them from a program without UI) except of course things like visualisations.
 
 The current goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
 
@@ -40,6 +40,8 @@ Extensions:
 * Oscilloscope
 * Spectrum
 * etc.
+
+Everything in the Core must work in headless mode, the Extension part contains components which can or cannot be used without Ui.
 
 In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control beeFX filters, it's basically works the same way as for every similar library.
 
@@ -79,7 +81,7 @@ The Web Audio API is quite effective, audio graphs consisting of more than 1000 
 
 For the playground of course the DOM is the bottleneck in most cases.
 
-I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots. 
+(I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots.)
 
 # Browsers
 
