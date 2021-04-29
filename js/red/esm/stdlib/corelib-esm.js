@@ -16,6 +16,8 @@ const {Ø, undef, yes, yeah, no, nooo} = Types
 const {maxFract, safeParseJSON, safeStringifyJSON} = Types
 const {floor, random, pow, round} = Math
 
+export const merge = (f, a = f) => a
+
 export const getRnd = (fr, to) => typeof to !== Ø
   ? floor(random() * (1 + to - fr)) + fr
   : Number.isNaN(fr) ? 0 : getRnd(0, fr)
