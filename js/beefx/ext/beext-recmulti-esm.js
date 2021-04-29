@@ -13,7 +13,7 @@ const {max, round, floor} = Math
 const {AudioWorkletNode, requestAnimationFrame: RAF} = window
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, connectArr, concatAudioBuffers, getJsPath} = BeeFX(waCtx)
+  const {registerFxType, connectArr, concatAudioBuffers, getJsPath, nowa} = BeeFX(waCtx)
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -79,7 +79,7 @@ onWaapiReady.then(waCtx => {
       }
       
       cc.font = '700 13px roboto condensed'
-      cc.lineWidth = 1.8
+      cc.lineWidth = 1.7
 
       for (const {tempo, count} of int.groups) {
         if (tempo >= bpmMin && tempo <= bpmMax) {
@@ -119,7 +119,7 @@ onWaapiReady.then(waCtx => {
     
     const drawRecIndicator = _ => {
       if (int.mode === 'modeRecord') {
-        const timeFrac = (waCtx.currentTime * 1000) % 1000
+        const timeFrac = (nowa() * 1000) % 1000
         if (timeFrac > 450) {
           cc.beginPath()
           cc.arc(width - 30, 30, 12, 0, 2 * Math.PI, false)
@@ -315,7 +315,7 @@ onWaapiReady.then(waCtx => {
         resetMarkers()
       }
       const resetMarkers = _ => { //: called at the start of a recording segment
-        recorded.startAt = recorded.endAt = waCtx.currentTime
+        recorded.startAt = recorded.endAt = nowa()
         trim.left = trim.right = 0
       }
       const muteInput = on => { //: we have two states: 'audio pass through' / 'sampler as source'
@@ -397,7 +397,7 @@ onWaapiReady.then(waCtx => {
       const appendBuffer = (buffer, frames) => {
         int.audioBuffer = concatAudioBuffers(int.audioBuffer, buffer)
         int.aubLength += frames
-        recorded.endAt = waCtx.currentTime
+        recorded.endAt = nowa()
         fx.recalcMarkers()
       }
       const setupRecorder = _ => { //: the output of both is int.audioBuffer / int.aubLength
