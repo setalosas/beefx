@@ -2,28 +2,22 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, clamp, s_a} = Corelib
-const {wassert, weject, brexru} = Corelib.Debug
-const {post, startEndThrottle} = Corelib.Tardis
-const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, setClass$, q$$, iAttr, haltEvent, canvas$} = DOMplusUltra
-const {round} = Math
+const {weject} = Corelib.Debug
+const {div$, set$, iAttr, canvas$} = DOMplusUltra
 
 //8#49f -------------------------- Stages ui --------------------------
 
 export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
-  const {root, pg} = ui
+  const {pg} = ui
   const {sources} = pg
 
-  const stageHash = {} //: hash instead of an array ([0 1 2 3 5 6 101 102] are possible)
+  const stageHash = {} 
   const stageLetterHash = {} 
     
-  ui.capture({stageHash, stageLetterHash})  //+ ezt nem szabad hasznalni!!!!
-  
   ui.iterateStageObjects = callback => {
     for (const stageIx in stageHash) {
       const stageObj = stageHash[stageIx]
@@ -33,20 +27,19 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   ui.getStageObj = stageIx => 
     stageHash[stageIx] || console.warn(`Invalid stage index: ${stageIx}`)
   
-  ui.addStage = (stage, parent$ = ui.mid$, pars = {}) => {//+bena ez az opcionalis parent
-    const {stageIx, letter, isStandardStage, hasEndSpectrum, isSourceStage} = stage
+  ui.addStage = (stage, parent$ = ui.mid$, pars = {}) => { //: no optional parent~
+    const {stageIx, letter, isStandardStage, hasEndSpectrum, isSourceStage, endRatio} = stage
     isSourceStage && (parent$ = ui.getSourceUi(stage.sourceStageIx).stage$)
     
     const stageObj = {
       stage,
       letter,
       stageIx,             //: stage index
+      isEndRatio: !!endRatio,
       isStandardStage,
       fxPanelObjArr: [],    //:fx panel objects in the stage
       ...pars
     }
-    
-    //+LETTER-re kene atirni classokat is meg mindent
     
     const cc = 'bfx-stage bfx-st' + (stageIx + 1) + ' bfx-st-' + letter + (hasEndSpectrum ? '' : ' noendspectrum') + (isSourceStage ? ' sourcestage' : '')
             
@@ -64,13 +57,11 @@ export const extendUi = ui => { //: input: ui.sourceStrip$ (empty)
   }
 
   ui.resetStage = stageIx => { //:nothing to do? NOT USED
-    // endratioba az ujat kell befuzni, pl volume? led!
   }
   
   ui.createInputDispatchers = sourceIxArr => ui.iterateStageObjects(stageObj => {
     const {stageIx, isStandardStage} = stageObj
     if (isStandardStage) {
-      //console.log('found a stage to dispatch to', stageIx, stageObj)
       const chg = sourceIx => _ => sources.changeStageSourceIndex(stageIx, sourceIx)
       set$(stageObj.inputSelector$, {class: 'blue'}, [
         div$({class: 'input-selbg huerot'}),
