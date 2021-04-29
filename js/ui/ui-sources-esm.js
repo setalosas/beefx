@@ -2,16 +2,14 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, clamp, s_a, getIncArray} = Corelib
-const {wassert, weject, brexru} = Corelib.Debug
-const {post, startEndThrottle, pinky} = Corelib.Tardis
-const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, setClass$, q$$, haltEvent, iAttr} = DOMplusUltra
-const {round} = Math
+const {undef, nop, getIncArray} = Corelib
+const {wassert, brexru} = Corelib.Debug
+const {post, pinky} = Corelib.Tardis
+const {div$, leaf$, set$, q$$, haltEvent, iAttr} = DOMplusUltra
 
 //8#c00 -------------------------- Youtube Interface --------------------------
 
@@ -36,8 +34,8 @@ void (_ => { //: init the Youtube iframe api asap
 
 export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   const {root, pg} = ui
-  const {stageMan, players, sources} = pg
-  const {getStage, iterateStages, iterateStandardStages} = stageMan
+  const {stageMan, sources} = pg
+  const {getStage, iterateStages} = stageMan
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -213,6 +211,7 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     sourceUi.request = {method: 'changeVideoSource', sourceIx, par: {videoId, title, src}}
     const mediaHolder$ = sourceUi.media$
     set$(mediaHolder$, {html: ''}, div$({}))
+    set$(sourceUi.frame$, {attr: {type: 'mock'}})
       
     insertYoutubeIframe(mediaHolder$.children[0], sourceUi, videoId)
       .then(_ => {
@@ -348,7 +347,6 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
         }
         thumbs.push({thumb, src, videoId, title})
       }
-      //console.table(thumbs)
       for (const {thumb, videoId, src = '', title = ''} of thumbs) {
         if (videoId?.length === 11 || src) {
           div$(thumb, {class: 'bfx-grab-frame', attr: {videoId, title, src}},
@@ -369,11 +367,11 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   const destStr = source => source.destStageIxArr.map(a => getStage(a).letter).join(', ') || 'Mute'
   
   ui.refreshSourcesUi = _ => {
-    const {sourceArr, slog, tlog} = sources
+    const {sourceArr, slog} = sources
     
     //: setting output marks on sources
     sourceArr.map(({destStageIxArr}, sourceIx) => {
-      if (sourceIx) { //  && sourceArr[sourceIx].isMediaElement) { 
+      if (sourceIx) {
         ui.setSourceInUseInfo(sourceIx, destStr({destStageIxArr}))
         void sourceUis[sourceIx].sourceChanged?.()
       }
