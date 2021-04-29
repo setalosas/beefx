@@ -103,18 +103,18 @@ onWaapiReady.then(waCtx => {
         warning: {defVal: iirWarn, type: 'html'},
         ...(variant === 'manual' ? {
           preset: {defVal: iirPresetNames[0][1], type: 'strings', subType: iirPresetNames},
-          a: {defVal: .99, min: coeffMinA, max: coeffMaxA, arrayIx: [0, coeffCnt - 1], unit: '🔸'},
-          b: {defVal: .01, min: coeffMinB, max: coeffMaxB, arrayIx: [0, coeffCnt - 1], unit: '🔹', color: 95}
+          a: {defVal: .99, min: coeffMinA, max: coeffMaxA, arrayIx: [0, coeffCnt - 1], unit: '🔸', color: 95},
+          b: {defVal: .01, min: coeffMinB, max: coeffMaxB, arrayIx: [0, coeffCnt - 1], unit: '🔹'}
         } : {
           filterType: {defVal: 'lowpass', type: 'strings', subType: filterTypeNames},
           cutOffFreq: {defVal: .025, min: 0, max: .5}, //.025 -> 500hz
           ripplePt: {defVal: 5, min: .1, max: 49},
-          aMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 2], unit: '🔸%'},
-          bMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 1], unit: '🔹%', color: 180}
+          aMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 2], unit: '🔸%', color: 180},
+          bMod: {defVal: 100, min: 1, max: 200, arrayIx: [0, coeffCnt - 1], unit: '🔹%'}
         }),
         log: {defVal: '-', type: 'info'},
         previewGraph: {type: 'graph'},
-        autoGen: {defVal: 'off', type: 'cmd', subType: 'led', color: 325},
+        autoGen: {defVal: 'off', type: 'cmd', subType: 'led', color: 325, dontSave: true},
         reGenerate: {defVal: 'off', type: 'cmd'}, // go live!
         exTerminate: {defVal: 'off', type: 'cmd'}, // omg, kill it fast!
         liveGraph: {type: 'graph'}
