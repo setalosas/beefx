@@ -36,7 +36,7 @@ const fxMap = {
   odwac: 'overdriveWAC'
 }
 
-const stagePresets = { //: These compressed defs are ugly, but it's easier to overview
+const stagePresets = { //: These compressed defs are ugly, but it's easier to overview.
   preset1xb: {A: 'b'},
   preset2xb: {AB: 'b'},
   preset3xb: {ABC: 'b'},
@@ -122,7 +122,7 @@ const stagePresets = { //: These compressed defs are ugly, but it's easier to ov
     J: 'IIRcheb8,cabinet,scope',
     K: 'waveGen,scope,convGen,scope,g',
     L: 'IIRmanual8,b,scope'},
-  eq: { //+ check performance here
+  eq: {
     AE: 'scope,eq4,scope',
     BF: 'scope,eq6,scope',
     CG: 'scope,eq10,scope',
@@ -138,7 +138,7 @@ export const create = root => {
     slots: [{}],
     actProject: ''
   }
-  const maxSlots = 40
+  const maxSlots = 100
 
 //: name->ret, parent$->menu
   stateManager.getActualPreset = async ({name, parent$}) => new Promise(resolve => {
@@ -254,14 +254,10 @@ export const create = root => {
   }
   stateManager.getProjectListExtended = _ => 
     stateManager.getProjectList().map(projName => {
-      const {lastSavedAt, revisions, lastSaved} = readProject(projName) || {}
-        const {projDesc = ''} = lastSaved
-      return {
-        projName,
-        projDesc,
-        versions: revisions.propertiesToArr().length,
-        lastSavedAt
-      }
+      const {lastSavedAt = 0, revisions = {}, lastSaved = {}} = readProject(projName) || {}
+      const {projDesc = ''} = lastSaved
+      const versions = revisions.propertiesToArr().length
+      return {projName, projDesc, versions, lastSavedAt}
     })
   
   //8#4a9 Stage slots storage
@@ -277,7 +273,6 @@ export const create = root => {
   
   stateManager.onStageToSlotDrop = ({dstSlot, letter}) => {
     const state = stageMan.getStage(letter).saveState()
-    console.log({state})
     stateManager.slots[dstSlot] = {fxarr: state}
     fixSlots(stateManager.slots)
     store.save('slots', stateManager.slots)
