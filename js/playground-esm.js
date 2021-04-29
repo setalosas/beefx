@@ -3,14 +3,12 @@
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
    standard/no-callback-literal, object-curly-newline */
-/* eslint-disable no-unused-vars */
    
 import * as pgIm from './improxy-esm.js'
 
 const {Corelib, BeeFX, Sources, StateManager, StageManager, createUI} = pgIm
-const {s_a, undef, isFun, isNum, getRnd} = Corelib
-const {wassert, weject} = Corelib.Debug
-const {schedule, adelay, NoW, startEndThrottle, post} = Corelib.Tardis
+const {undef, getRnd} = Corelib
+const {schedule, adelay} = Corelib.Tardis
 
 const createPlayground = async root => {
   const {waCtx, ui} = root
@@ -20,51 +18,55 @@ const createPlayground = async root => {
   
   ui.configNames(namesDb)
   
-  const output = waCtx.createGain()
+  const output = waCtx.createGain() //: This needs a gain and could be a global mute.
   
   const stageMan = StageManager.createStageManager(root)
   const {getStage} = stageMan
 
   const pg = {
     beeFx,
-    stageMan, //+ PFUJ de sourcesnek kell es fxpaneluinak is
+    stageMan,      //: this should be added to root instead
+    //: Sync with remote window - turned off now
     lastSentAt: 0,
     lastReceivedAt: 0,
-    senderStage: undef,   //: the stage object
-    listenerStage: undef, //: the stage object
+    senderStage: undef,   //: the stage object (not used now)
+    listenerStage: undef, //: the stage object (not used now)
     meState: {},
     meStateHash: '',
+    //: end of sync part
     fingerPrint: getRnd(100000, 999999),
     getFxType
   }
   
   pg.sources = Sources.createSources(pg, root)
-  //pg.players = Players.extendWithPlayers(pg, root)
+  //pg.players = Players.extendWithPlayers(pg, root) // no sync!
   //const {radio} = pg.players
   
   //8#a66 ----------- Change core playground Fxs -----------
     
   pg.changeFx = (stageId, ix, type) => stageMan.changeFx({stageId, ix, type})
   
+  pg.addFx = (stageId, name) => stageMan.addFx(stageId, name)
+  
   //8#46f ------------- Sync control: Master/slave stage settings -------------
   
   const activateMaster = stageId => {
     pg.senderStage = getStage(stageId)
     pg.isMaster = true
-    pg.senderStage.fpo.panel.set('send', {class: 'active'}) 
+    pg.senderStage.fpoEndRatio.panel.set('send', {class: 'active'}) 
   }
   const activateSlave = stageId => {
     pg.listenerStage = getStage(stageId)
     pg.isSlave = true
-    pg.listenerStage.fpo.panel.set('listen', {class: 'active'}) 
+    pg.listenerStage.fpoEndRatio.panel.set('listen', {class: 'active'}) 
   }
   const inactivateMaster = _ => {
-    void pg.senderStage?.fpo.panel.set('send', {declass: 'active'}) 
+    void pg.senderStage?.fpoEndRatio.panel.set('send', {declass: 'active'}) 
     delete pg.senderStage
     pg.isMaster = false
   }
   const inactivateSlave = _ => {
-    void pg.listenerStage?.fpo.panel.set('listen', {declass: 'active'}) 
+    void pg.listenerStage?.fpoEndRatio.panel.set('listen', {declass: 'active'}) 
     delete pg.listenerStage
     pg.isSlave = false
   }
@@ -97,7 +99,7 @@ const createPlayground = async root => {
   
   pg.destroyLastBlanks = _ => stageMan.iterateStandardStages(stage => stage.destroyLastBlanks())
   
-  pg.rebuildStage = stageId => getStage(stageId)?.rebuild() //: re ui regen click
+  pg.rebuildStage = stageId => getStage(stageId)?.rebuild() //: re ui regen click - not imp
 
   pg.activateStage = (stageId, on) => getStage(stageId)?.activate(on)
   
@@ -106,34 +108,24 @@ const createPlayground = async root => {
   const init = _ => {
     console.log(BeeFX(waCtx).fxHash)
     output.connect(waCtx.destination)
+    //: no sync:
     //pg.players.init()
     //pg.players.initRadioListeners()
   }
   
-  pg.initMixerStages = _ => {
-    pg.localStage = stageMan.createStage({letter: pg.localStageLetter = 'LOC'})
-    pg.localStageIx = pg.localStage.stageIx
-    pg.remoteStage = stageMan.createStage({letter: pg.remoteStageLetter = 'REM'})
-    pg.remoteStageIx = pg.remoteStage.stageIx
-    pg.faderStage = stageMan.createStage({letter: pg.faderStageLetter = 'FAD'})
-    pg.faderStageIx = pg.faderStage.stageIx
-  }
-  
-  pg.changeDestination = newDestination => { //: not used
+  pg.changeDestination = newDestination => { //: not used, but it could redirect the final output
     output.disconnect()
     output.connect(newDestination)
   }
     
-  pg.addFx = (stageId, name) => stageMan.addFx(stageId, name)
-  
-  pg.loadPreset = actPreset => {
+  pg.loadPreset = actPreset => { //: startup mode 1: preset
     const stageNames = []
     
     for (const key in actPreset) {
       stageNames.includes(key) || stageNames.push(key)
     }
     stageNames.sort()
-    console.log({stageNames})
+
     for (const stageName of stageNames) {
       pg.addStage(stageName)
     }      
@@ -145,37 +137,30 @@ const createPlayground = async root => {
     }
   }
   
-  pg.reloadWithProject = projName => {
-    root.stateManager.setActProject(projName)
-    window.location.href = window.location.href // eslint-disable-line no-self-assign
-  }
-  
-  pg.loadProjectOnStart = async projName => {
-    console.log('project load START')
+  pg.loadProjectOnStart = async projName => { //: startup mode 2: project
+    console.log('pg: project load START') //: still needed for testing async timings
     const project = root.stateManager.loadProject(projName)
     if (project) {
       const {stageLetters, stages, sourceRequests = [], flags = {}} = project
-      console.log('flags loaded:', {flags})
 
       for (const key in flags) {
         key.slice(-2) === 'On' || ui.setFlag(key, flags[key])
       }
-      
       for (const {method, sourceIx, par} of sourceRequests) {
         void ui[method]?.(sourceIx, par)
       }
-      
       for (const stageName of stageLetters) {
         pg.addStage(stageName)
         const {state, sourceIx} = stages[stageName]
         const stage = stageMan.getStage(stageName)
         stage.loadState(state)
         while (sourceIx > 0 && !pg.sources.sourceArr[sourceIx]) { // eslint-disable-line
-          console.log('wait for', sourceIx)
+          //: sometimes youtube iframes die why loading, this is the reason of this check:
+          console.log('pg.loadProjectOnStart is waiting for source', sourceIx)
           await adelay(1000)
         }
       }
-      schedule(0).then(_ => {
+      schedule(0).then(_ => { //: wait for the ui to finalize in this cycle, so push this a bit
         for (const stageName of stageLetters) {
           const {sourceIx} = stages[stageName]
           sourceIx !== -1 && pg.sources.changeStageSourceIndex(stageName, sourceIx)
@@ -184,7 +169,12 @@ const createPlayground = async root => {
     } else {
       console.warn(`No such project in storage:`, projName)
     }
-    console.log('project load END')
+    console.log('pg: project load END')
+  }
+  
+  pg.reloadWithProject = projName => { //: just set a new project in localStorage and RELOAD
+    root.stateManager.setActProject(projName)
+    window.location.href = window.location.href // eslint-disable-line no-self-assign
   }
   
   pg.saveProject = (projName, projDesc = '') => {
@@ -199,7 +189,6 @@ const createPlayground = async root => {
       sourceUi.request && sourceRequests.push(sourceUi.request)
     })
     const {flags} = root
-    console.log('flags saved:', {flags})
     const project = {projDesc, stageLetters, stages, sourceRequests, flags}
     root.stateManager.saveProject(project, projName)    
   }
@@ -218,7 +207,7 @@ const createPlayground = async root => {
   return pg
 }
 
-//8#b39 All entry points are here (beeFxPlayground site, CromBee, Patashnik)
+//8#b39 All app entry points are here (beeFxPlayground site, CromBee, Patashnik)
 
 export const runPlaygroundWithin = async (waCtx, options) => { //: no mediaE, ABSNs will be added
   const config = {
@@ -240,14 +229,14 @@ export const runPlaygroundWithin = async (waCtx, options) => { //: no mediaE, AB
 
 export const runPlayground = async root => { //: we may have a mediaElement in root
   const ui = root.ui = createUI(root)
-  root.midi = pgIm.TestMidi?.createTestMidi(ui) //: MIDI test, can be deleted
+  root.midi = pgIm.TestMidi?.createTestMidi(ui) //: MIDI test
   const playground = await createPlayground(root)
   root.pg = playground
   await ui.start(playground)
 
   const setupName = root.onYoutube 
     ? root.killEmAll ? 'youtubeFull' : 'youtubeDefault'
-    : 'last'
+    : 'last' //: = auto reload of last preset set
   
   const parent$ = root.config.presetDisplayOn ? document.body : undef
   
@@ -263,6 +252,6 @@ export const runPlayground = async root => { //: we may have a mediaElement in r
       //: this should work delayed too (no video on non-watch youtbe pages in the first 10 sec)
       root.onYoutube
         ? root.mediaElement && ui.changeVideoElementSource(1, root.mediaElement)
-        : playground.sources.getValidSourcesCnt() || ui.setFlag('sourceList', true)//if no sources
+        : playground.sources.getValidSourcesCnt() || ui.setFlag('sourceList', true)
     })
 }
