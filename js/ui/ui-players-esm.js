@@ -3,25 +3,25 @@
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    standard/no-callback-literal, object-curly-newline */
-/* eslint-disable no-unused-vars */   
+/* eslint-dissable no-unused-vars */   
    
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {Ø, undef, isNum, isFun, nop, clamp, s_a, hashOfString, getRndDig} = Corelib
-const {wassert, weject, brexru} = Corelib.Debug
+const {undef, hashOfString, getRndDig} = Corelib
+const {wassert} = Corelib.Debug
 const {post, startEndThrottle, schedule, adelay} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
-const {div$, leaf$, set$, setClass$, q$, q$$, haltEvent} = DOMplusUltra
+const {div$, set$, q$} = DOMplusUltra
 const {round, abs} = Math
 
-//8#49f --------------------------Players ui --------------------------
+//8#49f -------------------------- Players ui --------------------------
 
-export const extendUi = ui => {
-  const {root, pg} = ui
-  const {sources} = pg
+export const extendUi = ui => { //: Extends the sourceUi object with player functionality
+  const {pg} = ui
+  const {sources, stageMan, beeFx} = pg // eslint-disable-line no-unused-vars
   
   const logOn = false
-  const clog = (...args) => logOn && console.log(...args)
+  const clog = (...args) => logOn && console.log(...args) // eslint-disable-line no-unused-vars
   
   //8#49cScraping the youtube DOM for video data
   /* 
@@ -70,16 +70,16 @@ export const extendUi = ui => {
   const createMediaObserver = (sourceUi) => {
     const observer = {
       sourceUi, //: for debug only
-      videoState: {},
-      audioState: {},
-      iframeState: {},
+      videoState: undef,
+      audioState: undef,
+      iframeState: undef,
       lastState: {},
       currState: {},
       videoHash: '',
       audioHash: '',
       iframeHash: ''
     }
-    const observerTickPeriod = 1000
+    const observerTickPeriod = 500 // 1000
     
     const logSyncOn = false
     const slog = (...args) => logSyncOn && console.log(...args)
@@ -94,59 +94,39 @@ export const extendUi = ui => {
       const muted = ytp.isMuted()
       const playerState = ytp.getPlayerState()
       // -1: unstarted // 0: ended // 1: playing // 2: paused // 3: buffering // 5: video cued
-      observer.iframeState = {
+      return observer.iframeState = {
         paused: playerState !== 1, playerState, currentTime, duration, playbackRate,
-        src: '', title, videoId, volume, muted, isIframeState: true
+        title, videoId, volume, muted, isIframeState: true
       }
-      return observer.iframeState
     }
     
     const getVideoElementState = _ => { //: youtube.com video
-      const {paused, src, volume, title,  muted} = sourceUi.video$
-      const {currentTime, duration, playbackRate} = sourceUi.video$
+      const {paused, volume, title, muted, currentTime, duration, playbackRate} = sourceUi.video$
       const {videoTitle, videoId} = scrapingYoutubeForVideoInfo()
       return observer.videoState = {
         paused, currentTime, duration, playbackRate,
-        src, title, videoTitle, videoId, volume: volume * 100, muted, isVideoState: true
+        title, videoTitle, videoId, volume: volume * 100, muted, isVideoState: true
       }
     }
     
     const getAudioElementState = _ => {
-      const {paused, src, volume, title, muted} = sourceUi.audio$
-      const {currentTime, duration, playbackRate} = sourceUi.audio$
-      const videoId = ''
+      const {paused, volume, title, muted, currentTime, duration, playbackRate} = sourceUi.audio$
       return observer.audioState = {
         paused, currentTime, duration, playbackRate,
-        src, title, videoTitle: '', videoId: '', volume: volume * 100, muted, isAudioState: true
+        title, videoTitle: '', videoId: '', volume: volume * 100, muted, isAudioState: true
       }  
     }
     const logState = type => {
       const state = observer[type + 'State']
       if (state) {
         const {paused, currentTime = 0.1, duration: d, playbackRate} = state
-        const {src, title = '', videoTitle = '', videoId, volume, muted} = state
+        const {title = '', videoTitle = '', videoId, volume, muted} = state
         const duration = d || 0.1 //Number.isNaN(d) ? 1 : d
         const info = `paused=${paused} curr=${currentTime.toFixed(2)}  dur=${duration.toFixed(2)} pbRate=${playbackRate} vol=${volume} muted=${muted} title=${title.substr(0, 40)} videoId=${videoId} videoTitle=${videoTitle.substr(0, 30)}`
-        console.log(type, info)
+        slog(type, info)
       }
     }
-    /*
-    paused playerState
-    curr dur
-    volume muted
-    pbRate
-    title
-    videoTitle
-    videoId
-    src
-    
-    paused ikon    - muted/volume
-    videoId
-    title / videoTitle
-    ...
-    slider curr dur 
-    
-    */
+
     observer.getState = _ => sourceUi.video$ 
       ? observer.videoState 
       : sourceUi.audio$ 
@@ -193,29 +173,47 @@ export const extendUi = ui => {
       if (!fp) {
         return console.error(`getMediaElement: dead observer?`, observer)
       }
+      if (sourceUi.iframe$) {
+        getYtPlayerState() //: no need to store in currState, there is always a video or audio 
+      }
       if (sourceUi.video$) {
         getVideoElementState()
-        observer.currState = observer.videoState
+        observer.currState = {...observer.videoState}
       } else if (sourceUi.audio$) {
         getAudioElementState()
-        observer.currState = observer.audioState
+        observer.currState = {...observer.audioState}
 
         if (sourceUi.isMocked) {   //: this is the syncing point as it's a quite low level
           if (sourceUi.iframe$) {
-            getYtPlayerState()
-            observer.currState.videoId = observer.iframeState.videoId
             syncMocked()
           } else {
             console.warn(`getMediaElementState(): no iframe in mocked mode!`, observer)
           }
         }
       }
+      const {currState, iframeState} = observer
+      if (currState.videoId?.length !== 11) {
+        currState.videoId = iframeState?.videoId
+      }
+      currState.title = currState.title || iframeState.title
+      if (Number.isNaN(currState.duration)) {
+        currState.duration = iframeState?.duration
+      }
+      
       observer.currStateReduced = {...observer.currState, currentTime: 0}
 
       const stateHashReduced = hashOfString(JSON.stringify(observer.currStateReduced))
       const hasTimeChanged = observer.lastState.currentTime !== observer.currState.currentTime
       const hasAllChanged = observer.mediaStateHashReduced !== stateHashReduced
       if (hasTimeChanged || hasAllChanged) {
+        if (hasAllChanged) {
+          const tab = []
+          observer.currState && tab.push(observer.currState)
+          observer.audioState && tab.push(observer.audioState)
+          observer.videoState && tab.push(observer.videoState)
+          observer.iframeState && tab.push(observer.iframeState)
+          console.table(tab)
+        }
         //hasAllChanged && console.log(`OBSERVER: ALL CHANGED`)
         hasAllChanged && sourceUi.onStateChanged()
         hasTimeChanged && sourceUi.onTimeChanged()
@@ -233,7 +231,7 @@ export const extendUi = ui => {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
         }*/
       }
-      //logState('last')
+      logOn && logState('last')
       
       //const fps = fp === observer.fp ? `${fp}✔️` : `${fp}❌ (${observer.fp})`
       //console.log(`------${sourceUi.sourceIx}--${fps}----${observer.lastState.title}`)
@@ -255,15 +253,14 @@ export const extendUi = ui => {
       const fp = 1 + getRndDig(6)
       mediaElement && post(_ => {
         mediaElement.addEventListener('onloadedmetadata', event => {
-          console.log('ONLOADEDMETADATA', event)
+          slog('ONLOADEDMETADATA', event)
           getMediaElementState(fp)
         })
         mediaElement.addEventListener('play', event => getMediaElementState(fp))
         mediaElement.addEventListener('pause', event => getMediaElementState(fp))
         mediaElement.addEventListener('seeked', event => getMediaElementState(fp))
         mediaElement.addEventListener('timeupdate', event => lazyGetMediaElementState(fp))
-        console.log(`mediaObserver started listening to `, mediaElement)
-        console.log(`observer started:`, fp, mediaElement.title)
+        slog(`mediaObserver started listening to `, fp, mediaElement.title, mediaElement)
         observer.fp = fp
         tick(fp)
       })
@@ -276,24 +273,38 @@ export const extendUi = ui => {
   }
   
   ui.recreateSourcePlayer = sourceUi => {
-    const player = {}
-      
     void sourceUi.mediaObserver?.destroy()
       
     const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
     
     sourceUi.master = undef
     sourceUi.slave = undef
-    sourceUi.beatTime = 0
-    sourceUi.bpm = 0
     sourceUi.beatTime = .5
     sourceUi.bpm = 120
+    sourceUi.bpmFx = sources.getSourceStage(sourceUi.sourceIx).bpmFx
+    wassert(sourceUi.bpmFx)
+    sourceUi.bpmFx.setValue('pitch', 100)
+    sourceUi.bpmFx.setValue('bpmModifier', 0)
+    
+    sourceUi.sourceChanged = (reset = false) => {
+      if (reset) {
+        sources.stateChanged(sourceUi.sourceIx, {reset: true})
+        sourceUi.bpmFx.setValue('bpmOriginal', 120)
+        //stage.onGlobalChange('source.reset', 0)
+      } else {
+        sources.stateChanged(sourceUi.sourceIx, {bpm: sourceUi.bpm, beatTime: sourceUi.beatTime})
+        sourceUi.bpmFx.setValue('bpmOriginal', sourceUi.bpm + '#set')
+        //stage.onGlobalChange('source.beatTime', sourceUi.beatTime)
+        //stage.onGlobalChange('source.bpm', sourceUi.bpm)
+      }
+    }
+    sourceUi.sourceChanged(true) //: call at new media load
     
     const getState = _ => observer.getState()
     
-    //8#3ae Core (unsynced) control methods
+    //8#3ae Low level (unsynced) control methods
     
-    sourceUi._stop = _ => {
+    sourceUi._pause = _ => {
       void sourceUi.ytPlayer?.pauseVideo?.()
       void sourceUi.audio$?.pause()
       void sourceUi.video$?.pause()
@@ -321,15 +332,20 @@ export const extendUi = ui => {
       sourceUi.audio$ && (sourceUi.audio$.muted = !sourceUi.audio$.muted)
       sourceUi.video$ && (sourceUi.video$.muted = !sourceUi.video$.muted)
     }
+    sourceUi._setPitchToBpm = bpm => sourceUi.bpmFx.setPitchToBpm(bpm)
     sourceUi.hasControls = true
     
+    const forcedSyncedControl = (funKey, ...args) =>
+      ui.iterateSourceUis(sourceUi => sourceUi[funKey]?.(...args)) 
+      
     const syncedControl = (funKey, ...args) => ui.getFlag('syncSources')
-      ? ui.iterateSourceUis(sourceUi => sourceUi[funKey]?.(...args)) 
+      ? forcedSyncedControl(funKey, ...args)
       : sourceUi[funKey](...args)
       
     //8#67f High level (synced) control methods
     
-    sourceUi.stop = _ => syncedControl('_stop')
+    sourceUi.stop = _ => syncedControl('_pause')
+    sourceUi.pause = _ => syncedControl('_pause')
     sourceUi.play = _ => syncedControl('_play')
     sourceUi.seek = sec => syncedControl('_seek', sec)
     sourceUi.speed = pbr => syncedControl('_setPlaybackRate', pbr)
@@ -343,27 +359,28 @@ export const extendUi = ui => {
       }
       sourceUi.seek(duration * pt / 100)
     }
-    //+ needs revamp
+    
     sourceUi.doBpm = async (calcSec = 15) => {
-      set$(sourceUi.bpm1$, {attr: {state: 'calc'}})
-      set$(sourceUi.bpm2$, {attr: {state: 'calc'}})
+      const state = calcSec === 2 ? 'calcx' : 'calc'
+      set$(sourceUi.bpm1$, {attr: {state}})
+      set$(sourceUi.bpm2$, {attr: {state}})
+        sourceUi.bpmFx.setValue('pitch', 100)
       calcSec = [0, 10, 20][calcSec] || calcSec
       if (getState().paused) {
         const sec = (getState().duration || 100) / 3
-        console.log(`Force start for bpm at sec`, sec)
         sourceUi.seek(sec)
         sourceUi.play()
         await adelay(100)
       }
       const input = sources.getSourceNode(sourceUi.sourceIx)
-      const bpmDetector = pg.beeFx.newFx('fx_bpm')
+      const bpmDetector = beeFx.newFx('fx_bpm')
       input.connect(bpmDetector)
       bpmDetector.startPrivilegedBpmRequest(calcSec)
         .then(bpm => {
-          setUi('bpm', {text: bpm, attr: {state: 'set'}})
-          const {bpmFx} = sources.getSourceStage(sourceUi.sourceIx) || {}
-            wassert(bpmFx)
-            bpmFx.setValue('bpmOriginal', bpm + '#set')
+          sourceUi.bpm = bpm
+          sourceUi.beatTime = 60 / bpm
+          sourceUi.sourceChanged()
+          setUi('bpmX', {attr: {state: 'on'}})
         })
         .catch(msg => {
           console.warn(`Player BPM detection failed:`, msg)
@@ -371,72 +388,66 @@ export const extendUi = ui => {
         })
         .finally(_ => {
           input.disconnect(bpmDetector)
-          console.log(bpmDetector.int)
           set$(sourceUi.bpm1$, {attr: {state: ''}})
           set$(sourceUi.bpm2$, {attr: {state: ''}})
         })
     }
+    sourceUi.syncBpm = _ => {
+      forcedSyncedControl('_setPitchToBpm', sourceUi.bpmFx.int.bpmOut)
+    }
 
     const setUi = ui.setHost(sourceUi)
+    const lastDOM = {}
     
     sourceUi.onStateChanged = state => {
       const {title, duration, muted, paused, videoId} = observer.currState
-      //sourceUi.setUi('title', {text: title})
+      title && setUi('info', {text: title})
       setUi('duration', {text: secToString(duration)})
       setUi('muted', {attr: {state: muted ? 'alert' : 'off'}})
       setUi('play', {attr: {state: paused ? 'on' : 'off'}})
       setUi('stop', {attr: {state: paused ? 'off' : 'on'}})
       
-      //:  todo: not on every call!
-      if (videoId?.length === 11 && sourceUi.masterThumb$) {
+      if (videoId !== lastDOM.videoId && videoId?.length === 11 && sourceUi.masterThumb$) {
+        lastDOM.videoId = videoId
         const backgroundImage = `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')`
-        sourceUi.setUi('masterThumb', {css: {backgroundImage}})
+        setUi('masterThumb', {css: {backgroundImage}})
       }
-      
-      sourceUi.onTimeChanged() //: yack!
-    }
-    sourceUi.onTimeChanged = _ => {
-      const {currentTime, duration} = observer.currState
-      setUi('dragBar', {css: {__prog: 100 * currentTime / (duration || 1) + '%'}})
-      setUi('current', {text: secToString(currentTime)})
-    }
-
-    sourceUi.refreshPlayerControl = data => {
-      const {paused, currentTime = 0, volume, duration: d, playbackRate, videoId, videoTitle} = data
-      const duration = Number.isNaN(d) ? 1 : d
-      //set$(sourceUi.info$, {text: videoId + ': ' + videoTitle})
-      const info = `paused=${paused} curr=${currentTime.toFixed(1)} vol=${volume} dur=${duration} pbRate=${playbackRate} videoId=${videoId} tit=${videoTitle}`
-      setUi('info', {text: info})
+      sourceUi.onTimeChanged()
     }
     
-    const buildStage = _ => {
+    sourceUi.onTimeChanged = _ => {
+      const {currentTime, duration} = observer.currState
+      if (currentTime !== lastDOM.currentTime || duration !== lastDOM.duration) {
+        lastDOM.capture({currentTime, duration})
+        setUi('dragBar', {css: {__prog: 100 * currentTime / (duration || 1) + '%'}})
+        setUi('current', {text: secToString(currentTime)})
+      }
     }
-  
+
     const buildUi = _ => {
       const dragBar = event => (event.type === 'click' || event.buttons & 1) &&
         sourceUi.seekPt(round(1000 * event.offsetX / event.target.clientWidth) / 10)
         
-      const absSeekS = sec => _ => sourceUi.seel(sec)
+      const absSeekS = sec => _ => sourceUi.seek(sec)
       const relSeekS = sec => _ => sourceUi.seekRel(sec)
       const relSeekB = bt => _ => sourceUi.beatTime && sourceUi.seekRel(bt * sourceUi.beatTime)  
           
       set$(sourceUi.ctrl$, {html: ``}, [
         sourceUi.navNoneed$ = div$({class: 'src-above'}, [
-          div$({class: 'bee-cmd n-start', text: 'Start', click: _ => absSeekS(0)}),
+          div$({class: 'bee-cmd n-start', text: 'Start', click: absSeekS(0)}),
           div$({class: 'bee-cmd n-m30s', text: '-30s', click: relSeekS(-30)}),
           div$({class: 'bee-cmd n-m10s', text: '-10s', click: relSeekS(-10)}),
-          div$({class: 'bee-cmd n-m2b', text: '-2b', click: _ => relSeekB(-2)}),
-          div$({class: 'bee-cmd n-m1b', text: '-1b', click: _ => relSeekB(-1)}),
-          div$({class: 'bee-cmd n-p1b', text: '+1b', click: _ => relSeekB(1)}),
-          div$({class: 'bee-cmd n-p2b', text: '+2b', click: _ => relSeekB(2)}),
+          div$({class: 'bee-cmd n-m2b', text: '-2b', click: relSeekB(-2)}),
+          div$({class: 'bee-cmd n-m1b', text: '-1b', click: relSeekB(-1)}),
+          div$({class: 'bee-cmd n-p1b', text: '+1b', click: relSeekB(1)}),
+          div$({class: 'bee-cmd n-p2b', text: '+2b', click: relSeekB(2)}),
           div$({class: 'bee-cmd n-p10s', text: '+10s', click: relSeekS(10)}),
           div$({class: 'bee-cmd n-p30s', text: '+30s', click: relSeekS(30)})
         ]),
         div$({class: 'src-navtop'}, [
           sourceUi.bpm1$ = div$({class: 'bee-cmd', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
           sourceUi.bpm2$ = div$({class: 'bee-cmd', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
-          sourceUi.bpm$ = div$({class: 'bee-box', text: '--?--'}),
-          //bpm display
+          sourceUi.bpmX$ = div$({class: 'bee-cmd', text: 'syncBPM', click: sourceUi.syncBpm}),
           sourceUi.play$ = div$({class: 'bee-cmd cc-play', text: 'Play', click: sourceUi.play}),
           sourceUi.stop$ = div$({class: 'bee-cmd cc-stop', text: 'Stop', click: sourceUi.stop}),
           div$({class: 'bee-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)}),
