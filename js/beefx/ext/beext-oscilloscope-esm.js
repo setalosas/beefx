@@ -122,7 +122,7 @@ onWaapiReady.then(waCtx => {
       const used = round(100 * (frameIx - frameIxFromZero) / flen)//: errrr...
       const ffts = int.fftSize + (int.fftSize === 32768 ? ' (max)' : '')
       const msec = round(1000 * (frameIx - frameIxFromZero) / sampleRate)
-      const over = j < width ? width / j * msec : 0
+      const over = j < width ? (width - 1) / j * msec : 0
       const msecex = over ? ` (of ${round(over)}ms)` : ``
       ccext.setTextStyle('#aaa', 'right')
       cc.fillText(`FFT: ${used}% of ${ffts} used`, txtx, 40)
@@ -202,7 +202,7 @@ onWaapiReady.then(waCtx => {
     beatZoom: _ => value === 'fire' && fx.setCmds('beatZoom', int.beatZoom),
     beat2Zoom: _ => value === 'fire' && fx.setCmds('beat2Zoom', int.beat2Zoom),
     resetZoom: _ => value === 'fire' && fx.setCmds('resetZoom', 1),
-    freeze: _ => value === 'fire' && (int.isRAFOn ? (int.isRAFOn = false) : fx.startOsc())
+    freeze: _ => value === 'fire' && (int.isRAFOn ? fx.stopOsc() : fx.startOsc())
   }[key])
   
   oscilloscopeExt.onActivated = (fx, isActive) => isActive ? fx.startOsc() : fx.stopOsc()
@@ -247,9 +247,13 @@ onWaapiReady.then(waCtx => {
       if (!int.isRAFOn) {
         int.isRAFOn = true
         window.requestAnimationFrame(_ => drawFrame(fx))
+        fx.setValue('freeze', 'off')
       }
     }
-    fx.stopOsc = _ => int.isRAFOn = false
+    fx.stopOsc = _ => {
+      int.isRAFOn = false
+      fx.setValue('freeze', 'on')
+    }
     
     fx.setCmds = (act, newZoomVal) => {
       fx.setValue('zoom', newZoomVal)
