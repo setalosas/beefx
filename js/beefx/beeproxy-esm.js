@@ -4,6 +4,8 @@ import * as DOMplusUltra from './red/esm/dom/dom-plus-ultra-esm.js'
 import { onReady as onWaapiReady } from './wautils-esm.js'
 import { createGraphBase } from './vis/graphbase-esm.js'
 import * as Visualizer from './vis/visualizer-esm.js'
+import { createBeeDebug } from './beefx-debug-esm.js'
+
 import { BeeFX } from './beefx-esm.js'
 
 import './fxs/beefxs-basic-esm.js'
@@ -25,16 +27,16 @@ import * as Chebyshev from './fxs/chebyshev-math-esm.js'
 import './fxs/beefxs-iir-esm.js'
 import './fxs/beefxs-ringmod-esm.js'
 
+import { detectBPMj } from './med/bpmj-esm.js'
+import * as BPM from './med/bpm-auditor-esm.js'
+
 import './ext/beext-oscillator-esm.js'
 import './ext/beext-oscilloscope-esm.js'
 import './ext/beext-spectrum-esm.js'
 import './ext/beext-recmulti-esm.js'
-
 import './med/beefxs-bpmtrans-esm.js'
-import { detectBPMj } from './med/bpmj-esm.js'
-import * as BPM from './med/bpm-auditor-esm.js'
 
 export {
-  Corelib, DOMplusUltra,
-  onWaapiReady, BeeFX, Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
+  Corelib, DOMplusUltra, onWaapiReady,
+  createBeeDebug, BeeFX, Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
 }
