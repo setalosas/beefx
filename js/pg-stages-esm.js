@@ -2,35 +2,36 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, Visualizer} from './improxy-esm.js'
 
-const {s_a, undef, isFun, isNum, isStr, getRnd} = Corelib
+const {undef, isStr} = Corelib
 const {wassert, weject} = Corelib.Debug
-const {schedule, adelay, startEndThrottle} = Corelib.Tardis
+const {startEndThrottle} = Corelib.Tardis
   /*
-  StageManager can have many stages of different types (normal, mixer, internal, invisible, etc).
+  StageManager can have many stages of different types (normal, source, internal, headless, etc).
   A Stage is a sequential chain of beeFxs (or beeExts) + scaffolding.
   Scaffolding has fixed (input, source, mayday) and optional (endRatio, vis) parts.
   A stage doesn't know anything about it's source, whether it's media or not.
   Stages with endRatio forms a group and these stages are linked (and can be requested as a list).
-  This is stageGroup.
+  This is stageGroup. (Accessible with iterateStandradStages.)
   Stages can have ui assigned to them (uiStage), but they work without ui too.
   Activating/deactivating a stage means deactivating all fxs in it (+ endRatio if there is one).
-  Stages have indexes (auto or manual). 
+  Stages have indexes (indices!) (auto or manual). 
   These cannot be freely mixed - no empty slots. (Allocating 0 3 1 2 is ok, but 0 3 2 is not.)
-  !!!! Letters only!!!! Indexes are assigned internally as allocating slots in the array.
-  Stages have letters assigned to them. This is main identifier for a stage.
-  - A-P are normal (standard) stages (ABCD EFGH IJKL [MNOP]).
-  - S1..S8.. are player/source control stages for sources.
+  Indexes are assigned internally as allocating slots in the array.
+  Allocating through the playground with letters is the optimal way (playground takes care of this).
+  Stages have letters assigned to them. This is the main identifier for a stage.
+  - A-P are normal (standard) stages (ABCD EFGH IJKL [MNOP - not yet]).
+  - S1..S8..S? are player/source control stages for sources.
   - LOC, REM, FAD, MIX are reserved for special stage types.
   Access is possible by both (indexes and letters).
   Most methods can recognize both type of reference (see stageId as param name).
   */
 export const createStageManager = root => {
   const {waCtx, beeFx} = root
-  const {newFx, connectArr} = beeFx 
+  const {newFx} = beeFx 
   
   //8#c89 -------- Helpers --------
   
@@ -51,7 +52,7 @@ export const createStageManager = root => {
   const stages = []
   const stageLetterHash = {}
     
-  window.stages = stages //+ debug only
+  window.stages = stages //: debug only
   
   const iterateStages = callback => {
     for (const stage of stages) {
@@ -112,12 +113,11 @@ export const createStageManager = root => {
   
   stageMan.createStage = ({letter, nuIx = stages.length}, params) => {
     const defaultParams = {
-      hasStageMarks: true, //+tmp
       hasEndSpectrum: false,
       hasEndRatio: false,
       hasUi: true,
       isSourceStage: false,
-      sourceStageIx: 0 //: not 0 if sourceStage
+      sourceStageIx: 0 //: not 0 if sourceStage, tmp
     }
     const stageParams = {
       ...defaultParams,
@@ -131,11 +131,15 @@ export const createStageManager = root => {
     endRatio && beeFx.debug.addStage(endRatio, letter + ':')
 
     const output = endRatio || waCtx.createGain()
+    endRatio !== output && beeFx.debug.addFx(output)
+    beeFx.debug.markNode(output, `stages[${nuIx}]-endRatio(${endRatio !== output})`)
+    beeFx.debug.addStage(output, letter + ':output')
+      
     void endRatio?.chain(...getEndRatios()) //: only the other chain elements' stage is needed
     
     const stage = {
       nuIx,
-      ix: nuIx, //+killem all
+      ix: nuIx,
       stageIx,
       letter,
       isStandardStage: letter.length === 1, //: very rudimental
@@ -168,12 +172,13 @@ export const createStageManager = root => {
         const {spectcanv$, levelMeter$} = stage.uiStage
         stage.vis = spectcanv$ && Visualizer
           .createSpectrumVisualizer(stage.analyser, spectcanv$, levelMeter$, nuIx, stage.mayday)
+        root.vis = root.vis || stage.vis //: to have at least one remembered (redresh!)
       }
-      stage.fpo = endRatio && root.ui.rebuildStageEndPanel(stage, endRatio) //+pfuj
+      stage.fpoEndRatio = endRatio && root.ui.rebuildStageEndPanel(stage, endRatio)
     }
   
-    stage.mayday = data => { //: spectrum visualizer will call this if thew sound is BAD
-      stage.deactivate()
+    stage.mayday = data => { //: spectrum visualizer will call this if the sound is BAD
+      stage.deactivate()     //: this is quite lousy protection as visualizers are optional...
       for (const fx of fxArr) {
         void fx.mayday?.(data)
       }
@@ -181,20 +186,19 @@ export const createStageManager = root => {
     }
     
     stage.activate = (on = true) => { //: only the endRatio will be changed!
-      endRatio.activate(on)
-      stage.fpo && root.ui.refreshFxPanelActiveState(stage.fpo) //+ this is bad
-      void stage.vis?.setActive(on) //: just for performance gain
+      void endRatio?.activate(on)     //: so it's not possible to inactivate one without endRatio
+      stage.fpoEndRatio && root.ui.refreshFxPanelActiveState(stage.fpoEndRatio)
+      void stage.vis?.setActive(on)   //: turn it off just for performance gain
     }
     
     stage.deactivate = _ => stage.activate(false)
     
-    stage.decompose = _ => { //: no endRatio!
+    stage.decompose = _ => { //: endRatio/output not affected!
       stage.input.disconnect()
       for (const fx of fxArr) {
         void fx?.disconnect()
       }
     }
-    
     stage.compose = _ => {
       stage.input.connect(fxArr[0] || stage.output)
       if (fxArr[0]) {
@@ -202,12 +206,49 @@ export const createStageManager = root => {
       }
     }
     
+    //8#974 stage global state listeners
+    
+    //: (sourceIx changes should be listened here too - now muting won't change the bpm - bad)
+    
+    const globalStageState = {}   //: store of last emitted values (for late arrivals)
+      
+    stage.onGlobalChange = (prop, value) => { //: event in -> store & check all existing fxs
+      globalStageState[prop] = value
+      if (value) { //: 0 or undef -> no info
+        for (const fx of fxArr) {
+          for (const [propRequest, local] of fx.meta.listeners) {
+            if (propRequest === prop) {
+              fx.setValue(local, value)
+            }
+          }
+        }
+      }
+    }
+    const checkGlobalsForFx = fx => { //: new fx with listeners => check all processed globals
+      for (const [prop, local] of fx.meta.listeners) {
+        if (globalStageState[prop]) {
+          fx.setValue(local, globalStageState[prop])
+        }
+      }
+    }
+    const addFxMeta = (fx,  metaObj) => {
+      fx.meta = fx.meta || {}
+      for (const key in metaObj) {
+        fx.meta[key] = metaObj[key]
+      }  
+    }
+    
+    //8#7a4 Single point of normal Fx creation in playground
+    //8#9c6 (almost, apart from endRatios, Fx internals & bpm in players)
+    
     const changeFxLow = ({ix = fxArr.length, type, params = {}}) => {
       void fxArr[ix]?.deactivate()
       
       fxArr[ix] = newFx(type)
       beeFx.debug.addStage(fxArr[ix], letter + ix)
-      fxArr[ix].addMeta({stageId: letter})
+      addFxMeta(fxArr[ix], {stageId: letter})
+      addFxMeta(fxArr[ix], {listeners: fxArr[ix].exo.listen?.map(lstn => lstn.split(':')) || []})
+      checkGlobalsForFx(fxArr[ix])
       
       if (fxArr[ix]) { //: create ui for the fx if the stage has one
         stage.uiStage && root.ui.rebuildStageFxPanel(stage.ix, ix, fxArr[ix], params)
@@ -227,22 +268,6 @@ export const createStageManager = root => {
     
     stage.saveState = _ => fxArr.map(fx => fx.getFullState())
     
-    /* stage.reset = _ => { //+ should be const reset, not stage.reset to avoid call from outside
-      for (let ix = 0; ix < fxArr.length; ix++) { //: delete all non fixed fxs
-        if (fxArr[ix] && !fxArr[ix].isFixed) {
-          stage.changeFx({ix, type: 'fx_blank'})
-          //fxArr[ix].deactivate()
-          //fxArr[ix] = undef
-        }
-      }
-      while (fxArr[fxArr.length - 1]?.getName() === 'Blank') {
-        const fx = fxArr.pop() //: we need a destroy ui fpo here
-        stage.uiStage && root.ui.destroyStageLastFxPanel(stage.uiStage, fx)
-      } 
-      //:ui.resetStage(stageIx)
-      beeFx.debug.dump('(resetted)')
-    } */
-
     const destroyLastFx = _ => {
       wassert(fxArr.length)
       const fx = fxArr.pop() //: we need a destroy ui fpo here
@@ -265,25 +290,27 @@ export const createStageManager = root => {
         break
       }
     }
-    
+    stage.reset = _ => {
+      while (fxArr.length > 1) {
+        destroyLastFx()
+      }
+    }
+      
     stage.loadState = async fxStates => {
-      //: was: deactivate stage
       stage.decompose()
       destroyLastFxsAfter(fxStates.length)
       
       for (let ix = 0; ix < fxStates.length; ix++) {
         const fxState = fxStates[ix]
-        fxArr[ix]?.isFixed ||
-          void changeFxLow({ix, type: wassert(fxState.fxName)})?.restoreFullState(fxState)
-          stage.uiStage.fxPanelObjArr[ix].isActive = fxArr[ix].isActive
-          root.ui.refreshFxPanelActiveStateByStageIx(nuIx, ix)
-          //+THIS IS BAD.
+        const type = wassert(fxState.fxName)
+        fxArr[ix]?.isFixed || void changeFxLow({ix, type})?.restoreFullState(fxState)
+        stage.uiStage.fxPanelObjArr[ix].isActive = fxArr[ix].isActive
+        root.ui.refreshFxPanelActiveStateByStageIx(nuIx, ix)
       }
       stage.compose()
-      //: was: activate stage
     }
     
-    stage.rebuild = _ => {
+    stage.rebuild = _ => { //: What is this for?
       const state = stage.saveState()
       iterateStages(istage => {
         if (istage !== stage) {
@@ -294,9 +321,8 @@ export const createStageManager = root => {
         
     stage.clone = _ => {
       const state = stage.saveState()
-      console.log('this state will be cloned:', state)
       iterateStandardStages(istage => {
-        if (istage !== stage) {
+        if (istage !== stage) { //: This condition isn't really needed. It must clone to itself too.
           istage.loadState(state)
         }
       })
