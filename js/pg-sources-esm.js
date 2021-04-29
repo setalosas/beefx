@@ -2,13 +2,13 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, brace-style, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib} from './improxy-esm.js'
 
-const {Ø, s_a, yes, no, undef, clamp, nop, isNum, getRnd, getIncArray} = Corelib
+const { undef, getIncArray} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
-const {schedule, adelay, NoW, since, startEndThrottle, post} = Corelib.Tardis
+const {startEndThrottle} = Corelib.Tardis
 const {AudioNode, MediaElementAudioSourceNode} = window
   /*
   Sources management - each Stage in the playground can have different sources.
@@ -24,7 +24,7 @@ const {AudioNode, MediaElementAudioSourceNode} = window
   - A sequencer feeds us with AudioNodes as input (DAN). In this case the sequencer 
     will take care of the sync.
   - We loaded a series of audios (STEMs) as tracks of the same song. This is the case
-    we have to address (this is done in ui-players).
+    we have to address (this is done in ui-players and it's a border-line use case).
     
   Any source mediaElement will be disconnected (we don't want to hear their original sound),
   but also will be immediately connected to a dummy mute AudioNode. The reason for this is that
@@ -34,20 +34,20 @@ const {AudioNode, MediaElementAudioSourceNode} = window
   - Adapter to play / control the different sources.
   - One of the main tasks: generating events on playback. (Can be synced with a remote player.)
   - It's in a separate module, but referred from here. Responsibilities are not quite clear yet.
-  - Any source can have a Player interface (except the direct AudioNodes).
+  - Any source can (will) have a Player interface (except the direct AudioNodes).
   - If a source has a Player interface, it also has a special Player stage (but we call this a
     source stage, sources and players are way too interconnected).
-  - Player/source stage consists of controls like speed, bpmDetector, play, stop, etc.
-  - A Player can be remote (two browser windows side by side). The good news is that this makes lots of issues more complex.
+  - Player/source stage consists of controls like speed, bpmDetector, play, stop, flood, etc.
+  - A Player can be remote (two browser windows side by side). The good news is that this makes lots of issues more complex. So currently this is disabled.
   - Question: all non DAN sources will automatically get a Player interface? (Yes.)
   
   There are many special cases (like a Youtube video in an iframe to which we have audio access 
-  or not (not if it's not on the youtube.com site.) In the latter case there can be a mock audio
-  element replacing it. (This makes testing easier as we don't have to run a Youtube chrome
+  or not) (not if it's not on the youtube.com site). In the latter case there can be a mock audio
+  element replacing it. (This makes testing easier as we don't have to run in the Youtube chrome
   extension every time.)
   
   Sources are displayed in a separate strip on the top, but it's in a separate module (sources-ui).
-  Again, responsibility division between sources and sources-ui is mixed.
+  Again, responsibility division between sources and sources-ui is not clear yet.
   
   Main methods: 
   - changeSource: adds a new source.
@@ -56,21 +56,18 @@ const {AudioNode, MediaElementAudioSourceNode} = window
   Rules of thumb:
   - Any source can be connected to many (or zero) stages.
   - Any stage can have one source only. (This can or cannot be zero, we will see it.)
-  - There can be no sources. Only the dummy (muting) one.
+  - There cannot be no sources for a stage. As a fallback it's muted (connected to the dummy one).
   
   Sources are numbered from 1 to maxSource (from config).
-  There is also a dummy source 0 for muting (this is in development).
-  Starting source indexes for every stage are -1.
-  (Until recently the (now deprecated) primary source had index 0, so we'll facing lots of 
-  bugs of this change :-))
+  There is also a dummy source 0 for muting.
+  Starting source indexes for every stage are -1. (Maybe 0 would be better).
+  (Until recently the (now deprecated) primary source had index 0, hopefully it's cleaned up now.)
   At this point, most of this module is debug check or log.
   */
 
 export const createSources = (playground, root) => {
   const {waCtx, ui, beeFx} = root
-  
-  //+ NOOOOOOOOOO
-  const {iterateStages, iterateStandardStages, getStage, createStage} = playground.stageMan
+  const {iterateStandardStages, getStage, createStage} = playground.stageMan
   
   //8#a48 ------------ Debug primitives ------------
   
@@ -124,7 +121,7 @@ export const createSources = (playground, root) => {
   const {maxSources = 8} = root.config
   const sourceIxArr = getIncArray(1, maxSources)
   
-  const source_interface = {
+  const source_interface = { // eslint-disable-line no-unused-vars
     sourceIx: 0,
     mediaElement: undef,
     sourceNode: undef,
@@ -132,7 +129,7 @@ export const createSources = (playground, root) => {
   }
   const sourceArr = []
   const sources = {
-    autoFloodOnFirst: true,
+    autoFloodOnFirst: true, //: first added source will flood every stage
     sourceArr,
     dbgDump,
     dbgMarkNode,
@@ -148,7 +145,7 @@ export const createSources = (playground, root) => {
   
   sources.getSource = ix => sourceArr[ix]
   
-  sources.getSourceNode = ix => sourceArr[ix]?.sourceNode //: player needs for bpm detection
+  sources.getSourceNode = ix => sourceArr[ix]?.sourceNode //: player needs this for bpm detection
   
   //8#a6a Source stages. Maybe not the final resting place for them.
   
@@ -164,7 +161,8 @@ export const createSources = (playground, root) => {
         stage,
         bpmFx: stage.fxArr[0]
       }
-    } else {sourceStageArr[sourceIx].stage.output.disconnect()
+    } else {
+      sourceStageArr[sourceIx].stage.output.disconnect()
     }
     return sourceStageArr[sourceIx]
   }
@@ -180,13 +178,13 @@ export const createSources = (playground, root) => {
       mediaElement: undef,
       paramExternalSourceNode: undef,  //: not needed any more, just for debug
       sourceNode: waCtx.createGain(),
-      destStageIxArr,   //: saved from previous source in this slot
+      destStageIxArr,                  //: saved from previous source in this slot
       sourceIx
     }
     if (paramExternalSource instanceof AudioNode) {
       newSource.externalSourceNode = paramExternalSource
       newSource.isAudioNode = true
-    } else if (paramExternalSource.node instanceof AudioNode) {
+    } else if (paramExternalSource.node instanceof AudioNode) { //: patashnik-specific, not nice
       newSource.externalSourceNode = paramExternalSource.node
       newSource.isAudioNode = true
     } else {
@@ -209,24 +207,22 @@ export const createSources = (playground, root) => {
     const {stage: sourceStage, bpmFx} = createSourceStage(sourceIx)
     
     if (!newSource.isInvalid) {
-      //newSource.externalSourceNode.connect(newSource.sourceNode)
       newSource.externalSourceNode.connect(sourceStage.input)
       sourceStage.output.connect(newSource.sourceNode)
     }
-    //+ mar eleve a ikntrollt se kell letrehoz\ni ha nincs media, de ez csak ASBN-nel erdekes, future
-    newSource.mediaElement && bpmFx.setValue('controller', ui.getSourceUi(sourceIx)) // newSource.mediaElement)
+    newSource.mediaElement && bpmFx.setValue('controller', ui.getSourceUi(sourceIx))
 
     return sourceArr[sourceIx] = newSource
   }
   
-  //:8#856 --------------- playground extension methods ---------------
+  //8#49e -------------------- Interface -----------------
   
   sources.changeSource = (sourceIx, {audio, video, audioNode, audioBuffer}) => {
     dbgCheckIx(sourceIx)
     
-    const sourceIn = video || audio || audioNode //+temporary
+    const sourceIn = video || audio || audioNode || audioBuffer
     
-    if (!sourceIn) {
+    if (!sourceIn) { //: This is really bad. But never happens.
       debugger
       return wlog(`💦changeSource: no source/mediaElement to connect [${sourceIx}]!`)
     }
@@ -249,13 +245,12 @@ export const createSources = (playground, root) => {
     if (newSource.isMediaElement) {
       if (!sourceIx) { //: local main media, we will listen its state changes
         slog('💦sources calling initlocalmedialisteners')
+        //: This is disabled for now. We don't sync with remote window bee.
         //playground.players.initLocalMediaListeners(newSource.mediaElement)
-        //+ ittt kell a player kontrollokat beapplikalni
-        //: ui.addMediaPlayerControls(sourceIx)
       }
     }
     if (destStageIxArr.length) {
-      ui.autoPlaySource(sourceIx)
+      ui.autoPlaySource(sourceIx) //: There were living connections. Redoing the things they had.
     }
     dbgMarkNode(newSource, {sourceIx, stageIx: 'N/A'}, `chgSrc (re)created`)
     
@@ -275,15 +270,18 @@ export const createSources = (playground, root) => {
     dbgCheckConsistency()
     ui.refreshSourcesUi()
   }
+  
+  //: Flood = connect the source's output into EVERY stage. There's a button for that!
 
-  sources.floodStages = ({sourceIx}) => iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
+  sources.floodStages = ({sourceIx}) => 
+    iterateStandardStages(stage => sources.changeStageSourceIndex(stage.stageIx, sourceIx))
   
   sources.changeStageSourceIndex = (stageId, newSourceIx, {isFirst} = {}) => {
     dbgCheckIx(newSourceIx)
     const stage = getStage(stageId)
-    const {stageIx, sourceIx: oldSourceIx} = stage
+    const {sourceIx: oldSourceIx} = stage
     
-    if (newSourceIx > 0 && !sourceArr[newSourceIx]) { //: no such valid source
+    if (newSourceIx > 0 && !sourceArr[newSourceIx]) {
       return console.warn(`There is no source[${newSourceIx}] for stage ${stageId}`)
     }
     const isAlreadyConnected = !isFirst && oldSourceIx !== -1 //: it should be the same
@@ -294,22 +292,41 @@ export const createSources = (playground, root) => {
       }
       slog(`💦playground.chgStageSrc st: [${stageId}] sourceIx: ${oldSourceIx} -> ${newSourceIx}`)
       
-      //: starting a volatile state until connectSrc
-      disconnectSource(oldSourceIx, stage)
+      disconnectSource(oldSourceIx, stage)//: starting a volatile state until connectSrc
     }
     //: evth is ok now, old (if there was one) has been disconnected, and there IS a new one
     slog(`💦hgStageSrcIx: connecting source ${newSourceIx} to stage ${stageId}`)
-    connectSource(newSourceIx, stage) //: stable again
+    connectSource(newSourceIx, stage) //: state is stable again
     dbgCheckConsistency()
+    sources.stateChanged(oldSourceIx, {reset: true})
+    sources.stateChanged(newSourceIx, {reset: true})
     ui.refreshSourcesUi()
-    playground.stageMan.dump()
+    logSources && playground.stageMan.dump() //: log if trouble comes up
+  }
+  
+  //: Solution: sources stores (bpm, beatTime or RESET state)
+  //: source - stage conn changes -> the data of the new source will be set to the stage
+  //: new media: players calls this and we set sources state to reset
+  //: bpm: player sends bpm data here and we set sources state
+  //: but now we havge 5 layers of storage holding the bpm data :-((((
+  
+  sources.stateChanged = (sourceIx, {reset = false, bpm = 0, beatTime = 0}) => {
+    iterateStandardStages(stage => {
+      if (stage.sourceIx === sourceIx) {
+        slog('MATCHING stages', {sourceIx, stage})
+        stage.onGlobalChange('source.reset', reset)
+        stage.onGlobalChange('source.beatTime', beatTime)
+        stage.onGlobalChange('source.bpm', bpm)
+        slog(`SOURCES CHANGED`, {sourceIx, letter: stage.letter, reset, bpm, beatTime})
+      }
+    })
   }
   
   //:8#2b3 --------------- sources' main methods for connect / disconnect ---------------
   
   const connectSource = (sourceIx, stage) => {
     if (!sourceIx) {
-      dummyInput.connect(stage.input)
+      dummyInput.connect(stage.input) //:  muting
       stage.sourceIx = 0
       return
     }
@@ -328,7 +345,7 @@ export const createSources = (playground, root) => {
   
   const disconnectSource = (sourceIx, stage) => {
     if (!sourceIx) {
-      dummyInput.disconnect(stage.input)
+      dummyInput.disconnect(stage.input) //: was muted
       return
     }
     dbgCheckIx(sourceIx)
@@ -341,7 +358,6 @@ export const createSources = (playground, root) => {
     currSource.destStageIxArr.length || ui.autoStopSource(sourceIx)
     
     slog(`💦➖source[${sourceIx}] disconnected from stage#${stageIx}`, currSource)
-    return currSource.destStageIxArr.length
   }
 
   return sources  
