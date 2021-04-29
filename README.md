@@ -71,7 +71,7 @@ Currently the playground can be used with local audio files, youtube videos, aud
 
 # Installation
 
-This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use this same folder as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements.
+This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use this same folder as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements. It's possible to use this subfolder without the playground parts, at least I use it in a bigger sequencer app as a library.
 
 Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course, but it's dynamic include from Google servers.)
 
