@@ -2,23 +2,20 @@
    object-curly-spacing, no-trailing-spaces, indent, new-cap, block-spacing, comma-spacing,
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
-   no-unused-vars, standard/no-callback-literal, object-curly-newline */
+   standard/no-callback-literal, object-curly-newline */
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, isArr, getRnd, getRndFloat} = Corelib
-const {wassert} = Corelib.Debug
-const {createPerfTimer, startEndThrottle, post} = Corelib.Tardis
-const {round} = Math
+const {createPerfTimer, startEndThrottle} = Corelib.Tardis
 const {fetch} = window
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, newFx, connectArr, getPresetPath} = BeeFX(waCtx)
+  const {registerFxType, connectArr, getPresetPath} = BeeFX(waCtx)
   
-  //const clog = nop
-  const clog = console.log
+  const logOn = false
+  const clog = (...args) => logOn && console.log(...args)
 
-  const convPresets = [
+  const convPresets = [ //: https://www.voxengo.com/impulses/
     ['tuna/impulse_guitar', '1. Default'],
     ['tuna/impulse_rev', '2. Default reverse'],
     ['cw/cardiod-rear-levelled', '3. Cardiod Rear Levelled'],
@@ -93,7 +90,7 @@ onWaapiReady.then(waCtx => {
      onBufferReady(impulse)
    }
   
-  const createConvolverVariation = variation => {
+  const createConvolverVariation = variation => { //8#86c ---- Convolvers (Tuna & Chris Wilson) ----
     const isGenImp = variation === 'genimpulse'
     
     const convolverFx = {
@@ -178,58 +175,6 @@ onWaapiReady.then(waCtx => {
     return convolverFx
   }
   
-  //8#289 ----- Convolver from sample (Tuna) -----
   registerFxType('fx_convolver', createConvolverVariation('classic'))
-  
-  //8#298 --------- Convolver with generated impulse (CW) ----------
   registerFxType('fx_convolverGen', createConvolverVariation('genimpulse'))
-  
-  //+No use of this, just a watered down dummy convolver wrapper
-  
-  const reverbFx = {//8#27a --------- Reverb (CW) ----------
-    def: {
-      buffer: {defVal: convPresets[2][0], type: 'strings', subType: convPresets}
-    },
-    name: 'Obs.Reverb (DEPRECATED)',
-    fxNamesDb: {convPresets}
-  }
-  
-  reverbFx.setValue = (fx, key, value, {int} = fx) => ({
-    buffer: _ => loadImpRespFromSample(value, int)
-  }[key])
-  
-  reverbFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    int.onBufferReady = buffer => {
-      int.reverb.buffer = buffer
-    }
-    
-    int.reverb = waCtx.createConvolver()
-    connectArr(fx.start, int.reverb, fx.output)
-  }
-  
-  registerFxType('fx_reverb', reverbFx)
-  
-  const cabinetFx = {  //8#2a8 ----- Cabinet (Tuna) -----
-    def: {
-      buffer: {defVal: convPresets[0][0], type: 'strings', subType: convPresets},
-      makeupGain: {defVal: 1, min: 0, max: 20}
-    },
-    name: 'Obs.Cabinet (DEPRECATED)'
-  }
-  cabinetFx.setValue = (fx, key, value, {int} = fx) => ({
-    makeupGain: _ => fx.setAt('makeupNode', 'gain', value),
-    buffer: _ => int.convolver.setValue('buffer', value)
-  }[key])
-  
-  cabinetFx.construct = (fx, {initial}, {int} = fx) => {
-    int.convolver = newFx('fx_convolver', {initial: {
-      buffer: initial.buffer,
-      dryLevel: 0,
-      wetLevel: 1
-    }})
-    int.makeupNode = waCtx.createGain()
-
-    connectArr(fx.start, int.convolver, int.makeupNode, fx.output)
-  }
-  registerFxType('fx_cabinet', cabinetFx)
 })
