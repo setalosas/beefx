@@ -855,21 +855,7 @@ body::after {
   position: relative;
   left: 0;
   top: 0;
-}
-.source-strip .source-frame .src-ctrl .cc-play {
-  color: rgba(255, 255, 255, 0.7);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(120deg) saturate(2);
-}
-.source-strip .source-frame .src-ctrl .cc-stop {
-  color: rgba(255, 255, 255, 0.7);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(220deg) saturate(2);
-}
-.source-strip .source-frame .src-ctrl .cc-mute {
-  color: rgba(255, 255, 255, 0.7);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(0deg) saturate(2);
+  margin-top: -33px;
 }
 .source-strip .source-frame .src-ctrl .src-above {
   position: relative;
@@ -880,6 +866,30 @@ body::after {
   position: relative;
   width: 100%;
   height: 22px;
+}
+.source-strip .source-frame .src-ctrl .bee-cmd {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.cc-play {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 136, 136, 0.4);
+  filter: hue-rotate(120deg) saturate(2);
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.cc-stop {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 136, 136, 0.4);
+  filter: hue-rotate(220deg) saturate(2);
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.cc-mute {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 136, 136, 0.4);
+  filter: hue-rotate(0deg) saturate(2);
+}
+.source-strip .source-frame .src-ctrl .bee-cmd[state=on] {
+  color: #ffffff;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.75), 0 0 3px rgba(255, 255, 255, 0.75), 0 0 6px rgba(255, 255, 255, 0.75);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd[state=calc] {
   color: #000000;
@@ -999,6 +1009,11 @@ audio::-webkit-media-controls-panel {
   display: inline-block;
   color: #ccc;
   padding: 3px 4px 0 0;
+}
+.input-selector .input-cmd.bee-cmd {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 .input-selector .input-cmd.bee-cmd[state="active"] {
   color: #000000;

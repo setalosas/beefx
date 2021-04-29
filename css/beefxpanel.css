@@ -221,6 +221,28 @@
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.5), 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.5);
   border-color: rgba(0, 0, 0, 0.5);
 }
+body:not(.invertcmd) .bee-cmd {
+  color: rgba(0, 0, 0, 0.75);
+  background-color: rgba(255, 255, 255, 0.25);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 0 3px rgba(0, 0, 0, 0.2), 0 0 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 1px 1px 1px 0px rgba(0, 0, 0, 0.5), -1px -1px 1px 0px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+body:not(.invertcmd) .bee-cmd[state="on"] {
+  color: rgba(0, 0, 0, 0.75);
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.35), 0 0 3px rgba(0, 0, 0, 0.35), 0 0 6px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.65);
+}
+body:not(.invertcmd) .bee-cmd[state="active"] {
+  color: #000000;
+  text-shadow: 0 0 1px rgba(0, 0, 0, 0.5), 0 0 3px rgba(0, 0, 0, 0.5), 0 0 6px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+}
+body:not(.invertcmd) .bee-cmd[state="alert"] {
+  color: #c00;
+  text-shadow: 0 0 1px rgba(204, 0, 0, 0.55), 0 0 3px rgba(204, 0, 0, 0.55), 0 0 6px rgba(204, 0, 0, 0.55);
+  background: #ff8;
+}
 .bfx-rama {
   position: relative;
   left: 0;
