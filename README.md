@@ -95,11 +95,11 @@ The main goal of this project is not to find out how to compute the coefficients
 * Oskar Eriksson (Theodeus), the creator of [Tuna](https://github.com/Theodeus/tuna), from whom I borrowed many ideas and algorithms.
 * Chris Wilson [cwilso](https://github.com/cwilso) (Google), who created countless Web Audio demos and examples.
 * Raymond Toy (rtoy) ([webaudio-hacks](https://github.com/rtoy/webaudio-hacks))
-* [mohayonao](https://github.com/mohayonao) - [wave-tables](https://github.com/mohayonao/wave-tables)
+* [mohayonao](https://github.com/mohayonao) - [wave-tables](https://github.com/mohayonao/wave-tables) collection
 * José M. Pérez ([JMPerez](https://github.com/JMPerez)) original implementation of the [BPM detection](https://github.com/JMPerez/beats-audio-api)
   * [Detecting tempo of a song using browser's Audio API](https://jmperezperez.com/bpm-detection-javascript/)   
   * [Beat Detection Using JavaScript and the Web Audio API by Joe Sullivan](http://joesul.li/van/beat-detection-using-web-audio/)
 * [The Scientist and Engineer's Guide to Digital Signal Processing By Steven W. Smith, Ph.D.](http://www.dspguide.com/) - Chebyshev-filter coefficient algorithm
 * [khoin](https://github.com/khoin) - implementation of Jon Dattorro's reverb algorithm
-* Reverb impulse responses are from [Voxengo](https://www.voxengo.com/impulses/)
+* Reverb impulse response samples are from [Voxengo](https://www.voxengo.com/impulses/)'s free collection 
 * [BBC](https://github.com/bbc/webaudio.prototyping.bbc.co.uk/blob/master/src/ring-modulator.coffee) - Ring modulator
