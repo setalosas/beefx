@@ -10,6 +10,14 @@ const {createPerfTimer, startEndThrottle} = Corelib.Tardis
 const {wassert, weject} = Corelib.Debug
 const {max, min, round, pow, log: mathlog, log2, floor, LN2, LN10, abs} = Math
 
+//: graphBase draws the commonly used (ie used by more than one fx) graphs.
+//: Lots of custom graphs are rendered in the fx modules.
+//: (It's a tough question where is the place of fx graph rendering.)
+//: Other fxs use graphBase, but still add some extra drawings onto the graph (before or after).
+//: Obviously this is not optimal, there should bee(!) a different rendering module
+//: for each every graph type. But graphBase was born when we had only one graph 
+//: and didn't plan more. -> Later
+
 export const createGraphBase = waCtx => {
   const graphBase = {}
     
@@ -23,10 +31,8 @@ export const createGraphBase = waCtx => {
     const halfWidth = width / 2
     const halfHeight = height / 2
     const cc = canvas$.getContext('2d')
-    //const canvasHeight = ~~window.getComputedStyle(canvas$, null).height
-    //const canvasWidth = ~~window.getComputedStyle(canvas$, null).width
 
-    const {     //: these defaults are overrideable(?) from graphDesc
+    const {     //: these defaults can be overridden from graphDesc
       graphType,
       renderSet = {doClear: true, doGrid: true, doGraph: true},
       customRenderer = {},
@@ -61,7 +67,6 @@ export const createGraphBase = waCtx => {
     const realFreqScaleX = realFreqWidth / width
     
     const scaleAndRoundFreqX = x => round(freqMarginLeft + x * realFreqScaleX)
-    //const getXFromFreQ = freq => 
     
     const dbToY = db => height - (db - minDb) * pixPerDbY
     const dbToX = db => (db - minDb) * pixPerDbX
@@ -271,6 +276,7 @@ export const createGraphBase = waCtx => {
           drawPhaseResponse(freq)
           drawMagResponse(freq)
         }
+        void customRenderer.post?.({fx, cc, ccext, freq})
       }
       return {render}    
     }
@@ -372,7 +378,7 @@ export const createGraphBase = waCtx => {
         const compx2 = maxDb
         const compWi = compx2 - compx1
         const compy1 = threshold + makeupGain
-        const compHi = compWi / ratio // inkabb minusz szerintem
+        const compHi = compWi / ratio
         
         const kneeRight = min(maxDb + 3, compx1 + knee) - compx1
         const kneex1 = compx1 - knee

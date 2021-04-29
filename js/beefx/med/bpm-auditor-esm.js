@@ -49,12 +49,19 @@ export const createBPMAuditor = waCtx => { //: allegro
     dis.isAnalysing = false
   }
   
+  //: There are two ways of using the bpmAuditor:
+  //: 1. Calling start with a source node, wait x secs and then call (and await) stop.
+  //: 2. Calling (awaiting) detect directly without start/stop if we have a finite length sample.
+  //: We use the 2. method currently (we started with 1, but 2 is better for us now).
+  //: We keep the method 2. functionality, maybe it will be useful in a future feature.
+  //: Depending on the detecting algo complexities and parameteres (WIP) detection is
+  //: around 100-200 ms.
+  
   auditor.start = source => {
     dis.source = wassert(source)
     connectAuditor()
     dis.isAnalysing = true
   }
-  
   auditor.stop = async _ => {
     const bpm = await auditor.detect(dis.audioBuffer)
     disconnectAuditor()
@@ -70,7 +77,7 @@ export const createBPMAuditor = waCtx => { //: allegro
       console.warn(err)
       bpmj.error = err
     }
-    console.log(`BPM details:`, timer.sum().summary, bpmj)
+    console.log(`BPM details:`, timer.sum().summary, bpmj) //: Keep this to track the elapsed time.
     return bpmj
   }
   

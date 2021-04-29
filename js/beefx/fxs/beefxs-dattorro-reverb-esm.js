@@ -9,7 +9,7 @@ import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 const {AudioWorkletNode} = window
 
 onWaapiReady.then(async waCtx => {
-  const {registerFxType, connectArr, getJsPath} = BeeFX(waCtx)
+  const {registerFxType, connectArr, getJsPath, nowa} = BeeFX(waCtx)
   
   const presets = {
     preDelay: [1525, 0, 0, 0],
@@ -87,7 +87,7 @@ onWaapiReady.then(async waCtx => {
     fx.refreshParams = _ => {
       for (const key in exo.def) {
         key !== 'preset' && 
-          getPar(key).linearRampToValueAtTime(atm[key], waCtx.currentTime + 0.190)
+          getPar(key).linearRampToValueAtTime(atm[key], nowa(.19))
       }
     }
   }
