@@ -7,7 +7,7 @@
 import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType} = BeeFX(waCtx)
+  const {connectArr, registerFxType, nowa} = BeeFX(waCtx)
   
   const blankFx = { //8#bbb ------- blank (there won't be any simpler Fx than this) -------
     def: {}
@@ -18,12 +18,12 @@ onWaapiReady.then(waCtx => {
   
   const gainFx = { //8#a00 ------- WAU gain -------
     def: {
-      gain: {defVal: 1, min: 0, max: 4, name: 'gain'}
+      gain: {defVal: 1, min: 0.01, max: 9, name: 'gain', subType: 'exp'}
     },
     midi: {pars: ['gain']}
   }
   gainFx.setValue = (fx, key, value) => ({
-    gain: _ => fx.setAt('gain', 'gain', value)
+    gain: _ => fx.setAt('gain', 'gain', Math.pow((value - gainFx.def.gain.min) / .9, .6))
   }[key])
   
   gainFx.construct = (fx, pars, {int} = fx) => {
@@ -41,7 +41,7 @@ onWaapiReady.then(waCtx => {
   delayWAFx.setValue = (fx, key, value) => ({
     //: This is unsolved issue: what is the best way to set the delay? (it clicks like H).
     //delayTime: _ => fx.setDelayTime('delay', value)
-    delayTime: _ => fx.int.delay.delayTime.linearRampToValueAtTime(value, waCtx.currentTime, .05)
+    delayTime: _ => fx.int.delay.delayTime.linearRampToValueAtTime(value, nowa(), .05)
   }[key])
 
   delayWAFx.construct = (fx, pars, {int} = fx) => {
