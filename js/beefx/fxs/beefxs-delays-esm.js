@@ -15,9 +15,9 @@ onWaapiReady.then(waCtx => {
   const beatDelayFx = { //8#96e ------- Perfect beat delay -------
     def: {
       bpmLabel: {defVal: 'BPM:#label', type: 'box', width: 26},
-      bpm: {defVal: 161, min: 40, max: 240, skipUi: true},
+      bpm: {defVal: 999, min: 40, max: 240, skipUi: true},
       bpmDisp: {defVal: '50#set', type: 'box', width: 24},
-      beatTime: {defVal: .3715, min: .25, max: 2, skipUi: true},
+      beatTime: {defVal: .060 /*3715,*/, min: .25, max: 2, skipUi: true},
       beatTimeDisp: {defVal: '500ms#set', type: 'box', width: 40},
       delayLabel: {defVal: 'Delay:#label', type: 'box', width: 28},
       delayDisp: {defVal: '0 beats / 0ms#set', type: 'box', width: 67},
@@ -26,12 +26,19 @@ onWaapiReady.then(waCtx => {
       incDelay: {defVal: 'on', type: 'cmd', name: '+1 beat'},
       halfBeat: {defVal: 'off.ledoff', type: 'cmd', subType: 'led', name: '/2 beat'},
       delayBeats: {defVal: 0, min: 0, max: 16, subType: 'int', skipUi: true},
-      delayTime: {defVal: 0, min: 0, max: 16, unit: 's', readOnly: true, skipUi: true}
+      delayTime: {defVal: 0, min: 0, max: 16, unit: 's', readOnly: true, skipUi: true},
+      reset: {skipUi: true}
     },
     name: 'Perfect Beat Delay',
-    listen: ['source.beatTime:beatTime', 'source.bpm:bpm']
+    listen: ['source.beatTime:beatTime', 'source.bpm:bpm', 'source.reset:reset']
   }
-  beatDelayFx.setValue = (fx, key, value, {atm, int} = fx) => ({
+  beatDelayFx.setValue = (fx, key, value, {atm, int, exo} = fx) => ({
+    reset: _ => {
+      if (value) {
+        fx.setValue('bpm', exo.def.bpm.defVal)
+        fx.setValue('beatTime', exo.def.beatTime.defVal)
+      }
+    },
     bpmLabel: nop,
     bpm: _ => fx.recalc(),
     bpmDisp: nop,
@@ -60,8 +67,7 @@ onWaapiReady.then(waCtx => {
     
     fx.recalc = _ => { //: in: beatTime, bpm, delayBeats, out: beatTimeDisp, bpmDisp, delayTime
       const beatTimeStr = round(atm.beatTime * 1000) + 'ms'
-      const mod1 = atm.bpm === 161 ? '#def' : '#set'
-      const mod2 = atm.bpm === 161 ? '#def' : '#mod'
+      const [mod1, mod2] = atm.bpm === 999 ? ['#def', '#def'] : ['#set', '#mod']
       const halfer =  int.half ? 2 : 1
       fx.setValue('beatTimeDisp', beatTimeStr + mod1)
       fx.setValue('bpmDisp', atm.bpm + mod1)
