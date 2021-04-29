@@ -17,20 +17,12 @@ export const createUI = (root, exroot) => {
   
   const earlyCall = doStop => _ => console.warn('Too early call to ui.', doStop && brexru())
   
-  root.flags = {  //: flags must/will be moved into playground or into a global state module
+  root.flags = {  //: flags should be moved into the state module?
     autoplay: false,
     autostop: false,
-    syncSources: false
-    
-    /* isGrabOn: false, //: this list of flags is not valid anymore, have to refresh it
-    isListOn: false, //: flags are like 'autostop' now, not isAutostopOn etc.
-    isStageSlotsOn: false,
-    isMixerOn: false,
-    isAuxOn: false,
-    isProjOn: false,
-    isProjListOn: false,
-    isSyncOn: false,
-    isRedreshOn: false //: redresh=reduced refesh, I'm apologizing. */
+    syncSources: false, //: synced play/stop/speed of all sources
+    redresh: false      //: redresh=reduced refesh, I'm apologizing. 
+    //: ..too many more to enumerate here, they will be added anyway with the toggle defs.
   }
   const ui = {
     root,
@@ -41,14 +33,14 @@ export const createUI = (root, exroot) => {
     cmds: {}
   }
   
-  const dbgDumpFlags = msg => {
+  const dbgDumpFlags = msg => { //: tmp
     console.log(msg)
     console.table(root.flags)
   }
   
   //8#79c Utilities, primitives, config
   
-  ui.configNames = namesDb => ui.namesDb = namesDb   //: only used for select fx names now
+  ui.configNames = namesDb => ui.namesDb = namesDb  //: only used for select fx names now
 
   ui.setHost = host => (key, params) => {
     const node$ = host[key + '$']
@@ -109,20 +101,22 @@ export const createUI = (root, exroot) => {
   ui.start = async playground => {
     ui.pg = playground
     
-    Im.StagesUi.extendUi(ui)
+    Im.StagesUi.extendUi(ui) //: ui subs won't be stand-alone objects, ui obj will be extended
     Im.FxUi.extendUi(ui)
     Im.PlayersUi.extendUi(ui)
     await Im.SourcesUi.extendUi(ui)
     Im.StatesUi.extendUi(ui)
     
     populateMenus()
-    ui.setFlag('autoplay', true)
+    ui.setFlag('autoplay', true) //: auto project load (if any) will rewrite these as it's later
     ui.setFlag('autostop', true)
   }
   
   ui.finalize = _ => {
     ui.finalizeSources() //: createInputDispatchers (->stages)
   }
+  
+  //8#94f Ui primitives
 
   const createInput = baseClass => ({cc, onInput = nop} = {}) => {
     const node$ = leaf$('input', {
@@ -164,6 +158,7 @@ export const createUI = (root, exroot) => {
     isToggle && toggle(root.flags[name] = on)
     return ui[nodeKey] = node$
   }
+  
   ui.setFlag = (name, on) => ui.toggleCmds[name]
     ? ui.toggleCmds[name].toggle(on)
     : root.flags[name] = on //: kind of fallback for flags without toggleCmd (or @load before ui)
@@ -198,6 +193,7 @@ export const createUI = (root, exroot) => {
       togg('stageSlots', 'Stage slots...', {link: 'stageSlotStrip', onChg: ui.onStageSlotsToggled}),
       togg('redresh', 'Reduce refresh', {onChg: ui.toggleRefresh}),
       togg('nospectrum', 'No bottom spectrums (reload!)', {onChg: ui.toggleRefresh}),
+      togg('invcmd', 'Invert commands)', {onChg: on => setClass$(body, on, 'invertcmd')}),
       cmd('noblanks', 'Remove bottom blanks', {click: pg.destroyLastBlanks}),
       cmd('dump', 'Dump to console', {cc: 'rt', click: _ => pg.beeFx.debug.dump()})
     ])
