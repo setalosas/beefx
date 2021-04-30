@@ -3,12 +3,12 @@
    handle-callback-err, no-return-assign, camelcase, yoda, object-property-newline,
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    standard/no-callback-literal, object-curly-newline */
-/* eslint-dissable no-unused-vars */   
+/* eslint-disable no-unused-vars */   
    
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {undef, hashOfString, getRndDig} = Corelib
-const {wassert} = Corelib.Debug
+const {undef, hashOfString, getRndDig, no} = Corelib
+const {wassert, weject, wejectNaN} = Corelib.Debug
 const {post, startEndThrottle, schedule, adelay} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, set$, q$} = DOMplusUltra
@@ -21,7 +21,10 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
   const {sources, stageMan, beeFx} = pg // eslint-disable-line no-unused-vars
   
   const logOn = false
-  const clog = (...args) => logOn && console.log(...args) // eslint-disable-line no-unused-vars
+  const logScrapingOn = false
+  const logMediaStateOn = false
+  const clog = (...args) => logOn && console.log(...args) // eslint-disable-line
+  const slog = (...args) => logScrapingOn && console.log(...args) // eslint-disable-line
   
   //8#49cScraping the youtube DOM for video data
   /* 
@@ -50,19 +53,19 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
 
     if (videoInMiniplayer) {
       real.videoTitle = h1Mini
-      //clog(`🟦 ${real.videoTitle = h1Mini}`)
+      slog(`🟦 ${real.videoTitle = h1Mini}`)
       const wcEndPoints = [...miniplayer.querySelectorAll('a#wc-endpoint')]
       for (const wcEndPoint of wcEndPoints) {
         const videoId = wcEndPoint.getAttribute('href')?.split('?v=')[1]?.substr(0, 11)
         const title = wcEndPoint.querySelector('#video-title')?.getAttribute('title')
         title === h1Mini && (real.videoId = videoId)
       }
-       //clog(`🔷${real.videoId}`)
+       slog(`🔷${real.videoId}`)
     } else {
       real.videoTitle = h1Big
       real.videoId = q$('.ytd-page-manager[video-id]')?.getAttribute('video-id')
-      //clog(`🟥${real.videoTitle}`)
-      //clog(`🔶 ${real.videoId}`)
+      slog(`🟥${real.videoTitle}`)
+      slog(`🔶 ${real.videoId}`)
     }
     return real
   }
@@ -174,7 +177,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
         return console.error(`getMediaElement: dead observer?`, observer)
       }
       if (sourceUi.iframe$) {
-        getYtPlayerState() //: no need to store in currState, there is always a video or audio 
+        getYtPlayerState() //: no need to store in currState, the video / audio will overwrite it
       }
       if (sourceUi.video$) {
         getVideoElementState()
@@ -195,7 +198,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       if (currState.videoId?.length !== 11) {
         currState.videoId = iframeState?.videoId
       }
-      currState.title = currState.title || iframeState.title
+      currState.title = currState.title || iframeState?.title || ''
       if (Number.isNaN(currState.duration)) {
         currState.duration = iframeState?.duration
       }
@@ -206,7 +209,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       const hasTimeChanged = observer.lastState.currentTime !== observer.currState.currentTime
       const hasAllChanged = observer.mediaStateHashReduced !== stateHashReduced
       if (hasTimeChanged || hasAllChanged) {
-        if (hasAllChanged) {
+        if (logMediaStateOn && hasAllChanged) {
           const tab = []
           observer.currState && tab.push(observer.currState)
           observer.audioState && tab.push(observer.audioState)
@@ -214,27 +217,21 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
           observer.iframeState && tab.push(observer.iframeState)
           console.table(tab)
         }
-        //hasAllChanged && console.log(`OBSERVER: ALL CHANGED`)
         hasAllChanged && sourceUi.onStateChanged()
         hasTimeChanged && sourceUi.onTimeChanged()
         observer.mediaStateHashReduced = stateHashReduced
         observer.lastState = observer.currState
-        /*if (playground.isSlave) {
-          sendGeneral('state', state)
-          console.log(`🚀state sent from slave`)
-        }
-        if (root.onYoutube) { //: cue pont!
-          const canvas = ui.videoGrabCanvas$
-          const ctx = canvas.getContext('2d')
-          const video = mediaElement
-  
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        }*/
+        
+        //if (playground.isSlave) { //: multi-window sync, disabled
+          //sendGeneral('state', state)
+          //console.log(`🚀state sent from slave`)
+        //
       }
-      logOn && logState('last')
-      
-      //const fps = fp === observer.fp ? `${fp}✔️` : `${fp}❌ (${observer.fp})`
-      //console.log(`------${sourceUi.sourceIx}--${fps}----${observer.lastState.title}`)
+      if (logOn) {
+        logState('last')
+        const fps = fp === observer.fp ? `${fp}✔️` : `${fp}❌ (${observer.fp})`
+        clog(`------${sourceUi.sourceIx}--${fps}----${observer.lastState.title}`)
+      }
     }
     const lazyGetMediaElementState = startEndThrottle(getMediaElementState, observerTickPeriod)
     
@@ -273,34 +270,34 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
   }
   
   ui.recreateSourcePlayer = sourceUi => {
-    void sourceUi.mediaObserver?.destroy()
-      
-    const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
+    const {sourceIx} = sourceUi
+    const source = sources.getSource(sourceIx)
+    sourceUi.bpmFx = sources.getSourceStage(sourceIx).bpmFx
     
-    sourceUi.master = undef
-    sourceUi.slave = undef
-    sourceUi.beatTime = .5
-    sourceUi.bpm = 120
-    sourceUi.bpmFx = sources.getSourceStage(sourceUi.sourceIx).bpmFx
-    wassert(sourceUi.bpmFx)
-    sourceUi.bpmFx.setValue('pitch', 100)
-    sourceUi.bpmFx.setValue('bpmModifier', 0)
-    
-    sourceUi.sourceChanged = (reset = false) => {
-      if (reset) {
-        sources.stateChanged(sourceUi.sourceIx, {reset: true})
-        sourceUi.bpmFx.setValue('bpmOriginal', 120)
-        //stage.onGlobalChange('source.reset', 0)
-      } else {
-        sources.stateChanged(sourceUi.sourceIx, {bpm: sourceUi.bpm, beatTime: sourceUi.beatTime})
-        sourceUi.bpmFx.setValue('bpmOriginal', sourceUi.bpm + '#set')
-        //stage.onGlobalChange('source.beatTime', sourceUi.beatTime)
-        //stage.onGlobalChange('source.bpm', sourceUi.bpm)
+    //: Build/destroy helpers for recall (source change)
+
+    const createBpmDetector = _ => {
+      weject(sourceUi.bpmDetector)
+      sourceUi.bpmInput = sources.getSourceNode(sourceIx)
+      sourceUi.bpmDetector = beeFx.newFx('fx_bpm')
+      sourceUi.bpmInput.connect(sourceUi.bpmDetector)
+    }
+    const destroyBpmDetector = _ => {
+      if (sourceUi.bpmDetector) {
+        sourceUi.bpmDetector.deactivate()
+        delete sourceUi.bpmDetector
+        sourceUi.inBpm = false
       }
     }
-    sourceUi.sourceChanged(true) //: call at new media load
+    destroyBpmDetector()
+
+    void sourceUi.mediaObserver?.destroy()
+    const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
     
     const getState = _ => observer.getState()
+
+    sourceUi.master = undef //: sync - not used
+    sourceUi.slave = undef
     
     //8#3ae Low level (unsynced) control methods
     
@@ -348,7 +345,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
     sourceUi.pause = _ => syncedControl('_pause')
     sourceUi.play = _ => syncedControl('_play')
     sourceUi.seek = sec => syncedControl('_seek', sec)
-    sourceUi.speed = pbr => syncedControl('_setPlaybackRate', pbr)
+    sourceUi.speed = pbr => syncedControl('_setPlaybackRate', wejectNaN(pbr))
     sourceUi.seekRel = sec => syncedControl('_seekRel', sec)
     sourceUi.toggleMute = _ => syncedControl('_toggleMute')
     
@@ -361,10 +358,13 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
     }
     
     sourceUi.doBpm = async (calcSec = 15) => {
-      const state = calcSec === 2 ? 'calcx' : 'calc'
-      set$(sourceUi.bpm1$, {attr: {state}})
-      set$(sourceUi.bpm2$, {attr: {state}})
-        sourceUi.bpmFx.setValue('pitch', 100)
+      if (sourceUi.inBpm) {
+        return
+      }
+      sourceUi.inBpm = true
+      const nodeKey = 'bpm' + calcSec
+      setUi(nodeKey, {attr: {state: 'calc'}})
+      sourceUi.bpmFx.setValue('pitch', 100)  //: set standard speed for detection
       calcSec = [0, 10, 20][calcSec] || calcSec
       if (getState().paused) {
         const sec = (getState().duration || 100) / 3
@@ -372,24 +372,20 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
         sourceUi.play()
         await adelay(100)
       }
-      const input = sources.getSourceNode(sourceUi.sourceIx)
-      const bpmDetector = beeFx.newFx('fx_bpm')
-      input.connect(bpmDetector)
-      bpmDetector.startPrivilegedBpmRequest(calcSec)
+      createBpmDetector()
+      sourceUi.bpmDetector.startPrivilegedBpmRequest(calcSec)
         .then(bpm => {
-          sourceUi.bpm = bpm
-          sourceUi.beatTime = 60 / bpm
-          sourceUi.sourceChanged()
-          setUi('bpmX', {attr: {state: 'on'}})
+          sources.bpmInChanged(sourceIx, bpm)
+          setUi(nodeKey, {css: {__bt: 30 / bpm + 's'}})
+          setUi('bpmX', {text: 'syncBPM', attr: {state: 'on'}}) //: syncBpm
         })
         .catch(msg => {
           console.warn(`Player BPM detection failed:`, msg)
-          setUi('bpm', {text: '-Error-', attr: {state: 'err'}})
+          setUi('bpmX', {text: '-Error-', attr: {state: 'err'}})
         })
         .finally(_ => {
-          input.disconnect(bpmDetector)
-          set$(sourceUi.bpm1$, {attr: {state: ''}})
-          set$(sourceUi.bpm2$, {attr: {state: ''}})
+          destroyBpmDetector()
+          setUi(nodeKey, {attr: {state: 'done'}})
         })
     }
     sourceUi.syncBpm = _ => {
@@ -430,7 +426,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
         
       const absSeekS = sec => _ => sourceUi.seek(sec)
       const relSeekS = sec => _ => sourceUi.seekRel(sec)
-      const relSeekB = bt => _ => sourceUi.beatTime && sourceUi.seekRel(bt * sourceUi.beatTime)  
+      const relSeekB = bt => _ => source.beatTimeIn && sourceUi.seekRel(bt * source.beatTimeIn)  
           
       set$(sourceUi.ctrl$, {html: ``}, [
         sourceUi.navNoneed$ = div$({class: 'src-above'}, [
@@ -445,13 +441,16 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
           div$({class: 'bee-cmd n-p30s', text: '+30s', click: relSeekS(30)})
         ]),
         div$({class: 'src-navtop'}, [
-          sourceUi.bpm1$ = div$({class: 'bee-cmd', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
-          sourceUi.bpm2$ = div$({class: 'bee-cmd', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
+          sourceUi.bpm1$ = 
+            div$({class: 'bee-cmd bpm-cmd bpm1', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
+          sourceUi.bpm2$ = 
+            div$({class: 'bee-cmd bpm-cmd bpm2', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
           sourceUi.bpmX$ = div$({class: 'bee-cmd', text: 'syncBPM', click: sourceUi.syncBpm}),
           sourceUi.play$ = div$({class: 'bee-cmd cc-play', text: 'Play', click: sourceUi.play}),
           sourceUi.stop$ = div$({class: 'bee-cmd cc-stop', text: 'Stop', click: sourceUi.stop}),
-          div$({class: 'bee-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)}),
-          sourceUi.muted$ = div$({class: 'bee-cmd cc-mute', text: 'Mute', click: sourceUi.toggleMute})
+          sourceUi.muted$ = 
+            div$({class: 'bee-cmd cc-mute', text: 'Mute', click: sourceUi.toggleMute}),
+          div$({class: 'bee-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
         ]),
         sourceUi.thumb$ = div$({class: 'nav-thumb'}, [
           sourceUi.dragBar$ = div$({class: 'drag-bar', on: {mousemove: dragBar, click: dragBar}}, [
