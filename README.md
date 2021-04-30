@@ -6,7 +6,7 @@ beeFX is a collection of filters, audio effects, visualisers and other fun stuff
 
 # The components of beeFX
 
-The original goal was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
+The original goal of this project was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
 
 Although many parts of beeFX are implemented (and working), the project itself is in development phase. Thus the final architecture can change, but here are the components of the current concept:
 
@@ -18,9 +18,11 @@ There are a few solutions which implements filters and effects as standardized e
 
 So the most important feature goal of beeFX was the easy extensibility, new effects should be added easily as separate modules, using the common architecture of the library. Of course similar filters or variations can be grouped into one module.
 
-Currently the beeFX library has over 60 effects or other Web Audio gadgets. These effects - at least the algorithm of them - are from various sources, but they were rewritten to fit the beeFX architecture. Many effects are in test phase, as there are different implementations for each filter, I tried a few variations and made a lot of experimental ones. (It's quite easy to write bad effects. However my goal is to make an audio library, not getting a PhD in DSP.) This collection must be cut down to a more standard set for a release, but at this moment this set is not defined yet. Also have to find out how to separate the different parts - like visualizations from effects, UIs from the core. Currently (almost) all effects or other audio components can be used in headless mode (just managing them from a program without UI) except of course the visualisation things for example.
+Currently the beeFX library has over 60 effects or other Web Audio gadgets. These effects - at least the algorithm of them - are from various sources, but they were rewritten to fit the beeFX architecture (and also into ES6 Javascript from various dialects / standards / languages). Many effects are in test phase, as there are different implementations for each filter, I tried a few variations and made a lot of experimental ones. (It's quite easy to write bad effects. However my goal is to make an audio library, not getting a PhD in DSP.) This collection must be cut down to a more standard set for a release, but at this moment this set is not defined yet (and I still love experimenting with the filter variations).
 
-The current goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
+Also, this is a work in progress, have to find out yet a few things. The most important issue is the separation of the different parts - visualizations from effects, UIs from the core. The project concept changed a lot since the original idea was born. Currently (almost) all effects or other audio components can be used in headless mode (just managing them from a program without UI) except of course things like visualisations. The main topic of interest is whether the infrastructural parts (like source or stage handling) should be included in beeFx or it's better to make a stand-alone layer from them.
+
+For the very short term the goal here is to make a core effect library and a separate extension library for the not-so-standard elements.
 
 So the separation is something like:
 
@@ -40,6 +42,8 @@ Extensions:
 * Oscilloscope
 * Spectrum
 * etc.
+
+Everything in the Core must work in headless mode, the Extension part contains components which can or cannot be used without Ui.
 
 In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control beeFX filters, it's basically works the same way as for every similar library.
 
@@ -65,13 +69,13 @@ So as a very simple solution to that problem it can run on the youtube.com domai
 
 There is a normal mode when you click on the bee in the bottom left corner and a full takeover mode if you click with the Shift key held down. This is useful because it kills the complete youtube page (it needs quite a lot resources).
 
-So currently the playground can be used with local audio files, youtube videos and also with STEMs (parallel tracks for a song). For testing there is also a mock mode when it's possible to use Youtube videos if we have locally the audio files for them - there are many online downloading sites to get this files. 
+Currently the playground can be used with local audio files, youtube videos, audio file links and also with STEMs (parallel tracks for a song). For testing there is also a mock mode when it's possible to use Youtube videos if we have locally the audio files for them - there are many online downloading sites to create these files. 
 
 # Installation
 
-This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use it as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements.
+This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use this same folder as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements. It's possible to use this subfolder without the other parts, at least I use it in a bigger sequencer app as a library.
 
-Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course.)
+Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course, but it's dynamic include from Google servers.)
 
 # Performance
 
@@ -79,14 +83,14 @@ The Web Audio API is quite effective, audio graphs consisting of more than 1000 
 
 For the playground of course the DOM is the bottleneck in most cases.
 
-I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots. 
+(I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots.)
 
 # Browsers
 
 The playground is intented to run in Chrome and for now I don't plan test other browsers. However:
 * It works in Firefox but the UI controls are ugly.
 * It works in Edge, but a few effects have some sound artifacts. (I will find out why as Edge is more comfortable for development than Chrome as it's much faster.)
-* It works in Android Chrome on phones too if someone has quite small fingers.
+* It works in Android Chrome on phones too if someone has quite small fingers (or a huge phone).
 
 # Acknowledgments
 
