@@ -7,32 +7,37 @@
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 const {nop} = Corelib
+const {schedule} = Corelib.Tardis
 const {min, max, round} = Math
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType} = BeeFX(waCtx)
+  const {connectArr, registerFxType, nowa} = BeeFX(waCtx)
   
   const beatDelayFx = { //8#96e ------- Perfect beat delay -------
     def: {
       bpmLabel: {defVal: 'BPM:#label', type: 'box', width: 26},
-      bpm: {defVal: 999, min: 40, max: 240, skipUi: true},
+      bpm: {defVal: 333, min: 40, max: 240, skipUi: true},
       bpmDisp: {defVal: '50#set', type: 'box', width: 24},
-      beatTime: {defVal: .060 /*3715,*/, min: .25, max: 2, skipUi: true},
+      beatTime: {defVal: 60 / 333, min: .25, max: 2, skipUi: true},
       beatTimeDisp: {defVal: '500ms#set', type: 'box', width: 40},
       delayLabel: {defVal: 'Delay:#label', type: 'box', width: 28},
       delayDisp: {defVal: '0 beats / 0ms#set', type: 'box', width: 67},
+      wait: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 10, name: 'Wait'},
       noDelay: {defVal: 'on', type: 'cmd', name: 'No delay'},
       decDelay: {defVal: 'on', type: 'cmd', name: '-1 beat'},
       incDelay: {defVal: 'on', type: 'cmd', name: '+1 beat'},
-      halfBeat: {defVal: 'off.ledoff', type: 'cmd', subType: 'led', name: '/2 beat'},
+      halfBeat: {defVal: 'off.ledoff', type: 'cmd', subType: 'led', color: 190, name: '/2 beat'},
       delayBeats: {defVal: 0, min: 0, max: 16, subType: 'int', skipUi: true},
       delayTime: {defVal: 0, min: 0, max: 16, unit: 's', readOnly: true, skipUi: true},
-      reset: {skipUi: true}
+      reset: {skipUi: true},
+      onChange: {skipUi: true}
     },
     name: 'Perfect Beat Delay',
-    listen: ['source.beatTime:beatTime', 'source.bpm:bpm', 'source.reset:reset']
+    listen: ['source.bpm:bpm', 'source.chg:onChange']
   }
   beatDelayFx.setValue = (fx, key, value, {atm, int, exo} = fx) => ({
+    wait: nop,
+    onChange: _ => fx.setBusy(),
     reset: _ => {
       if (value) {
         fx.setValue('bpm', exo.def.bpm.defVal)
@@ -40,16 +45,22 @@ onWaapiReady.then(waCtx => {
       }
     },
     bpmLabel: nop,
-    bpm: _ => fx.recalc(),
+    bpm: _ => {
+      const defBpm = exo.def.bpm.defVal
+      const hasBpm = fx.past.bpm !== defBpm && fx.past.bpm > 0
+      atm.bpm !== defBpm || !hasBpm
+        ? fx.recalc()
+        : atm.bpm = fx.past.bpm //: don't set back to default, rather remember the last good one
+    },
     bpmDisp: nop,
-    beatTime: _ => fx.recalc(),
+    beatTime: nop,
     beatTimeDisp: nop,
     delayLabel: nop,
     delayDisp: nop,
     halfBeat: _ => {
       if (value === 'fire') {
         int.half = !int.half
-        fx.setValue('halfBeat', int.half ? 'on.ledon' : 'off.ledoff')
+        fx.setValue('halfBeat', int.half ? 'active.ledon' : 'off.ledoff')
         fx.recalc()
       }
     },
@@ -57,23 +68,45 @@ onWaapiReady.then(waCtx => {
     decDelay: _ => fx.setValue('delayBeats', max(0, atm.delayBeats - 1)),
     incDelay: _ => fx.setValue('delayBeats', min(16, atm.delayBeats + 1)),
     delayBeats: _ => fx.recalc(),
-    delayTime: _ => int.delay.delayTime.value = atm.delayTime
+    delayTime: _ => fx.setDelayTime('delay', atm.delayTime) //: much better than the setter
   }[key])
 
-  beatDelayFx.construct = (fx, pars, {int, atm} = fx) => {
+  beatDelayFx.construct = (fx, pars, {int, atm, exo} = fx) => {
     int.delay = waCtx.createDelay(10)
     connectArr(fx.start, int.delay, fx.output)
     int.half = false
     
-    fx.recalc = _ => { //: in: beatTime, bpm, delayBeats, out: beatTimeDisp, bpmDisp, delayTime
+    const checkBusy = _ => {
+      if (int.isBusy) {
+        if (int.endBusy < nowa()) {
+          int.isBusy = false
+          fx.setValue('wait', 'on.ledoff')
+        } else {
+          schedule(30).then(checkBusy)
+        }
+      }
+    }
+    
+    fx.setBusy = _ => {
+      int.endBusy = nowa() + atm.delayTime
+      if (!int.isBusy) {
+        int.isBusy = true
+        fx.setValue('wait', 'on.ledon')
+        checkBusy()
+      }
+    }
+    
+    fx.recalc = _ => { //: in: bpm, delayBeats, out: beatTimeDisp, bpmDisp, delayTime
+      fx.setValue('beatTime', 60 / atm.bpm)
       const beatTimeStr = round(atm.beatTime * 1000) + 'ms'
-      const [mod1, mod2] = atm.bpm === 999 ? ['#def', '#def'] : ['#set', '#mod']
-      const halfer =  int.half ? 2 : 1
+      const [mod1, mod2] = ~~atm.bpm === exo.def.bpm.defVal ? ['#def', '#def'] : ['#set', '#mod']
+      const halfer = int.half ? 2 : 1
       fx.setValue('beatTimeDisp', beatTimeStr + mod1)
       fx.setValue('bpmDisp', atm.bpm + mod1)
       fx.setValue('delayTime', atm.beatTime * atm.delayBeats / halfer)
       const delayTimeStr = round(atm.delayTime * 1000) + 'ms'
       fx.setValue('delayDisp', atm.delayBeats / halfer + ' / ' + delayTimeStr + mod2)
+      fx.setBusy()
     }
   }
   registerFxType('fx_beatDelay', beatDelayFx)
