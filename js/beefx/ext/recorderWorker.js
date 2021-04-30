@@ -52,6 +52,7 @@ class Recorder extends AudioWorkletProcessor {
           return
         }
         this.isRecording = true
+        this.hasNoInput = false
       } else if (data.op === 'stop') {
         this.isRecording = false
       } else if (data.op === 'params') {
@@ -120,7 +121,11 @@ class Recorder extends AudioWorkletProcessor {
   process (inputs, outputs, parameters) {
     if (this.isRecording && !this.noRecording) {
       if (!inputs.length || !inputs[0].length) {  //: hacking the "audioWorklet"
-        console.warn('Recorder worklet: process got no input. (????)')
+        if (!this.hasNoInput) {
+          this.hasNoInput = true
+          console.warn('Recorder worklet: process got no input. (????)')
+          this.port.postMessage({op: 'error', msg: 'no input'})
+        }
         return true
       }
       const input = inputs[0]
