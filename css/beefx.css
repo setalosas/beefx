@@ -156,7 +156,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.5);
 }
 .preset-menu .preset-item.act {
-  color: #ffb;
+  color: #ffa;
 }
 .preset-menu .preset-item .preset-preview {
   display: none;
@@ -549,7 +549,10 @@ body::after {
   background-color: rgba(0, 0, 0, 0.5);
 }
 .bfx-horbar .mitem.act {
-  color: #ffb;
+  color: #ffa;
+}
+.bfx-horbar .mitem.act {
+  background: rgba(25, 25, 179, 0.25);
 }
 .bfx-horbar .mframe {
   position: relative;
@@ -573,7 +576,7 @@ body::after {
   background-color: rgba(0, 0, 0, 0.5);
 }
 .bfx-horbar .mframe.act {
-  color: #ffb;
+  color: #ffa;
 }
 .bfx-horbar .mlabel {
   position: relative;
@@ -887,23 +890,54 @@ body::after {
   background-color: rgba(255, 136, 136, 0.4);
   filter: hue-rotate(0deg) saturate(2);
 }
+.source-strip .source-frame .src-ctrl .bee-cmd.cc-flood {
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 153, 0, 0.4);
+  filter: hue-rotate(0deg) saturate(2);
+}
 .source-strip .source-frame .src-ctrl .bee-cmd[state=on] {
   color: #ffffff;
   text-shadow: 0 0 1px rgba(255, 255, 255, 0.75), 0 0 3px rgba(255, 255, 255, 0.75), 0 0 6px rgba(255, 255, 255, 0.75);
 }
-.source-strip .source-frame .src-ctrl .bee-cmd[state=calc] {
-  color: #000000;
-  text-shadow: 0 0 1px rgba(0, 0, 0, 0.4), 0 0 3px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.4);
-  background: #f94;
-  pointer-events: none;
-  user-select: none;
+.source-strip .source-frame .src-ctrl .bee-cmd.bpm1 {
+  --b1: #f94;
 }
-.source-strip .source-frame .src-ctrl .bee-cmd[state=calcx] {
-  color: #000000;
-  text-shadow: 0 0 1px rgba(0, 0, 0, 0.4), 0 0 3px rgba(0, 0, 0, 0.4), 0 0 6px rgba(0, 0, 0, 0.4);
-  background: #e44;
+.source-strip .source-frame .src-ctrl .bee-cmd.bpm2 {
+  --b1: #e44;
+}
+@keyframes bpm-flicker {
+  from {
+    color: var(--c1);
+  }
+  to {
+    color: var(--c2);
+  }
+}
+@keyframes bpmc-flicker {
+  from {
+    background-color: var(--b1);
+  }
+  to {
+    background-color: var(--b2);
+  }
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.bpm-cmd {
+  text-shadow: 0 0 3px currentColor;
+  --c1: rgba(255, 255, 255, 0.75);
+  --c2: rgba(255, 255, 255, 0.25);
+  animation: bpm-flicker var(--bt, 1s) infinite alternate cubic-bezier(1, 0, 0, 1);
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.bpm-cmd[state=calc] {
   pointer-events: none;
   user-select: none;
+  --b2: #000000;
+  animation: bpmc-flicker var(--bt, 0.25s) infinite alternate ease-in-out;
+}
+.source-strip .source-frame .src-ctrl .bee-cmd.bpm-cmd[state=done] {
+  background: var(--b1);
+  --c1: transparent;
+  --c2: #000000;
+  opacity: .8;
 }
 .source-strip .source-frame .src-ctrl .nav-thumb {
   position: relative;
@@ -1014,6 +1048,7 @@ audio::-webkit-media-controls-panel {
   color: rgba(255, 255, 255, 0.8);
   background-color: rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.5), 0 0 3px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.5);
 }
 .input-selector .input-cmd.bee-cmd[state="active"] {
   color: #000000;
