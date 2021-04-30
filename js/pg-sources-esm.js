@@ -6,10 +6,12 @@
    
 import {Corelib} from './improxy-esm.js'
 
-const { undef, getIncArray} = Corelib
+const {isObj, undef, getIncArray} = Corelib
 const {wassert, weject, brexru} = Corelib.Debug
 const {startEndThrottle} = Corelib.Tardis
 const {AudioNode, MediaElementAudioSourceNode} = window
+void isObj
+
   /*
   Sources management - each Stage in the playground can have different sources.
   The source manager keeps track of each source and manages their connections into stages.
@@ -150,25 +152,62 @@ export const createSources = (playground, root) => {
   //8#a6a Source stages. Maybe not the final resting place for them.
   
   const sourceStageArr = []
-
+  
   const createSourceStage = sourceIx => { //: destroy and recreate if exists
     if (!sourceStageArr[sourceIx]) {
       const sourceStageParams = {isSourceStage: true, hasUi: true, sourceStageIx: sourceIx}
       const stage = createStage({letter: 'S' + sourceIx}, sourceStageParams)
-      stage.changeFx({ix: 0, type: 'fx_bpmTransformer', params: {isFixed: true}})
-      
-      sourceStageArr[sourceIx] = {
-        stage,
-        bpmFx: stage.fxArr[0]
-      }
+      stage.changeFx({ix: 0, type: 'fx_bpmTransformer', params: {isFixed: true, isOnOff: false}})
+      const bpmFx = stage.fxArr[0]
+      sourceStageArr[sourceIx] = {stage, bpmFx: stage.fxArr[0]}
+      bpmFx.onValueChange('bpmAdjusted', (key, bpm) => sources.bpmOutChanged(sourceIx, bpm))
     } else {
+      sourceStageArr[sourceIx].bpmFx.reset()
       sourceStageArr[sourceIx].stage.output.disconnect()
     }
     return sourceStageArr[sourceIx]
   }
   
   sources.getSourceStage = ix => sourceStageArr[ix]
-
+  
+  //8#3c9 Emitting source state change events to stage Fxs
+  
+  const defBpm = 333
+  
+  const iterateStagesWithSource = (sourceIx, callback) => 
+    iterateStandardStages(stage => stage.sourceIx === sourceIx && callback(stage))
+  
+  const emitBpmState = sourceIx => {
+    if (!sourceIx) { //: muted! no bpm for dummy mute
+      return
+    }
+    const {bpmOut} = sourceArr[sourceIx]
+    //: bpm should be enough for everyone, no need for beatTime (= 60/bpm)
+    //: never emit unset (default) bpm!
+    bpmOut !== defBpm && iterateStagesWithSource(sourceIx, stage => 
+      stage.onGlobalChange('source.bpm', bpmOut))
+  }
+  
+  sources.changed = sourceIx => 
+    iterateStagesWithSource(sourceIx, stage => stage.onGlobalChange('source.chg', sourceIx))
+  
+  sources.bpmInChanged = (sourceIx, bpm = defBpm) => { //: from ui-players/bpmDetect
+    const source = sourceArr[sourceIx]
+    const bpmInt = parseInt(bpm)
+    source.bpmIn = bpmInt
+    source.beatTimeIn = 60 / bpmInt
+    const {bpmFx} = sourceStageArr[sourceIx]
+    bpmFx.setValue('bpmOriginal', source.bpmIn + (source.bpmIn === defBpm ? '' : '#set'))
+  }
+  
+  sources.bpmOutChanged = (sourceIx, bpm) => { //: from sourceStage.bpmFx.onValueChange
+    const bpmInt = Math.round(parseFloat(bpm))
+    const source = sourceArr[sourceIx]
+    source.bpmOut = bpmInt
+    source.beatTimeOut = 60 / bpmInt
+    emitBpmState(sourceIx)
+  }
+  
   //8#c39 In the beginning, there was Jack, and Jack had a source.
   
   const createSource = (sourceIx, paramExternalSource, destStageIxArr) => {
@@ -179,7 +218,11 @@ export const createSources = (playground, root) => {
       paramExternalSourceNode: undef,  //: not needed any more, just for debug
       sourceNode: waCtx.createGain(),
       destStageIxArr,                  //: saved from previous source in this slot
-      sourceIx
+      sourceIx,
+      bpmIn: defBpm,
+      bpmOut: defBpm,
+      beatTimeIn: 60 / defBpm,
+      beatTimeOut: 60 / defBpm
     }
     if (paramExternalSource instanceof AudioNode) {
       newSource.externalSourceNode = paramExternalSource
@@ -204,6 +247,7 @@ export const createSources = (playground, root) => {
     beeFx.debug.markNode(newSource.sourceNode, `source[${sourceIx}].sourceNode`)
     beeFx.debug.markNode(newSource.externalSourceNode, `source[${sourceIx}].mediaEASN`)
     
+    sourceArr[sourceIx] = newSource
     const {stage: sourceStage, bpmFx} = createSourceStage(sourceIx)
     
     if (!newSource.isInvalid) {
@@ -211,8 +255,8 @@ export const createSources = (playground, root) => {
       sourceStage.output.connect(newSource.sourceNode)
     }
     newSource.mediaElement && bpmFx.setValue('controller', ui.getSourceUi(sourceIx))
-
-    return sourceArr[sourceIx] = newSource
+    
+    return newSource
   }
   
   //8#49e -------------------- Interface -----------------
@@ -239,23 +283,14 @@ export const createSources = (playground, root) => {
     const newSource = createSource(sourceIx, sourceIn, destStageIxArr)
     
     if (newSource.isInvalid) {
-      return
+      return console.warn(`Invalid source`, newSource)
     }
-    
-    if (newSource.isMediaElement) {
-      if (!sourceIx) { //: local main media, we will listen its state changes
-        slog('💦sources calling initlocalmedialisteners')
-        //: This is disabled for now. We don't sync with remote window bee.
-        //playground.players.initLocalMediaListeners(newSource.mediaElement)
-      }
-    }
-    if (destStageIxArr.length) {
-      ui.autoPlaySource(sourceIx) //: There were living connections. Redoing the things they had.
-    }
+    //: If there were living connections. Redoing the things they had.
+    destStageIxArr.length && ui.autoPlaySource(sourceIx)
     dbgMarkNode(newSource, {sourceIx, stageIx: 'N/A'}, `chgSrc (re)created`)
     
     if (!sourcesCnt) { //: this is the very first source, so we connect every stage here by default
-      //: temporary debug tests:
+      //: temporary tests:
       weject(destStageIxArr.length)
       iterateStandardStages(stage => wassert(stage.sourceIx === -1))
       
@@ -268,6 +303,7 @@ export const createSources = (playground, root) => {
       }
     }
     dbgCheckConsistency()
+    sources.changed(sourceIx) //: emit change to stage Fxs
     ui.refreshSourcesUi()
   }
   
@@ -298,28 +334,10 @@ export const createSources = (playground, root) => {
     slog(`💦hgStageSrcIx: connecting source ${newSourceIx} to stage ${stageId}`)
     connectSource(newSourceIx, stage) //: state is stable again
     dbgCheckConsistency()
-    sources.stateChanged(oldSourceIx, {reset: true})
-    sources.stateChanged(newSourceIx, {reset: true})
+    stage.onGlobalChange('source.chg', newSourceIx)
+    emitBpmState(newSourceIx)
     ui.refreshSourcesUi()
     logSources && playground.stageMan.dump() //: log if trouble comes up
-  }
-  
-  //: Solution: sources stores (bpm, beatTime or RESET state)
-  //: source - stage conn changes -> the data of the new source will be set to the stage
-  //: new media: players calls this and we set sources state to reset
-  //: bpm: player sends bpm data here and we set sources state
-  //: but now we havge 5 layers of storage holding the bpm data :-((((
-  
-  sources.stateChanged = (sourceIx, {reset = false, bpm = 0, beatTime = 0}) => {
-    iterateStandardStages(stage => {
-      if (stage.sourceIx === sourceIx) {
-        slog('MATCHING stages', {sourceIx, stage})
-        stage.onGlobalChange('source.reset', reset)
-        stage.onGlobalChange('source.beatTime', beatTime)
-        stage.onGlobalChange('source.bpm', bpm)
-        slog(`SOURCES CHANGED`, {sourceIx, letter: stage.letter, reset, bpm, beatTime})
-      }
-    })
   }
   
   //:8#2b3 --------------- sources' main methods for connect / disconnect ---------------
