@@ -23,12 +23,16 @@ const createBeeFX = waCtx => {
   }
   const fxNames = []
   const fxHash = {}
+  const beeState = {
+    redreshOn: false
+  }
   const beeFx = {
     fxHash,
     namesDb: {
       fxNames
     },
     nowa,
+    beeState,
     readyPromises: [],  //: promises registered by Fxs, we have to wait for them at start
     logConnects: false,
     logDisconnects: false,
@@ -114,8 +118,8 @@ const createBeeFX = waCtx => {
       }
     }
     fx.valueChanged = (key, value = fx.atm[key]) => {
-      callListenerArray(fx.listenersByKey[key])
-      callListenerArray(fx.listenersByKey.all)
+      callListenerArray(fx.listenersByKey[key], key, value)
+      callListenerArray(fx.listenersByKey.all, key, value)
     }
     
     //8#368------- Basic parameter access (set/get) --------
@@ -133,7 +137,7 @@ const createBeeFX = waCtx => {
         const fun = exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
         if (fun) {
           fun()
-          fx.valueChanged(key, value)
+          fx.valueChanged(key) //: no value here as in fun() atm[key] may have changed
         } else {
           console.warn(`${exo.name}: bad pars`, {key, value})
         }
@@ -218,27 +222,36 @@ const createBeeFX = waCtx => {
       }
     }
     
+    fx.reset = _ =>  fx.setWithPars(fx.pars.initial)
+    
     //8#879-------Fx state (get/set) --------
     
     //: There is no way to avoid Fx-level definition of which state vars should be saved.
-    //: This is a rough try to make it automatic, with half-success.
+    //: This is a rough try to make it automatic, with low success rate.
     //: Two methods to consider: (or four)
     //: 1. Save nothing. Fx defs can whitelist what they need to save.
     //: 2. Save everything available. Fx defs can blacklist what they don't want.
     //: 3. Set a default behaviour by type, that can be modified (black & white) by the Fx defs.
     //:    Actually this last one is what we are doing now - except the B&W part.
-    //:    First we have to figure out what is the optimal default behaviour by type.
-    //:    E.g. for cmds: they control and display complext internal fx states - save or not?
-    //:    (Oscilloscope cmds must be saved - IIR autoGen cmd state cannot be saved.)
+    //:    First we have to figure out what is the optimal default behaviour by par type.
+    //:    E.g. for cmds: they control and display complex internal fx states - save or not?
+    //:    (Oscilloscope cmds can be saved - IIR autoGen cmd state cannot be saved.)
     //:    (So we try this now: save all cmds, but IIR explicite disables autoGen save.)
+    //:    (Note: o'scope cmd save/load won't restore the scope's state - it's more complicated.)
+    //: +1. There can be two objects for internal state (int+state), the state could be saved.
+    //:     This still won't restore complex states though.
+    //: +2. A save/load function defined in Fxs so they can manage this ONLY if they want.
+    //:     This is being tested in a very experimental phase in the oscillator NOW.
     
     fx.getFullState = _ => { //: except: info boxes, graphs
       const {atm, isActive} = fx
       const atmState = {}
-      for (const key in def) {
-        const {type, dontSave = false} = def[key]
-        if (!['graph', 'html', 'info', 'box'].includes(type) && !dontSave) {
-          atmState[key] = atm[key]
+      if (!exo.state?.disableStandardState) {
+        for (const key in def) {
+          const {type, dontSave = false} = def[key]
+          if (!['graph', 'html', 'info', 'box'].includes(type) && !dontSave) {
+            atmState[key] = atm[key]
+          }
         }
       }
       const state = {
@@ -246,13 +259,18 @@ const createBeeFX = waCtx => {
         isActive,
         atmState
       }
+      exo.state?.save && (state.extState = exo.state.save(fx))
       return state
     }
     
-    fx.restoreFullState = state => {
-      const {isActive, atmState} = state
+    fx.restoreFullState = state => { //: the fx is already constructed, so it's in a valid state
+      const {isActive, atmState, extState} = state
       fx.setWithPars(atmState) //: restore only (subset of) the externally observable state
-      fx.activate(isActive)
+      fx.activate(isActive)    //: activation before extState restoring!
+      if (extState) {
+        wassert(isFun(exo.state?.restore))
+        exo.state.restore(fx, extState)
+      }
     }
     
     return fx  //: created!
@@ -278,8 +296,11 @@ const createBeeFX = waCtx => {
   
   //: This is messy yet (the second url should be /)
   
+  const {location} = window
+  
   beeFx.getRootPath = _ => //: full url 'cause of youtube
-    window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '//beefx.mork.work/' //  '/'
+    //window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '//beefx.mork.work/' // 
+    location.host === 'www.youtube.com' ? '//beefx.mork.work/' : location.origin + '/'
   
   beeFx.getPresetPath = sub => beeFx.getRootPath() + 'pres/' + sub 
   beeFx.getJsPath = sub => beeFx.getRootPath() + 'js/' + sub
@@ -295,6 +316,12 @@ const createBeeFX = waCtx => {
       arrarr[ix][0].connect(...arrarr[ix + 1])
     }
   }
+  const delayedRAF = (renderer, delay = 0) => {
+    window.requestAnimationFrame(_ => {
+      delay ? delayedRAF(renderer, delay - 1) : renderer()
+    })
+  }
+  beeFx.beeRAF = renderer => delayedRAF(renderer, beeState.redreshOn ? 1 : 0)
 
   beeFx.newFx = (type, pars = {}) => { //: pars: {initial, optional} -> change this to one object!
     if (!fxHash[type]) {
@@ -304,10 +331,11 @@ const createBeeFX = waCtx => {
     }
     const fx = newFxBase(type, fxHash[type]) //: par2: exo = {..., def, construct, ...}
     const {optional = {activate: true}} = pars
-    fx.initPars(pars)            //: changes/creates pars.initial, loads atm (but won't call set!)
-    fx.exo.construct(fx, pars)   //: not using return value
-    fx.setWithPars(pars.initial) //: this will call setValue methods
+    fx.initPars(pars)              //: changes/creates pars.initial, loads atm (but won't call set!)
+    fx.exo.construct(fx, pars)     //: not using return value
+    fx.setWithPars(pars.initial)   //: this will call setValue methods
     fx.activate(optional.activate) //: we will activate the new fx (unless disabled in pars)
+    fx.pars = pars
     
     //:TODO: reset, optional TODO: randomize
     
