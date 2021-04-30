@@ -10,7 +10,7 @@ const {nop, undef} = Corelib
 const {wassert} = Corelib.Debug //eslint-disable-line no-unused-vars
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType} = BeeFX(waCtx)
+  const {registerFxType, beeRAF} = BeeFX(waCtx)
   
   const logPerfOn = false
   const plog = (...args) => logPerfOn && console.log(...args)
@@ -85,11 +85,9 @@ onWaapiReady.then(waCtx => {
       }
     }
     if (cc) {
-      //if (int.drawCnt++ % 2) {
-        drawSpectrum() //: refresh reducer!
-      //}
+      drawSpectrum() //: refresh reducer!
     }
-    int.rAF = window.requestAnimationFrame(_ => drawFrame(fx))
+    int.isRAFOn && beeRAF(_ => drawFrame(fx))
   }
 
   const spectrumExt = { //8#48d ------- hi-res spectrum -------
@@ -116,9 +114,8 @@ onWaapiReady.then(waCtx => {
   spectrumExt.construct = (fx, pars, {int} = fx) => {
     int.freqData = new Uint8Array(int.frequencyBinCount)
     int.prevFreqData = []
-    int.rAF = null
+    int.isRAFOn = false
     int.prof = []
-    int.drawCnt = 0
     
     int.spectrum = waCtx.createAnalyser()
     int.spectrum.fftSize = 256
@@ -131,11 +128,13 @@ onWaapiReady.then(waCtx => {
     fx.start.connect(int.spectrum)
     fx.start.connect(fx.output)
     
-    fx.startSpect = _ => int.rAF = window.requestAnimationFrame(_ => drawFrame(fx))
-    fx.stopSpect = _ => {
-      window.cancelAnimationFrame(int.rAF)
-      int.rAF = null
+    fx.startSpect = _ => {
+      if (!int.isRAFOn) {
+        int.isRAFOn = true
+        beeRAF(_ => drawFrame(fx))
+      }
     }
+    fx.stopSpect = _ => int.isRAFOn = false
   }
   
   registerFxType('fx_spectrum', spectrumExt)
