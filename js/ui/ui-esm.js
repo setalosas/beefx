@@ -17,13 +17,6 @@ export const createUI = (root, exroot) => {
   
   const earlyCall = doStop => _ => console.warn('Too early call to ui.', doStop && brexru())
   
-  root.flags = {  //: flags should be moved into the state module?
-    autoplay: false,
-    autostop: false,
-    syncSources: false, //: synced play/stop/speed of all sources
-    redresh: false      //: redresh=reduced refesh, I'm apologizing. 
-    //: ..too many more to enumerate here, they will be added anyway with the toggle defs.
-  }
   const ui = {
     root,
     refreshPlayerControl: earlyCall(false),
@@ -33,7 +26,7 @@ export const createUI = (root, exroot) => {
     cmds: {}
   }
   
-  const dbgDumpFlags = msg => { //: tmp
+  const dbgDumpFlags = msg => { //  eslint-disable-line no-unused-vars
     console.log(msg)
     console.table(root.flags)
   }
@@ -134,14 +127,14 @@ export const createUI = (root, exroot) => {
     
     const toggle = (on = !togg.on) => {
       if (on !== togg.on) {
-        togg.on = root.flags[name] = on
+        root.setFlag(name, togg.on = on)
         setClass$(togg.node$, on, 'act')
         for (const linked of togg.linkeds) {
           setClass$(ui[linked], !on, 'off')
         }
         on && togg.focus && ui[togg.focus + '$'].focus()
         void togg.onChg?.(on)
-        dbgDumpFlags('toggle ' + name)
+        //dbgDumpFlags('toggle ' + name)
       }
     }
     const defOnClick = isToggle ? toggle : nop
@@ -155,13 +148,13 @@ export const createUI = (root, exroot) => {
     ui[nodeKey] = node$ //+ temporary for debug
     const linkeds = link.split(',').filter(a => a).map(link => link + '$')
     togg.capture({node$, nodeKey, on, click, toggle, linkeds, focus, onChg})
-    isToggle && toggle(root.flags[name] = on)
+    isToggle && toggle(root.setFlag(name, on))
     return ui[nodeKey] = node$
   }
   
   ui.setFlag = (name, on) => ui.toggleCmds[name]
     ? ui.toggleCmds[name].toggle(on)
-    : root.flags[name] = on //: kind of fallback for flags without toggleCmd (or @load before ui)
+    : root.setFlag(name, on) //: kind of fallback for flags without toggleCmd (or @load before ui)
     
   ui.getFlag = name => root.flags[name] ?? console.warn('unknown flag', name)
     
