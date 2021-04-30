@@ -8,9 +8,10 @@ import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 const {nop, undef} = Corelib
 const {round, pow} = Math
+void undef
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType} = BeeFX(waCtx)
+  const {registerFxType, beeRAF} = BeeFX(waCtx)
   const {sampleRate} = waCtx
   
   const logOn = false
@@ -153,15 +154,12 @@ onWaapiReady.then(waCtx => {
     }
     if (cc) {
       //const profile = startProfile()
-      //if (int.drawCnt++ % 2) {
-      //: todo: calling RAF refresh reducer
-        drawGrid()
-        drawXAxis()
-        drawWaveform()
-      //}
+      drawGrid()
+      drawXAxis()
+      drawWaveform()
       //profile.stop(fx, 'draw')
     }
-    int.isRAFOn && window.requestAnimationFrame(_ => drawFrame(fx))
+    int.isRAFOn && beeRAF(_ => drawFrame(fx))
   }
 
   const oscilloscopeExt = { //8#48d ------- oscilloscope (mostly after Chris Wilson) -------
@@ -175,11 +173,22 @@ onWaapiReady.then(waCtx => {
       beat2Zoom: {defVal: 'off', type: 'cmd', name: 'Beat/2'},
       resetZoom: {defVal: 'act', type: 'cmd', name: 'No zoom'},
       freeze: {defVal: 'off', type: 'cmd', name: 'Freeze'},
-      beatTime: {defVal: .37, skipUi: true},
+      beatTime: {defVal: 60 / 333, skipUi: true},
+      bpm: {defVal: 333, skpiUi: true}, //: bpm listener (only listener)
       scope: {type: 'graph'}
     },
+    state: { //: experimental state save / load pilot proto test
+      disableStandardState: false,
+      save: fx => fx.int.extract('isRAFOn,beatZoomOn,beat2ZoomOn'),
+      restore: (fx, state) => {
+        state.isRAFOn ? fx.startOsc() : fx.stopOsc()
+        fx.int.beatZoomOn = state.beatZoomOn
+        fx.int.beat2ZoomOn = state.beat2ZoomOn
+        fx.setValue('beatTime', fx.atm.beatTime)
+      }
+    },
     name: 'Oscilloscope',
-    listen: ['source.beatTime:beatTime'],
+    listen: ['source.beatTime:beatTime'], //: listen to source bpm changes
     graphs: {
       scope: {
         graphType: 'custom',
@@ -187,13 +196,10 @@ onWaapiReady.then(waCtx => {
       }
     }
   }
-  oscilloscopeExt.setValue = (fx, key, value, {int, atm} = fx) => ({
-    beatTime: _ => {
-      int.beatZoom = int.width / (sampleRate * atm.beatTime)
-      int.beatZoomOn && fx.setValue('zoom', int.beatZoom)
-      int.beat2Zoom = int.width / (sampleRate * atm.beatTime / 2)
-      int.beat2ZoomOn && fx.setValue('zoom', int.beat2Zoom)
-    },
+  oscilloscopeExt.setValue = (fx, key, value, {int, atm, exo} = fx) => ({
+    reset: nop, //: don't break saved projects, tmp
+    bpm: _ => fx.setValue('beatTime', 60 / (value || 333)),
+    beatTime: _ => fx.beatTimeChanged(),
     sensitivity: nop,
     zoom: _ => fx.resizeFFT(),
     fullZoom: _ => value === 'fire' && fx.setCmds('fullZoom', int.width / 16384),
@@ -209,11 +215,15 @@ onWaapiReady.then(waCtx => {
   
   oscilloscopeExt.construct = (fx, pars, {int, atm} = fx) => {
     int.prof = []
-    int.drawCnt = 0
-    int.rAF = null
-    int.cc = undef    //: baseGraph fills it in onInit
     int.width = 600   //: baseGraph fills it in onInit
     int.isRAFOn = false
+    
+    fx.beatTimeChanged = _ => {
+      int.beatZoom = int.width / (sampleRate * atm.beatTime)
+      int.beat2Zoom = int.width / (sampleRate * atm.beatTime / 2)
+      int.beatZoomOn && fx.setValue('zoom', int.beatZoom)
+      int.beat2ZoomOn && fx.setValue('zoom', int.beat2Zoom)
+    }
     
     const regenFFTArray = fftSize => {
       if (fftSize !== int.fftSize) {
@@ -246,7 +256,7 @@ onWaapiReady.then(waCtx => {
     fx.startOsc = _ => {
       if (!int.isRAFOn) {
         int.isRAFOn = true
-        window.requestAnimationFrame(_ => drawFrame(fx))
+        beeRAF(_ => drawFrame(fx))
         fx.setValue('freeze', 'off')
       }
     }
