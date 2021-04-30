@@ -6,7 +6,7 @@ const {OfflineAudioContext} = window
 //: Original algorithm from JMPerez (based on Joe Sullivan's article).
 //: Tweaked a lot, it's better now but it still has problems (works in most cases).
 //: Reliability depends on the length of the sample (originally it needed 30secs,
-//: now it works quite fine with 10-15s samples).
+//: now it works quite fine with 10-15s samples (even 5sec / 70 bpm works for a song!)).
 //: There are a lot of possibilites for experimenting here.
 //: And also there is a slightly different version of this algorithm from 
 //: https://github.com/dlepaux/allegro-youtube-bpm-extension (and other different ones too).
@@ -26,7 +26,7 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
     // What we're going to do here, is to divide up our audio into parts.
     // We will then identify, for each part, what the loudest sample is in that part.
     // It's implied that that sample would represent the most likely 'beat' within that part.
-    // Each part is 0.5 seconds long - or 22,050 samples.
+    // Each part is 0.5 seconds long - or 22050 samples.
     // This will give us 60 'beats' - we will only take the loudest half of those.
     // This will allow us to ignore breaks, and allow us to address tracks with a BPM below 120.
     const len = data[0].length
@@ -144,7 +144,7 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
     // Beats, or kicks, generally occur around the 100 to 150 hz range.
     // Below this is often the bassline.  So let's focus just on that.
     
-    // This should also be tried out with different filter parameters!
+    //: This should also be tried out with different filter parameters!
 
     // First a lowpass to remove most of the song.
     const lowpass = offlineContext.createBiquadFilter()
