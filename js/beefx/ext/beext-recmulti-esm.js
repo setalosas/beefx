@@ -259,7 +259,7 @@ onWaapiReady.then(waCtx => {
           bpm10: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 20, name: 'BPM 10s'},
           bpm15: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 40, name: 'BPM 15s'},
           bpm25: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 95, name: 'BPM 25s'},
-          bpm: {defVal: 'on', type: 'cmd', name: 'BPM this'},
+          bpmRec: {defVal: 'on', type: 'cmd', name: 'BPM this'},
           bpmGraph: {type: 'graph'}
         } : {}),
         ...(usePitchShift ? {piano: {defVal: 'Cm', type: 'piano'}} : {})
@@ -373,6 +373,15 @@ onWaapiReady.then(waCtx => {
             fx.setValue('trimRight', int.trimmable ? 'on' : 'off')
           }
         }
+        if (recorded.len > 5 && !int.inBpm) {
+          if (atm.bpmRec !== 'on') {
+            post(_ => fx.setValue('bpmRec', 'on'))
+          }
+        } else {
+          if (atm.bpmRec === 'on') {
+            post(_ => fx.setValue('bpmRec', 'off'))
+          }
+        }
       }
       const updateLog = _ => {
         const fix = v => round(v * 100) / 100
@@ -424,8 +433,13 @@ onWaapiReady.then(waCtx => {
                 transBuff.copyToChannel(channelData[ch], ch , 0)
               }
               appendBuffer(transBuff, frames)
+            } else if (data.op === 'error') {
+              exitRecordMode()
+              //fx.shutdownRecorder()
+              //int.inBpm = false //: ...
+              console.warn('Recorder got error from worklet:', data.msg, event)
             } else {
-              console.log('Recorder got invalid message from worklet:', event)
+              console.warn('Recorder got invalid message from worklet:', event)
             }
           }
           fx.start.connect(int.recorder)
@@ -551,8 +565,8 @@ onWaapiReady.then(waCtx => {
           const {candidates, error, peaks, groups} = await int.bpmAuditor.detect(int.audioBuffer)
           console.log({candidates, error, peaks}) //: we still need this, WIP
           const [cand1, cand2] = candidates || []
-          const [tempo1, tempo2] = [cand1.tempo, cand2.tempo]
-          const [count1, count2] = [cand1.count, cand2.count]
+          const [tempo1 = 333, tempo2 = 333] = [cand1?.tempo, cand2?.tempo]
+          const [count1 = 0, count2 = 0] = [cand1?.count, cand2?.count]
           const bpm = tempo1
           if  (bpm > 55 && bpm < 200 && candidates?.length > 1) {
             int.bpm = int.bpmMsg = bpm 
@@ -632,7 +646,7 @@ onWaapiReady.then(waCtx => {
             bpm10: _ => startBpmDetector(10),
             bpm15: _ => startBpmDetector(15),
             bpm25: _ => startBpmDetector(25),
-            bpm: _ => detectBpmFromRecorded()
+            bpmRec: _ => detectBpmFromRecorded()
           }[mode]
           void action?.()
           fx.recalcMarkers()
@@ -680,7 +694,7 @@ onWaapiReady.then(waCtx => {
         int.source && (int.source.detune.value = int.detune)
         int.isLoopPlaying || playOnce()
       }
-      initFx() //: was: post, but NEVER post the initFx!
+      initFx()
     }
     return recMultiExt
   }
