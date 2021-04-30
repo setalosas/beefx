@@ -6,7 +6,7 @@
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop} = Corelib
+const {nop} = Corelib // eslint-disable-line no-unused-vars
 const {startEndThrottle} = Corelib.Tardis
 const {log} = Math
 
@@ -16,12 +16,12 @@ onWaapiReady.then(waCtx => {
   const bpmTransformerFx = { //8#e74 ------- bpmTransformer -------
     def: {
       reset: {defVal: 'on', type: 'cmd', name: 'Reset'},
-      bpmOriginal: {defVal: 120, type: 'box', width: 24}, //: for disp only, int.bpmIn is the var
-      bpmDec: {defVal: '>>', type: 'box', width: 20},
-      bpmAdjusted: {defVal: 120, type: 'box', width: 30}, //: for disp only, int.bpmOut is the var
+      bpmOriginal: {defVal: 333, type: 'box', width: 24}, //: for disp only, int.bpmIn is the var
+      bpmDec: {defVal: '>>', type: 'box', width: 16},
+      bpmAdjusted: {defVal: 333, type: 'box', width: 32}, //: for disp only, int.bpmOut is the var
       decBpm: {defVal: 'on', type: 'cmd', name: '-1'},
       incBpm: {defVal: 'on', type: 'cmd', name: '+1'},
-      autoTune: {defVal: 'off', type: 'cmd'},
+      autoTune: {defVal: 'off', subType: 'led', color: 25, type: 'cmd'},
       pitch: {defVal: 100, min: 100 - 16 * 2, max: 100 + 16 * 2, unit: '%', name: 'Pitch Adj.'},
       bpmModifier: {defVal: 0, min: -30, max: 30, readOnly: true, skipUi: true},
       controller: {defVal: null, type: 'object', skipUi: true},
@@ -46,12 +46,18 @@ onWaapiReady.then(waCtx => {
     pitch: _ => fx.pitchChanged(value),
     bpmOriginal: _ => fx.bpmOrigChanged(value), // 123#set -> 123
     bpmModifier: _ => fx.bpmModChanged(value),
-    autoTune: _ => fx.recalcPitchShift(),
+    autoTune: _ => {
+      if (value === 'fire') {
+        atm.pitchCorrection = !atm.pitchCorrection
+        fx.recalcPitchShift()
+        fx.setValue('autoTune', atm.pitchCorrection ? 'active.ledon' : 'off')
+      }
+    },
     controller: _ => int.controller = value,
     pitchCorrection: _ => fx.recalcPitchShift()
   }[key] || (_ => fx.cmdProc(value, key))) //: all commands sent to cmdProc
 
-  bpmTransformerFx.construct = (fx, pars, {int, atm} = fx) => {
+  bpmTransformerFx.construct = (fx, pars, {int, atm, exo} = fx) => {
     int.pitchShifter = newFx('fx_pitchShifter') //: def params = no shift
     fx.start.connect(fx.output)
     
@@ -86,8 +92,10 @@ onWaapiReady.then(waCtx => {
     
     //: pitch, bpm and bpm mod, they each affect the other two. So the recalc is a bit tricky.
     
+    fx.hasBeenSet = _ => ~~atm.bpmOriginal !== exo.def.bpmOriginal.defVal
+    
     fx.setAdjustedDisp = _ => 
-      fx.setValue('bpmAdjusted', int.bpmOut.toFixed(1) + (int.hasBpmSet ? '#mod' : ''))
+      fx.setValue('bpmAdjusted', int.bpmOut.toFixed(1) + (fx.hasBeenSet() ? '#mod' : ''))
     
     fx.pitchChanged = pitch => { //: mod remains, bpmOut will change
       int.bpmOut = int.bpmIn * pitch / 100
@@ -98,8 +106,7 @@ onWaapiReady.then(waCtx => {
       fx.recalcPitchShift()
     }
     fx.bpmOrigChanged = value => { //: pitch remains, bpmMod & bpmOut will change
-      const [bpm, state] = value.split?.('#') ?? [value]
-      state === 'set' && (int.hasBpmSet = true)
+      const [bpm] = value.split?.('#') ?? [value]
       int.bpmIn = parseInt(bpm)
       int.bpmOut = int.bpmIn * atm.pitch / 100
       fx.setValue('bpmModifier', int.bpmOut - int.bpmIn)
