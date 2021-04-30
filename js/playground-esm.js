@@ -7,8 +7,9 @@
 import * as pgIm from './improxy-esm.js'
 
 const {Corelib, BeeFX, Sources, StateManager, StageManager, createUI} = pgIm
-const {undef, getRnd} = Corelib
+const {undef, getRnd, isStr} = Corelib
 const {schedule, adelay} = Corelib.Tardis
+const {wassert} = Corelib.Debug
 
 const createPlayground = async root => {
   const {waCtx, ui} = root
@@ -209,6 +210,32 @@ const createPlayground = async root => {
 
 //8#b39 All app entry points are here (beeFxPlayground site, CromBee, Patashnik)
 
+const extendRoot = async root => {
+  root.flags = {
+    autoplay: false,
+    autostop: false,
+    syncSources: false, //: synced play/stop/speed of all sources
+    redresh: false      //: redresh=reduced refesh, I'm apologizing. 
+    //: ..too many more to enumerate here, they will be added anyway with the ui toggle defs.
+  }
+
+  root.setFlag = (name, on) => {
+    wassert(isStr(name))
+    root.flags[name] = on
+    if (name === 'redresh' && root.beeFx) {
+      root.beeFx.beeState.redreshOn = root.flags.redresh
+      void root.vis?.reduceRefresh(root.flags.redresh)
+    }
+    return on
+  }
+  
+  root.ui = createUI(root)
+  root.midi = pgIm.TestMidi?.createTestMidi(root.ui) //: MIDI test
+  
+  root.pg = root.playground = await createPlayground(root)
+  await root.ui.start(root.playground)
+}
+
 export const runPlaygroundWithin = async (waCtx, options) => { //: no mediaE, ABSNs will be added
   const config = {
     maxSources: 8,
@@ -220,19 +247,13 @@ export const runPlaygroundWithin = async (waCtx, options) => { //: no mediaE, AB
     mediaElement: null,
     ...options
   }
-  root.ui = createUI(root)
-  const playground = await createPlayground(root)
-  root.pg = playground
-  await root.ui.start(playground)
-  return {root, playground}
+  await extendRoot(root)
+  return {root, playground: root.playground}
 }
 
 export const runPlayground = async root => { //: we may have a mediaElement in root
-  const ui = root.ui = createUI(root)
-  root.midi = pgIm.TestMidi?.createTestMidi(ui) //: MIDI test
-  const playground = await createPlayground(root)
-  root.pg = playground
-  await ui.start(playground)
+  await extendRoot(root)
+  const {ui, playground} = root
 
   const setupName = root.onYoutube 
     ? root.killEmAll ? 'youtubeFull' : 'youtubeDefault'
