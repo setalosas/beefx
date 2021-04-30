@@ -18,7 +18,7 @@ onWaapiReady.then(waCtx => {
   
   const gainFx = { //8#a00 ------- WAU gain -------
     def: {
-      gain: {defVal: 1, min: 0.01, max: 9, name: 'gain', subType: 'exp'}
+      gain: {defVal: 1, min: 0.05, max: 10, name: 'gain', subType: 'exp'}
     },
     midi: {pars: ['gain']}
   }
@@ -39,7 +39,7 @@ onWaapiReady.then(waCtx => {
     midi: {pars: ['delayTime']}
   }
   delayWAFx.setValue = (fx, key, value) => ({
-    //: This is unsolved issue: what is the best way to set the delay? (it clicks like H).
+    //: Unsolved issue: what is the best way to set the delay? (it clicks like H).
     //delayTime: _ => fx.setDelayTime('delay', value)
     delayTime: _ => fx.int.delay.delayTime.linearRampToValueAtTime(value, nowa(), .05)
   }[key])
