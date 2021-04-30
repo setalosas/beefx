@@ -128,12 +128,11 @@ export const createStageManager = root => {
     const stageIx = nuIx
     const fxArr = []
     const endRatio = stageParams.hasEndRatio ? newFx('fx_ratio') : undef //: cannot be false (?.)
-    endRatio && beeFx.debug.addStage(endRatio, letter + ':')
-
+    if (endRatio) {
+      beeFx.debug.addStage(endRatio, letter + ':')
+      beeFx.debug.markNode(endRatio, `stages[${nuIx}]-endRatio`)
+    }
     const output = endRatio || waCtx.createGain()
-    endRatio !== output && beeFx.debug.addFx(output)
-    beeFx.debug.markNode(output, `stages[${nuIx}]-endRatio(${endRatio !== output})`)
-    beeFx.debug.addStage(output, letter + ':output')
       
     void endRatio?.chain(...getEndRatios()) //: only the other chain elements' stage is needed
     
@@ -219,6 +218,7 @@ export const createStageManager = root => {
           for (const [propRequest, local] of fx.meta.listeners) {
             if (propRequest === prop) {
               fx.setValue(local, value)
+              //console.log('stage.onGlobalChange:', {local, prop, value, zh: fx.zholger})
             }
           }
         }
@@ -322,7 +322,7 @@ export const createStageManager = root => {
     stage.clone = _ => {
       const state = stage.saveState()
       iterateStandardStages(istage => {
-        if (istage !== stage) { //: This condition isn't really needed. It must clone to itself too.
+        if (istage !== stage) { //: This condition isn't really needed. It can clone to itself too.
           istage.loadState(state)
         }
       })
