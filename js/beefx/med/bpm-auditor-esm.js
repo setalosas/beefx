@@ -55,7 +55,7 @@ export const createBPMAuditor = waCtx => { //: allegro
   //: We use the 2. method currently (we started with 1, but 2 is better for us now).
   //: We keep the method 2. functionality, maybe it will be useful in a future feature.
   //: Depending on the detecting algo complexities and parameteres (WIP) detection is
-  //: around 100-200 ms.
+  //: around 50-200 ms.
   
   auditor.start = source => {
     dis.source = wassert(source)
