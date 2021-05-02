@@ -161,20 +161,22 @@ onWaapiReady.then(waCtx => {
     }
     int.isRAFOn && beeRAF(_ => drawFrame(fx))
   }
+  
+  const actCmd = 'active' // 'on'
 
   const oscilloscopeExt = { //8#48d ------- oscilloscope (mostly after Chris Wilson) -------
     def: {
       sensitivity: {defVal: 50, min: 1, max: 100},
       zoom: {defVal: 1, min: .025, max: 2, subType: 'exp'},
-      fullZoom: {defVal: 'off', type: 'cmd', name: 'Zoom x1'},
-      halfZoom: {defVal: 'off', type: 'cmd', name: 'x2'},
-      quartZoom: {defVal: 'off', type: 'cmd', name: 'x4'},
+      fullZoom: {defVal: 'off', type: 'cmd', name: 'Max'},
+      halfZoom: {defVal: 'off', type: 'cmd', name: 'M/2'},
+      quartZoom: {defVal: 'off', type: 'cmd', name: 'M/4'},
       beatZoom: {defVal: 'off', type: 'cmd', name: 'Beat'},
-      beat2Zoom: {defVal: 'off', type: 'cmd', name: 'Beat/2'},
-      resetZoom: {defVal: 'act', type: 'cmd', name: 'No zoom'},
+      beat2Zoom: {defVal: 'off', type: 'cmd', name: 'B/2'},
+      resetZoom: {defVal: actCmd, type: 'cmd', name: 'Real-time'},
       freeze: {defVal: 'off', type: 'cmd', name: 'Freeze'},
       beatTime: {defVal: 60 / 333, skipUi: true},
-      bpm: {defVal: 333, skpiUi: true}, //: bpm listener (only listener)
+      bpm: {defVal: 333, skpiUi: true}, //: bpm listener (used only to calc beatTime)
       scope: {type: 'graph'}
     },
     state: { //: experimental state save / load pilot proto test
@@ -188,7 +190,7 @@ onWaapiReady.then(waCtx => {
       }
     },
     name: 'Oscilloscope',
-    listen: ['source.beatTime:beatTime'], //: listen to source bpm changes
+    listen: ['source.bpm:bpm'], //: listen to source bpm changes
     graphs: {
       scope: {
         graphType: 'custom',
@@ -262,17 +264,17 @@ onWaapiReady.then(waCtx => {
     }
     fx.stopOsc = _ => {
       int.isRAFOn = false
-      fx.setValue('freeze', 'on')
+      fx.setValue('freeze', actCmd)
     }
     
     fx.setCmds = (act, newZoomVal) => {
       fx.setValue('zoom', newZoomVal)
-      fx.setValue('fullZoom', act === 'fullZoom' ? 'active' : 'off')
-      fx.setValue('halfZoom', act === 'halfZoom' ? 'active' : 'off')
-      fx.setValue('quartZoom', act === 'quartZoom' ? 'active' : 'off')
-      fx.setValue('beatZoom', act === 'beatZoom' ? 'active' : 'off')
-      fx.setValue('beat2Zoom', act === 'beat2Zoom' ? 'active' : 'off')
-      fx.setValue('resetZoom', act === 'resetZoom' ? 'active' : 'off')
+      fx.setValue('fullZoom', act === 'fullZoom' ? actCmd : 'off')
+      fx.setValue('halfZoom', act === 'halfZoom' ? actCmd : 'off')
+      fx.setValue('quartZoom', act === 'quartZoom' ? actCmd : 'off')
+      fx.setValue('beatZoom', act === 'beatZoom' ? actCmd : 'off')
+      fx.setValue('beat2Zoom', act === 'beat2Zoom' ? actCmd : 'off')
+      fx.setValue('resetZoom', atm.zoom === 1 ? actCmd : 'off')
       int.beatZoomOn = act === 'beatZoom'
       int.beat2ZoomOn = act === 'beat2Zoom'
     }
