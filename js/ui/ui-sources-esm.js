@@ -87,7 +87,7 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   
   //8#595 Youtube/p3 menu for testing on dev site
   
-  root.mp3s = pinky.promise('mp3s')   //: without pinky promises this would take ~30 lines
+  root.mp3s = pinky.promise('mp3s')
   
   window.fetch('/au/add-audio-esm.js') //: private files, if not on pub site (->beeFx.getFullPath!)
     .then(resp => resp.ok
@@ -170,7 +170,7 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   //: (Note: if we select the stem*4.mp3 filename, only stems 1-4 will be loaded.)
   
   ui.changeSourcesWithStems = file => { //: stems must be mp3 and in theix fixed dir
-    const preFix = `//beefx.mork.work/au/stems/`
+    const preFix = pg.beeFx.getRootPath() + `au/stems/`
     const stemName = file.split('.mp3')[0]
     const toSrc = parseInt(stemName.slice(-1)[0])
     const stemRoot = stemName.slice(0, -1)
