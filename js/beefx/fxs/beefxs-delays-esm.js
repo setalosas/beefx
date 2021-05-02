@@ -26,11 +26,16 @@ onWaapiReady.then(waCtx => {
       noDelay: {defVal: 'on', type: 'cmd', name: 'No delay'},
       decDelay: {defVal: 'on', type: 'cmd', name: '-1 beat'},
       incDelay: {defVal: 'on', type: 'cmd', name: '+1 beat'},
-      halfBeat: {defVal: 'off.ledoff', type: 'cmd', subType: 'led', color: 190, name: '/2 beat'},
+      halfBeat: {defVal: 'off', type: 'cmd', subType: 'led', color: 190, name: '/2 beat'},
       delayBeats: {defVal: 0, min: 0, max: 16, subType: 'int', skipUi: true},
       delayTime: {defVal: 0, min: 0, max: 16, unit: 's', readOnly: true, skipUi: true},
       reset: {skipUi: true},
       onChange: {skipUi: true}
+    },
+    state: {
+      disableStandardState: false,
+      save: fx => fx.int.extract('half'),
+      restore: (fx, state) => state.half && fx.setValue('halfBeat', 'fire')
     },
     name: 'Perfect Beat Delay',
     listen: ['source.bpm:bpm', 'source.chg:onChange']
