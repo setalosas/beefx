@@ -7,6 +7,7 @@ const {OfflineAudioContext} = window
 //: Tweaked a lot, it's better now but it still has problems (works in most cases).
 //: Reliability depends on the length of the sample (originally it needed 30secs,
 //: now it works quite fine with 10-15s samples (even 5sec / 70 bpm works for a song!)).
+//: Fast and precise BPM detection is crucial as it feeds many BeeFX components. 
 //: There are a lot of possibilites for experimenting here.
 //: And also there is a slightly different version of this algorithm from 
 //: https://github.com/dlepaux/allegro-youtube-bpm-extension (and other different ones too).
