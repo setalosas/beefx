@@ -143,22 +143,19 @@ export const extendUi = ui => {
     //: We will eventually need to use EventEmitter2 or fix this somehow.
     
     if (isEndRatio) {
-      fx.setValue('onCmd', ({op, par}) => {
-        void {
-          activate: _ => ui.setFxPanelActiveState(fxPanelObj, par),
-          regen: _ => stage.rebuild(),
-          clone: _ => stage.clone(),
-          master: _ => _,
-          slave: _ => _,
-          dbgDeact: _ => stage.deactivate(),
-          dbgDecomp: _ => stage.decompose(),
-          dbgReset: _ => stage.reset(),
-          dbgChg: _ => stage.chg(),
-          dbgComp: _ => stage.compose(),
-          dbgAct: _ => stage.activate()
-        }[op]?.()
-        //void action?.()
-      })
+      fx.setValue('onCmd', ({op, par}) => void {
+        activate: _ => ui.setFxPanelActiveState(fxPanelObj, par),
+        regen: _ => stage.rebuild(),
+        clone: _ => stage.clone(),
+        master: _ => _,
+        slave: _ => _,
+        dbgDeact: _ => stage.deactivate(),
+        dbgDecomp: _ => stage.decompose(),
+        dbgReset: _ => stage.reset(),
+        dbgChg: _ => stage.chg(),
+        dbgComp: _ => stage.compose(),
+        dbgAct: _ => stage.activate()
+      }[op]?.())
     }
     const topmenu$ = no && isEndRatio && div$({class: 'bfx-topmenu'}, [
       div$({class: 'bfx-mitem', text: 'Solo', click: _ => stage.setSolo()}),
@@ -181,7 +178,7 @@ export const extendUi = ui => {
         const srcLetter = slot
         root.stateManager.onStageToStageDrop({dstLetter, srcLetter})
       } else if (source === 'fromFactory') {
-        console.log(`dragDroppedOnStage from factory `, {dstLetter, data, source, slot})
+        clog(`dragDroppedOnStage from factory `, {dstLetter, data, source, slot})
         if (event.altKey) {
           pg.stageMan.iterateStandardStages(stage => pg.addFx(stage.letter, slot))
         } else {
@@ -191,7 +188,7 @@ export const extendUi = ui => {
     }
     const dragDroppedOnNotFixedFx = (dstLetter, dstIx) => (data, mod) => {
       const [source, fxname] = data.split('.') // eslint-disable-line no-unused-vars
-      console.log(`drag dropped on not fixed fx`, {data, mod, fxPanelObj})
+      clog(`drag dropped on not fixed fx`, {data, mod, fxPanelObj})
       pg.changeFx(dstLetter, dstIx, fxname)
     }
     
@@ -232,7 +229,7 @@ export const extendUi = ui => {
     const {fxHash} = pg.beeFx
     
     //: The categorization of the FXs is TODO, in the beginning there were a few, now
-    //: there are over 60 fxs, some grouping is needed. (Also for obsolete and internal FXs.) 
+    //: there are over 60 fxs, some grouping is needed. (Also marking obsolete and internal FXs.) 
     //: For now this is an ugly (tmp) manual categorization for the factory menu.
     
     const fxnames = fxHash.propertiesToArr()
@@ -281,7 +278,7 @@ export const extendUi = ui => {
       cats[cat].arr.push(fxname)
     }
     const catArr = cats.propertiesToArr()
-    console.log(cats)
+    clog(cats)
     
     if (on) {
       set$(ui.bigmid$, {class: 'factoryon'})
