@@ -100,6 +100,7 @@ export const createBeeDebug = waCtx => {
         short: fx.getName(),
         in: getGraphString(fx.input),
         start: getGraphString(fx.start),
+        id: '',
         out: getGraphString(fx.output)
       }
       taa.push(bItem)
