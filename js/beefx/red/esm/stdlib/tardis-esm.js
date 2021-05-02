@@ -122,3 +122,11 @@ export const createPerfTimer = (konf = {}) => {
   timer.start()
   return timer
 }
+
+export const pinky = (pinky => {
+  pinky.promise = (str, fun) => new Promise((resolve, reject) => {
+    pinky[str] = {resolve, reject}
+    void fun?.(resolve, reject)
+  })
+  return pinky
+})({})
