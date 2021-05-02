@@ -195,7 +195,7 @@ const createBeeFX = waCtx => {
     fx.getShortName = _ => exo.name.substr(3) //+ this is bugged, check who calls this!
     fx.getPepper = _ => fx[pepper]
     fx.getPepperDebug = _ => 
-      fx[pepper] + ` ${fx.input.__resource_id__}->${fx.output.__resource_id__}`
+      fx[pepper] + ` ${fx.input.__resource_id__ || ''}->${fx.output.__resource_id__ || ''}`
     
     //8#a72------- Fx initialization --------    
     
