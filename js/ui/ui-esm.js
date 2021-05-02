@@ -103,6 +103,7 @@ export const createUI = (root, exroot) => {
     populateMenus()
     ui.setFlag('autoplay', true) //: auto project load (if any) will rewrite these as it's later
     ui.setFlag('autostop', true)
+    ui.installKeyboardListener()
   }
   
   ui.finalize = _ => {
@@ -206,6 +207,24 @@ export const createUI = (root, exroot) => {
     set$(ui.bigmid$, {declass: 'off'})
   }
 
+  ui.installKeyboardListener = _ => document.addEventListener('keyup', event => {
+    const {key, ctrlKey, shiftKey} = event
+    
+    //weject(key === 'F10')
+    
+    if (key === 'F2') {
+      ui.setFlag('fxfactory')
+    } else if (key === 'F4') {
+    } else if (key === 'F7') {
+    } else if (key === 'F9') {
+      if (ctrlKey) {
+      } else if (shiftKey) {
+      } else {
+      }
+    } else if (key === 'Shift') {
+    }
+  })
+  
   ui.createSideList = cclass => { //: not used atm
     const frame$ = div$(body, {class: 'side-frame ' + cclass})
     
