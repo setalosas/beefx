@@ -55,41 +55,52 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_pinking', pinkingFx)
   
-  const bitcrusherFx = { //8#0a4 -------bitcrusher (Tuna) -------
+  const bitcrusherFx = { //8#0a4 -------bitCrusher (stereo) -------
     def: {
       bits: {defVal: 8, min: 1, max: 16, subType: 'int'},
-      freqStep: {defVal: .12, min: .001, max: 1, subType: 'exp'}
+      freqStep: {defVal: .12, min: .01, max: 1, subType: 'exp'}
     },
     midi: {pars: ['bits,freqStep']}
   }
 
   bitcrusherFx.setValue = (fx, key, value, {int} = fx) => ({
-    bits: nop,
+    bits: _ => int.step = Math.pow(.5, value),
     freqStep: nop
   }[key])
+  
+  bitcrusherFx.onActivated = (fx, isActive) => fx.activateScript(isActive)
 
   bitcrusherFx.construct = (fx, {initial}, {int, atm} = fx) => {
-    int.bufferSize = 4096
-    int.processor = waCtx.createScriptProcessor(int.bufferSize, 1, 1)
+    int.bufferSize = 256
+    int.scriptNode = waCtx.createScriptProcessor(int.bufferSize, 2, 2)
     
-    let phaser = 0
+    const phasers = [0, 0]
     let last
         
-    int.processor.onaudioprocess = e => {
-      const input = e.inputBuffer.getChannelData(0)
-      const output = e.outputBuffer.getChannelData(0)
-      const step = Math.pow(1 / 2, atm.bits)
-      const length = input.length
-      for (let i = 0; i < length; i++) {
-        phaser += atm.freqStep
-        if (phaser >= 1.0) {
-          phaser -= 1.0
-          last = step * Math.floor(input[i] / step + 0.5)
+    const bitcrusherProcessor = ({inputBuffer, outputBuffer}) => {
+      const {numberOfChannels} = inputBuffer
+      const {step} = int
+      
+      for (let chn = 0; chn < numberOfChannels; chn++) {
+        const input = inputBuffer.getChannelData(chn)
+        const output = outputBuffer.getChannelData(chn)
+        const length = input.length
+        let phaser = phasers[chn]
+        for (let i = 0; i < length; i++) {
+          phaser += atm.freqStep
+          if (phaser >= 1.0) {
+            phaser -= 1.0
+            last = step * ~~(input[i] / step + 0.5)
+          }
+          output[i] = last
         }
-        output[i] = last
+        phasers[chn] = phaser
       }
     }
-    connectArr(fx.start, int.processor, fx.output)
+
+    fx.activateScript = on => int.scriptNode.onaudioprocess = on ? bitcrusherProcessor : null
+
+    connectArr(fx.start, int.scriptNode, fx.output)
   }
   registerFxType('fx_bitCrusher', bitcrusherFx)
 
