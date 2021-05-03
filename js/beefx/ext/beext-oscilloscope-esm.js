@@ -189,7 +189,7 @@ onWaapiReady.then(waCtx => {
         fx.setValue('beatTime', fx.atm.beatTime)
       }
     },
-    name: 'Oscilloscope',
+    name: 'Scope',
     listen: ['source.bpm:bpm'], //: listen to source bpm changes
     graphs: {
       scope: {
