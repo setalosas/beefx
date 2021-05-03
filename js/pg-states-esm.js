@@ -22,7 +22,6 @@ const fxMap = {
   bi: 'biquad',
   waveGen: 'waveGenerator',
   cheb: 'chebyshevIIR',
-  scope: 'oscilloscope',
   spect: 'spectrum',
   osc: 'oscillator',
   pwmOsc: 'pwmOscillator',
