@@ -751,7 +751,7 @@ body::after {
   width: 254px;
   min-height: 70px;
 }
-.source-strip .source-frame:not([type])[ix="6"],
+.source-strip .source-frame:not([type])[ix="5"],
 .source-strip .source-frame:not([type])[ix="6"],
 .source-strip .source-frame:not([type])[ix="7"],
 .source-strip .source-frame:not([type])[ix="8"] {
