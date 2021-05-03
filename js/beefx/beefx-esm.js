@@ -4,11 +4,12 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    standard/no-callback-literal, object-curly-newline */
 
-import {Corelib, createBeeDebug} from './beeproxy-esm.js'
+import {Corelib, createBeeDebug, beeCommon} from './beeproxy-esm.js'
 
-const {isFun, isArr, clamp, merge} = Corelib
+const {isFun, isArr, merge} = Corelib
 const {wassert} = Corelib.Debug
-const {round, pow, max} = Math
+const {pow} = Math
+void isArr
 
 const toExp = val => pow(Math.E, val)
 const fromExp = val => Math.log(val)
@@ -18,6 +19,9 @@ const createBeeFX = waCtx => {
   
   const nowa = (add = 0) => waCtx.currentTime + add
   
+  const pepper = 'zholger'
+  let pepuid = 1
+
   const config = {
     useSetTargetForDelayTime: true //: this is not evident (linearRamp should be included too)
   }
@@ -27,6 +31,8 @@ const createBeeFX = waCtx => {
     redreshOn: false
   }
   const beeFx = {
+    waCtx,
+    pepper,
     fxHash,
     namesDb: {
       fxNames
@@ -42,9 +48,6 @@ const createBeeFX = waCtx => {
   
   window.beedump = debug.dump
   
-  const pepper = 'zholger'
-  let pepuid = 1
-
   const newFxBase = (type, exo) => {
     const fx = {
       [pepper]: pepuid++ + '.' + type,
@@ -124,23 +127,26 @@ const createBeeFX = waCtx => {
     
     //8#368------- Basic parameter access (set/get) --------
     
-    fx.setValue = (key, value) => {
+    fx.setValue = (key, value = fx.atm[key]) => { //: sometimes it's called just for triggering
       beeFx.logSetValue && console.log(`➔fx.setvalue ${exo.fxName}.${key}`, {value})
         
       fx.past[key] = fx.atm[key]
       fx.atm[key] = value
       
       //: This is way too concise and unreadable. Refakt: separate the array branch.
-      
-      const {arrayKey = key, ix = -1, type} = def[key]
-      if (type !== 'graph') {
-        const fun = exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
-        if (fun) {
-          fun()
-          fx.valueChanged(key) //: no value here as in fun() atm[key] may have changed
-        } else {
-          console.warn(`${exo.name}: bad pars`, {key, value})
+      if (def[key]) {
+        const {arrayKey = key, ix = -1, type} = def[key]
+        if (type !== 'graph') {
+          const fun = exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
+          if (fun) {
+            fun()
+            fx.valueChanged(key) //: no value here as in fun() atm[key] may have changed
+          } else {
+            console.warn(`${exo.name}: bad pars`, {key, value})
+          }
         }
+      } else {
+        console.warn(`fx.setValue(${key}, ${value}): Invalid key!`)
       }
     }
     fx.setValueIf = (key, value) => fx.atm[key] !== value && fx.setValue(key, value)
@@ -276,23 +282,9 @@ const createBeeFX = waCtx => {
     return fx  //: created!
   }
   
+  beeCommon.extendBeeFx(beeFx) //: general helpers added to beeFx
+  
   //8#c69 -------- BeeFX interface --------
-  
-  beeFx.concatAudioBuffers = (buf1, buf2) => {
-    if (!buf1) {
-      return buf2 
-    }
-    wassert(buf2)
-    const {numberOfChannels} = buf1
-    const tmp = waCtx.createBuffer(numberOfChannels, buf1.length + buf2.length, buf1.sampleRate)
-  
-    for (let i = 0; i < numberOfChannels; i++) {
-      const data = tmp.getChannelData(i)
-      data.set(buf1.getChannelData(i))
-      data.set(buf2.getChannelData(i), buf1.length)
-    }
-    return tmp
-  }
   
   //: This is messy yet (the second url should be /)
   
@@ -304,24 +296,6 @@ const createBeeFX = waCtx => {
   
   beeFx.getPresetPath = sub => beeFx.getRootPath() + 'pres/' + sub 
   beeFx.getJsPath = sub => beeFx.getRootPath() + 'js/' + sub
-  
-  beeFx.dB2Gain = db => max(0, round(1000 * pow(2, db / 6)) / 1000)
-  
-  beeFx.gain2dB = gain => clamp(round(Math.log2(gain) * 6 * 1000) / 1000, -60, 60)
-  
-  beeFx.connectArr = (...arr) => { //: array item in arr: node + in/out index
-    const arrarr = arr.map(item => isArr(item) ? item : [item])
-    
-    for (let ix = 0; ix < arrarr.length - 1; ix++) {
-      arrarr[ix][0].connect(...arrarr[ix + 1])
-    }
-  }
-  const delayedRAF = (renderer, delay = 0) => {
-    window.requestAnimationFrame(_ => {
-      delay ? delayedRAF(renderer, delay - 1) : renderer()
-    })
-  }
-  beeFx.beeRAF = renderer => delayedRAF(renderer, beeState.redreshOn ? 1 : 0)
 
   beeFx.newFx = (type, pars = {}) => { //: pars: {initial, optional} -> change this to one object!
     if (!fxHash[type]) {
@@ -337,7 +311,7 @@ const createBeeFX = waCtx => {
     fx.activate(optional.activate) //: we will activate the new fx (unless disabled in pars)
     fx.pars = pars
     
-    //:TODO: reset, optional TODO: randomize
+    //:TODO: randomize
     
     return fx  
   }
@@ -396,50 +370,6 @@ const createBeeFX = waCtx => {
       fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1) //: [1] for the Human name (0 is fx_...)
     }
   }
-  
-  //8#e92------- Connect/disconnect override --------
-    
-  void (_ => { //: init only Once In A Lifetime
-    const gain = waCtx.createGain()
-    const proto = Object.getPrototypeOf(Object.getPrototypeOf(gain)) //: From Tuna. I don't get it.
-    const wauConnect = proto.connect
-    const wauDisconnect = proto.disconnect
-    proto.connect = shimConnect
-    proto.disconnect = shimDisconnect
-    let cc = 0
-    let dc = 0
-
-    function shimConnect () {
-      const node = arguments[0]
-      arguments[0] = node?.[pepper] ? node.input : node
-      cc++
-      beeFx.logConnects && console.log(`shimConnect`, {cc, from: this, to: arguments[0]})
-      try {
-        wauConnect.apply(this, arguments)
-      } catch (err) {
-        console.log(node, arguments)
-        console.error(err)
-        debugger
-      }
-      debug.addCon(this, arguments[0])
-      return node
-    }
-
-    function shimDisconnect () {
-      const node = arguments[0]
-      arguments[0] = node?.[pepper] ? node.input : node
-      dc++
-      beeFx.logDisconnects && console.log(`shimDisconnect`, {dc, from: this, to: arguments[0]})
-      try {
-        wauDisconnect.apply(this, arguments)
-      } catch (err) {
-        console.log(node, arguments)
-        console.error(err)
-        debugger
-      }
-      debug.addDisco(this, arguments[0])
-    }
-  })()
   
   return beeFx
 }
