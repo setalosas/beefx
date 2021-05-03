@@ -65,7 +65,7 @@ VID
 
 The playground as a site has limits in the use of copyrighted music - of course I cannot include real songs with it. There is no much fun trying out a complex effect pipeline with free music or singing through the microphone, so from the beginning there was an option for upload and use any user files (mp3 or wav). However, not too many users have mp3s on their computer these days. So it seemed natural to use Youtube videos as audio sources - but here comes a wall again: embedded youtube iframes are closed, there is no way to access their audio output. Except of course if the playground runs on the youtube.com domain.
 
-So as a very simple solution to that problem it can run on the youtube.com domain. This repo is also a Chrome extension - you have to load into Chrome with the 'Load unpacked' option on the chrome://extensions page.
+So as a very simple solution to that problem it can run on the youtube.com domain. This repo is also a Chrome extension - you have to load into Chrome with the 'Load unpacked' option on the chrome://extensions page. With this extensions almost any Youtube video can be used as a source - except the ones where the embed is disabled (these can be used only if they are the main video on that page).
 
 There is a normal mode when you click on the bee in the bottom left corner and a full takeover mode if you click with the Shift key held down. This is useful because it kills the complete youtube page (it needs quite a lot resources).
 
