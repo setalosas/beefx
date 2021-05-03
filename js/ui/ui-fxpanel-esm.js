@@ -113,7 +113,7 @@ export const extendUi = ui => {
     const isRemoveable = !isFixed && !isBlank
     const isAlterable = !isFixed
     const isFoldable = isRemoveable       //: for now, but it can be different in theory
-    const isFolded = isFoldable && (fxname === 'Oscilloscope' || fxname === 'Hi-res spectrum')
+    const isFolded = isFoldable && (fxname === 'Scope' || fxname === 'Hi-res spectrum')
     fxPanelObj.capture({isBlank, isGain, isRemoveable, isAlterable, isFoldable})
 
     const truePropsToArr = obj => obj.propertiesToArr().filter(key => obj[key])
