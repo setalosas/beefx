@@ -54,11 +54,15 @@ export const createFxParControls = ui => {
           
   const addBox = (parO, width) => 
     parO.control$ = div$({class: 'bee-box', css: {width}})
+
+  const addBoxWithLed = (parO, width, cc) => 
+    parO.control$ = div$({class: 'bee-box wled', text: ' ', css: {width}},
+      parO.led$ = div$({class: 'led-fx ' + cc}))
     
   const addCmd = (parO, name, callback) => 
     parO.control$ = div$({class: 'bee-cmd', text: name, click: event => callback('fire')})
                      
-  const addCmdWithLed = (parO, name, callback, color = 0) => 
+  const addCmdWithLed = (parO, name, callback, color = 0, blink = false) => 
     parO.control$ = div$({class: 'bee-cmd wled', text: name, click: event => callback('fire')},
       div$({class: 'led-fx fix-on', css: {__ledhue: color}}))
 
@@ -151,8 +155,22 @@ export const createFxParControls = ui => {
         parO.input$.checked = dispVal
       },
       box: _ => {
-        const [text, state = ''] = dispVal.split?.('#') ?? [dispVal]
-        set$(parO.control$, {text, attr: {state}})
+        const [text, longState = '', led = ''] = dispVal.split?.('#') ?? [dispVal]
+        const [state, ledstate] = longState.split('.')
+        console.log('box chgval', {text, state, ledstate, led})
+        if (parDef.subType === 'led') {
+          wassert(parO.control$.childNodes[0])
+          parO.control$.childNodes[0].nodeValue = text
+          set$(parO.control$, {attr: {state, ledstate}})
+          if (led) {
+            const [__ledhue = 0, __pulseperiod] = led.split(',')
+            set$(parO.led$, {css: {__ledhue}})
+            __pulseperiod && set$(parO.led$, {css: {__pulseperiod}})
+            setClass$(parO.control$, !__pulseperiod, 'fix-on')
+          }
+        } else {
+          set$(parO.control$, {text, attr: {state}})
+        }
       },
       cmd: _ => {
         if (dispVal !== 'fire') {
@@ -207,7 +225,9 @@ export const createFxParControls = ui => {
           addCheckbox(parO, short, onValChanged(key))
         },
         box: _ => {    //8#b8a7 ------- box --> non-input, output, plain div cmd -------
-          addBox(parO, (parO.parDef.width || 40) + 'px')
+          subType === 'led'
+            ? addBoxWithLed(parO, (parO.parDef.width || 40) + 'px', parO.parDef.cc || '')
+            : addBox(parO, (parO.parDef.width || 40) + 'px')
         },
         cmd: _ => {    //8#b8c7 ------- cmd --> non-input, plain div cmd -------
           subType === 'led'
@@ -235,7 +255,7 @@ export const createFxParControls = ui => {
         console.warn('no paramConstructor for', {type, subType})
         continue
       }
-      readOnly && set$(parO.input$, {attr: {disabled: ''}})
+      readOnly && set$(parO.input$ || parO.control$, {attr: {disabled: ''}})
       div$(panel.parsFrame$, {class: 'fxr-parval fxt-' + type}, parO.control$)
       refreshDisplay(fxPanelObj, key, fx) //: initial display
       fx.onValueChange(key, _ => refreshDisplay(fxPanelObj, key, fx))
