@@ -8,7 +8,8 @@ import {Corelib, Visualizer} from './improxy-esm.js'
 
 const {undef, isStr} = Corelib
 const {wassert, weject} = Corelib.Debug
-const {startEndThrottle} = Corelib.Tardis
+const {startEndThrottle, post, schedule} = Corelib.Tardis
+void post
   /*
   StageManager can have many stages of different types (normal, source, internal, headless, etc).
   A Stage is a sequential chain of beeFxs (or beeExts) + scaffolding.
@@ -218,7 +219,6 @@ export const createStageManager = root => {
           for (const [propRequest, local] of fx.meta.listeners) {
             if (propRequest === prop) {
               fx.setValue(local, value)
-              //console.log('stage.onGlobalChange:', {local, prop, value, zh: fx.zholger})
             }
           }
         }
