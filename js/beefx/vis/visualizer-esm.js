@@ -5,11 +5,12 @@
 
 import {Corelib, DOMplusUltra} from '../beeproxy-esm.js'
 
-//: This module draws the spectrums ONLY at the end of each stage.
+//: This module draws the spectrums ONLY at the end of each stage on global flag showEndSpectrums.
 //: The Hi-Res spectrums are handled differently.
-//: These two must be dried into one place probably (although parameters differ).
+//: These two must be DRIed into one place probably (although parameters differ).
 //: So we will eliminate both and merge them into a ~spectrum-vis.js later. FUTREQ
 //: Levelmeter is also implemented here, although not used now -> later.
+//: Also levelMeter is the culprit who uses one call from DOMplusUltra.
 
 const {Ø, undef} = Corelib
 const {wassert, weject} = Corelib.Debug
@@ -102,9 +103,6 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix,
     if (!vis.isActive) {
       return
     }
-    if (vis.isActive) {
-      //return
-    }
     vis.analyser.getByteFrequencyData(vis.freqs)
     if (mayday) {
       const MAYDAY_LIMIT = 180
@@ -116,6 +114,8 @@ export const createSpectrumVisualizer = (analyserNode, canvas$, levelMeter$, ix,
         }
       }
       if (!ok) {
+        console.groupEnd()
+        console.error('mayday', vis)
         mayday({freqs: vis.freqs, MAYDAY_LIMIT})
       }
     }
