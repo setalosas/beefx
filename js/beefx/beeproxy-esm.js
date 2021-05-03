@@ -5,7 +5,7 @@ import { onReady as onWaapiReady } from './wautils-esm.js'
 import { createGraphBase } from './vis/graphbase-esm.js'
 import * as Visualizer from './vis/visualizer-esm.js'
 import { createBeeDebug } from './beefx-debug-esm.js'
-
+import * as beeCommon from './beefx-common-esm.js'
 import { BeeFX } from './beefx-esm.js'
 
 import './fxs/beefxs-basic-esm.js'
@@ -17,7 +17,7 @@ import './fxs/beefxs-noise-esm.js'
 import './fxs/beefxs-reverb-esm.js'
 import './fxs/beefxs-dattorro-reverb-esm.js'
 import './fxs/beefxs-compressor-esm.js'
-import './fxs/beefxs-lfo-esm.js'
+import './fxs/beefxs-wobble-esm.js'
 import './fxs/beefxs-scrlfo-esm.js'
 import './fxs/beefxs-chorus-esm.js'
 import './fxs/beefxs-pitchshifter-esm.js'
@@ -38,6 +38,6 @@ import './ext/beext-recmulti-esm.js'
 import './med/beefxs-bpmtrans-esm.js'
 
 export {
-  Corelib, DOMplusUltra, onWaapiReady,
-  createBeeDebug, BeeFX, Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
+  Corelib, DOMplusUltra, onWaapiReady, createBeeDebug, beeCommon, BeeFX,
+  Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
 }
