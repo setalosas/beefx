@@ -8,8 +8,9 @@ import {Corelib, Visualizer} from './improxy-esm.js'
 
 const {undef, isStr} = Corelib
 const {wassert, weject} = Corelib.Debug
-const {startEndThrottle, post, schedule} = Corelib.Tardis
+const {startEndThrottle, post} = Corelib.Tardis
 void post
+
   /*
   StageManager can have many stages of different types (normal, source, internal, headless, etc).
   A Stage is a sequential chain of beeFxs (or beeExts) + scaffolding.
