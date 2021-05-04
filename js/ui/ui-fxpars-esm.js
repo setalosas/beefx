@@ -103,11 +103,9 @@ export const createFxParControls = ui => {
     const {panel, fx} = fxPanelObj
     const graphObj = wassert(fx.exo.graphs[graphName])
     const graphArr = graphObj.map ? graphObj : [graphObj]
-    const {canvasSize = CANVAS_SIZE} = graphArr[0] 
-    const width = canvasSize * 2
-    const height = canvasSize
+    const {width = CANVAS_SIZE * 2, height = CANVAS_SIZE, css = {}} = graphArr[0] 
     const cclass = 'graph-canvas gr-' + graphName
-    const canv$ = canvas$(panel.parsFrame$, {class: cclass, attr: {width, height}})
+    const canv$ = canvas$(panel.parsFrame$, {class: cclass, attr: {width, height}, css})
 
     const timer = createPerfTimer()
     for (let ix = 0; ix < graphArr.length; ix++) {
@@ -157,7 +155,6 @@ export const createFxParControls = ui => {
       box: _ => {
         const [text, longState = '', led = ''] = dispVal.split?.('#') ?? [dispVal]
         const [state, ledstate] = longState.split('.')
-        console.log('box chgval', {text, state, ledstate, led})
         if (parDef.subType === 'led') {
           wassert(parO.control$.childNodes[0])
           parO.control$.childNodes[0].nodeValue = text
