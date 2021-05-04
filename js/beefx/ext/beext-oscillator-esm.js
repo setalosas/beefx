@@ -9,31 +9,38 @@ import {BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 const {fetch} = window
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, getPresetPath, nowa} = BeeFX(waCtx)
+  const {connectArr, registerFxType, getPresetPath, nowa, radioDef, createRadioCmds} = BeeFX(waCtx)
   
-  const waveFormOptions = [
-    ['sine', 'Sine'],
-    ['square', 'Square'],
-    ['sawtooth', 'Sawtooth'],
-    ['triangle', 'Triangle']
-  ]
+  const waveFormCmdsDef = {
+    wfOff: radioDef('active', 'Off', 'off'),
+    wfSine: radioDef('off', 'Sine', 'sine'),
+    wfSquare: radioDef('off', 'Square', 'square'),
+    wfSaw: radioDef('off', 'Sawtooth', 'sawtooth'),
+    wfTri: radioDef('off', 'Triangle', 'triangle')
+  }
   
   const oscillatorFx = { //8#b0c ------- oscillator with built-in WA-waveforms------
     def: {
-      on: {defVal: false, type: 'boolean'},
-      waveForm: {defVal: 'sine', type: 'strings', subType: waveFormOptions},
+      ...waveFormCmdsDef,
+      waveForm: {defVal: 'off', skipUi: true},
+      on: {defVal: false, skipUi: true},
       frequency: {defVal: 220, min: 20, max: 22050, subType: 'exp', unit: 'Hz'}
     }
   }
   oscillatorFx.setValue = (fx, key, value, {int} = fx) => ({
-    waveForm: _ => fx.regen(),
+    waveForm: _ => {
+      fx.setValue('on', value !== 'off')
+      value !== 'off' && fx.regen()
+    },
     frequency: _ => int.isValid && fx.setAt('oscillator', 'frequency', value),
     on: _ => value ? fx.rebuild() : fx.destroy()
-  }[key])
+  }[key] || (_ => fx.cmdProc(value, key)))
   
   oscillatorFx.onActivated = (fx, isActive) => isActive ? fx.rebuild() : fx.destroy()
 
   oscillatorFx.construct = (fx, pars, {int, atm} = fx) => {
+    const waveFormCmds = createRadioCmds(fx, waveFormCmdsDef)
+    
     fx.rebuild = _ => {
       if (fx.isActive) {
         if (!int.isValid) {
@@ -67,6 +74,11 @@ onWaapiReady.then(waCtx => {
     fx.regen = _ => {
       if (int.isValid) {
         int.oscillator.type = atm.waveForm
+      }
+    }
+    fx.cmdProc = (fire, mode) => {
+      if (fire === 'fire') {
+        waveFormCmds.check(mode, val => fx.setValue('waveForm', val))
       }
     }
     
@@ -208,7 +220,7 @@ onWaapiReady.then(waCtx => {
   
   const waveTablesFx = { //8#a69 ------- wave tables (predefined) -------
     def: {
-      waveTable: {defVal: wavePresets[0][0], type: 'strings', size: 12, subType: wavePresets},
+      waveTable: {defVal: wavePresets[0][0], type: 'strings', size: 8, subType: wavePresets},
       on: {defVal: false, type: 'boolean'},
       frequency: {defVal: 220, min: 20, max: 22050, subType: 'exp', unit: 'Hz'},
       normalize: {defVal: true, type: 'boolean'}
@@ -255,7 +267,7 @@ onWaapiReady.then(waCtx => {
       } 
     }
     fx.regen = _ => {
-      if (int.isValid) {
+      if (int.isValid && int.real) {
         const real = new Float32Array([0, ...int.real])
         const imag = new Float32Array([0, ...int.imag])
         const wave = waCtx.createPeriodicWave(real, imag, {disableNormalization: !atm.normalize})
