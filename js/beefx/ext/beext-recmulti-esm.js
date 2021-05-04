@@ -167,8 +167,8 @@ onWaapiReady.then(waCtx => {
         const maxSec = recorded.len || 0
         const mem = round(maxSec * sampleRate * 2 * 2 / 1024 / 1024 * 10) / 10
         ccext.setTextStyle('#aaf', 'right')
-        cc.fillText(`Length: ${maxSec.toFixed(1)}s`, width - 12, height - 50)
-        cc.fillText(`Mem: ${mem}MB`, width - 12, height - 18)
+        cc.fillText(`Length: ${maxSec.toFixed(1)}s`, width - 12, 40) // height - 50)
+        cc.fillText(`Mem: ${mem}MB`, width - 12, 80) //height - 18)
       }
     }
     
@@ -201,7 +201,7 @@ onWaapiReady.then(waCtx => {
 
       if (hasBpm) {
         const frameStart = disp.startRel * sampleRate
-        cc.strokeStyle = 'hsl(0, 100%, 100%)'
+        cc.strokeStyle = 'hsl(50, 100%, 90%)'
         for (const {position, volume} of int.peaks) {
           if (volume) {
             const x = (position - frameStart) / disp.zoom
@@ -274,7 +274,8 @@ onWaapiReady.then(waCtx => {
         },
         bpmGraph: {
           graphType: 'custom',
-          canvasSize: 120, //: I hoped that this will solve the canvas-antialias issues, but nope.
+          width: 240,
+          height: 120, //: I hoped that this will solve the canvas-antialias issues, but nope.
           onInit: ({cc,  width, height, fx, ccext}) => fx.int.bpmDia = {cc, width, height, ccext}
         }
       }
