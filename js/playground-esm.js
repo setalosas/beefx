@@ -143,7 +143,7 @@ const createPlayground = async root => {
     const project = root.stateManager.loadProject(projName)
     if (project) {
       const {stageLetters, stages, sourceRequests = [], flags = {}} = project
-
+      
       for (const key in flags) {
         key.slice(-2) === 'On' || ui.setFlag(key, flags[key])
       }
