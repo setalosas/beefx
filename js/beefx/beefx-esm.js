@@ -96,7 +96,9 @@ const createBeeFX = waCtx => {
     if (debug.checkSetAt) { //: override if testing
       fx.setAt = (node, key, value) => {
         wassert(fx?.int?.[node]?.[key])
-        fx.int[node][key].setTargetAtTime(value, nowa(), .01)
+        Number.isNaN(value)
+          ? console.warn(`fx.setAt: value is NaN`, {key, value, node, zh: fx.zholger})
+          : fx.int[node][key].setTargetAtTime(value, nowa(), .01)
       }
     }
     
