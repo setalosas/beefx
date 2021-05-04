@@ -44,7 +44,7 @@ onWaapiReady.then(waCtx => {
   
   const drawFrame = fx => {
     const {int, atm} = fx
-    const {cc, ccext, width, height, osc, freqData} = int
+    const {cc, ccext, width, height, scope, freqData} = int
     const {sensitivity} = atm
     
     const drawGrid = _ => {
@@ -77,7 +77,7 @@ onWaapiReady.then(waCtx => {
     const drawWaveform = _ => {
       const timer = Corelib.Tardis.createPerfTimer()
       const {zoom} = atm
-      osc.getByteTimeDomainData(freqData)
+      scope.getByteTimeDomainData(freqData)
       timer.mark('getdata')
       const findingZero = zoom > .2
       const frameIxFromZero = findingZero ? findZeroCrossing(freqData, width, sensitivity) : 0
@@ -230,16 +230,16 @@ onWaapiReady.then(waCtx => {
     const regenFFTArray = fftSize => {
       if (fftSize !== int.fftSize) {
         int.fftSize = fftSize
-        int.osc.fftSize = fftSize
-        int.freqData = new Uint8Array(int.osc.frequencyBinCount) //: fftSize / 2
+        int.scope.fftSize = fftSize
+        int.freqData = new Uint8Array(int.scope.frequencyBinCount) //: fftSize / 2
         clog(`Scope.regenFFTArray: FFT array resized with fftsize`, fftSize)
       }
     }
     
-    int.osc = waCtx.createAnalyser()
+    int.scope = waCtx.createAnalyser()
     regenFFTArray(2048)
     
-    fx.start.connect(int.osc)
+    fx.start.connect(int.scope)
     fx.start.connect(fx.output)
     
     fx.resizeFFT = _ => {
