@@ -35,6 +35,7 @@ export const createGraphBase = waCtx => {
     const {     //: these defaults can be overridden from graphDesc
       graphType,
       renderSet = {doClear: true, doGrid: true, doGraph: true},
+      disableInThisFrame = _ => false,
       customRenderer = {},
       dbGridColor =  'hsla(200, 70%, 55%, 0.5)',
       dbGridColorLo = 'hsla(200, 70%, 55%, 0.3)',
@@ -551,8 +552,10 @@ export const createGraphBase = waCtx => {
     
     graph.render = (...pars) => { //: this is not throttled, be cautious when calling!
       if (graph.renderer) {
-        graph.renderer.render(...pars)
-        graphDesc.postRender && graphDesc.postRender({fx, cc, ccext})
+        if (!disableInThisFrame(fx)) {
+          graph.renderer.render(...pars)
+          graphDesc.postRender && graphDesc.postRender({fx, cc, ccext})
+        }
       } else {
         console.warn(`no renderer!!!!!!!`, graph)
       }
