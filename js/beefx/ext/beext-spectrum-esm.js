@@ -118,6 +118,9 @@ onWaapiReady.then(waCtx => {
     int.prof = []
     
     int.spectrum = waCtx.createAnalyser()
+    int.spectrum.minDecibels = -140
+    int.spectrum.maxDecibels = 0
+    int.spectrum.smoothingTimeConstant = 0
     int.spectrum.fftSize = 256
     int.freqData = new Uint8Array(int.spectrum.frequencyBinCount) //: fftSize / 2
     
