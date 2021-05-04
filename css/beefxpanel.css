@@ -94,6 +94,7 @@
 .bee-cmd.act {
   color: #ffa;
 }
+.bee-cmd[state="off"]:hover,
 .bee-cmd[state="on"] {
   color: #eee;
   text-shadow: 0 0 1px rgba(238, 238, 238, 0.65), 0 0 3px rgba(238, 238, 238, 0.65), 0 0 6px rgba(238, 238, 238, 0.65);
@@ -225,7 +226,7 @@
 .bee-box.wled .led-fx,
 .bee-cmd.wled .led-fx {
   position: absolute;
-  right: 0px;
+  right: 1px;
   top: -1px;
   left: unset;
   /* --pulseperiod: .5s; */
@@ -247,6 +248,7 @@ body:not(.invertcmd) .bee-cmd {
   box-shadow: 1px 1px 1px 0px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
+body:not(.invertcmd) .bee-cmd[state="off"]:hover,
 body:not(.invertcmd) .bee-cmd[state="on"] {
   color: rgba(0, 0, 0, 0.75);
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.35), 0 0 3px rgba(0, 0, 0, 0.35), 0 0 6px rgba(0, 0, 0, 0.35);
