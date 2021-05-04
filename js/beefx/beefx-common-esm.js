@@ -13,6 +13,8 @@ const {round, pow, max} = Math
 export const extendBeeFx = beeFx => { //8#c69 -------- BeeFX common helpers --------
   const {beeState, pepper, debug, waCtx} = beeFx
   
+  beeFx.radioDef = (defVal, name, refVal, p = {}) => ({defVal, name, refVal, type: 'cmd', ...p})
+  
   beeFx.createRadioCmds = (fx, robj, {onVal = 'active', offVal = 'off'} = {}) => {
     const radioCmds = {}
       
