@@ -107,3 +107,4 @@ The main goal of this project is not to find out how to compute the coefficients
 * [khoin](https://github.com/khoin) - implementation of Jon Dattorro's reverb algorithm
 * Reverb impulse response samples are from [Voxengo](https://www.voxengo.com/impulses/)'s free collection 
 * [BBC](https://github.com/bbc/webaudio.prototyping.bbc.co.uk/blob/master/src/ring-modulator.coffee) - Ring modulator
+* [Zach Denton](https://noisehack.com/) - noises
