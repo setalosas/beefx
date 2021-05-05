@@ -406,7 +406,7 @@ body::after {
 }
 .factory-frame .factory-inner {
   min-width: 200px;
-  max-width: 310px;
+  max-width: 230px;
   text-align: right;
   --hue: 0;
 }
@@ -426,11 +426,11 @@ body::after {
   color: hsl(var(--hue), 80%, 94%);
   background-color: rgba(0, 0, 0, 0.5);
   text-align: left;
-}
-.factory-frame .fact-catname.half {
-  margin-bottom: -8px;
+  margin-top: -14px;
+  margin-bottom: -1px;
 }
 .factory-frame .fact-fx {
+  position: relative;
   display: inline-block;
   background-color: rgba(0, 0, 0, 0.5);
   padding: 1px 2px;
@@ -438,6 +438,7 @@ body::after {
   margin: 1px;
   cursor: move;
   border-radius: 6px;
+  z-index: 1;
   color: #ffffff;
   background-color: hsla(var(--hue), 60%, 50%, .5);
 }
