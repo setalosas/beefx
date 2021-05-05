@@ -6,10 +6,11 @@
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop} = Corelib
+const {nop, getRndFloat} = Corelib
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr} = BeeFX(waCtx)
+  const {sampleRate} = waCtx
 
   const noiseConvolverFx = { //8#978 ------- noiseConvolver (Noise Hacker) -------
     def: {}
@@ -29,7 +30,66 @@ onWaapiReady.then(waCtx => {
   }
   registerFxType('fx_noiseConvolver', noiseConvolverFx)
   
-  const pinkingFx = { //8#e88 -------pinking  (Noise Hacker) -------
+  const createNoise = variant => {
+    const noiseFx = {
+      def: {}
+    }
+    noiseFx.onActivated = (fx, isActive) => isActive ? fx.rebuild() : fx.destroy()
+    
+    noiseFx.construct = (fx, pars, {int} = fx) => {
+      int.isOn = false
+      int.lenSec = 5
+      int.bufferSize = int.lenSec * sampleRate
+      int.noiseBuffer = waCtx.createBuffer(2, int.bufferSize, sampleRate)
+      for (let chn = 0; chn < 2; chn++) {
+        const data = int.noiseBuffer.getChannelData(chn)
+        let [lastData, b0, b1, b2, b3, b4, b5, b6] = [0, 0, 0, 0, 0, 0, 0, 0] 
+        for (let i = 0; i < int.bufferSize; i++) {
+          data[i] = getRndFloat(-1, 1)
+
+          if (variant === 'brown') {
+            data[i] = (lastData + (0.02 * data[i])) / 1.02
+            lastData = data[i]
+            data[i] *= 3.5 // (roughly) compensate for gain
+          } else if (variant === 'pink') {
+            b0 = 0.99886 * b0 + data[i] * 0.0555179
+            b1 = 0.99332 * b1 + data[i] * 0.0750759
+            b2 = 0.96900 * b2 + data[i] * 0.1538520
+            b3 = 0.86650 * b3 + data[i] * 0.3104856
+            b4 = 0.55000 * b4 + data[i] * 0.5329522
+            b5 = -0.7616 * b5 - data[i] * 0.0168980
+            data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + data[i] * 0.5362
+            data[i] *= 0.11 // (roughly) compensate for gain
+            b6 = data[i] * 0.115926
+          }
+        }
+      }
+      
+      fx.rebuild = _ => {
+        if (!int.isOn) {
+          int.isOn = true
+          int.noise = waCtx.createBufferSource()
+          int.noise.buffer = int.noiseBuffer
+          int.noise.loop = true
+          int.noise.start(0)
+          int.noise.connect(fx.output)
+        }
+      }
+      fx.destroy = _ => {
+        if (int.isOn) {
+          int.isOn = false
+          void int.noise?.stop()
+          //int.noise.disconnect(fx.output)
+        }
+      }
+    }
+    return noiseFx
+  }
+  registerFxType('fx_whiteNoise', createNoise('white'))   //8#ccc --- white noise (stereo) ---
+  registerFxType('fx_brownNoise', createNoise('brown'))   //8#a60 --- brown noise (Noisehack) ---
+  registerFxType('fx_pinkNoise', createNoise('pink'))    //8#e88 --- pink noise (Noisehack) ---
+
+  const pinkingFx = { //8#e88 ------- pinking (Noisehack) -------
     def: {}
   }
   pinkingFx.construct = (fx, pars, {int} = fx) => {
