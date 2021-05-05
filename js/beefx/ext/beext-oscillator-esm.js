@@ -23,16 +23,20 @@ onWaapiReady.then(waCtx => {
     def: {
       ...waveFormCmdsDef,
       waveForm: {defVal: 'off', skipUi: true},
+      freqDisp: {defVal: '220#def', type: 'box'},
       on: {defVal: false, skipUi: true},
-      frequency: {defVal: 220, min: 20, max: 22050, subType: 'exp', unit: 'Hz'}
-    }
+      frequency: {defVal: 220, min: 20, max: 22050, subType: 'exp', unit: 'Hz'},
+      detune: {defVal: 100, min: 90, max: 110, unit: '%'}
+    },
+    midi: {pars: ['frequency']}
   }
-  oscillatorFx.setValue = (fx, key, value, {int} = fx) => ({
+  oscillatorFx.setValue = (fx, key, value, {int, atm} = fx) => ({
     waveForm: _ => {
       fx.setValue('on', value !== 'off')
       value !== 'off' && fx.regen()
     },
-    frequency: _ => int.isValid && fx.setAt('oscillator', 'frequency', value),
+    detune: _ => fx.setRealFreq(),
+    frequency: _ => fx.setRealFreq(),
     on: _ => value ? fx.rebuild() : fx.destroy()
   }[key] || (_ => fx.cmdProc(value, key)))
   
@@ -41,12 +45,18 @@ onWaapiReady.then(waCtx => {
   oscillatorFx.construct = (fx, pars, {int, atm} = fx) => {
     const waveFormCmds = createRadioCmds(fx, waveFormCmdsDef)
     
+    fx.setRealFreq = _ => {
+      int.realFreq = Math.round(atm.frequency * atm.detune / 100)
+      int.isValid && fx.setAt('oscillator', 'frequency', int.realFreq)
+      fx.setValue('freqDisp', int.realFreq + '#mod')
+    }
+    
     fx.rebuild = _ => {
       if (fx.isActive) {
         if (!int.isValid) {
           int.isValid = true
           int.oscillator = waCtx.createOscillator()
-          int.oscillator.frequency.value = atm.frequency
+          fx.setRealFreq()
           fx.regen()
           connectArr(int.oscillator, fx.output)
         }
