@@ -235,17 +235,17 @@ export const extendUi = ui => {
     const fxnames = fxHash.propertiesToArr()
     const cats = {
       basic: {catName: 'Basic', arr: [], cc: 'half', hue: 120},
-      filter: {catName: 'Filter', arr: [], cc: '', hue: 60},
-      equalizer: {catName: 'Equalizer', arr: [], cc: '', hue: 200},
+      filter: {catName: 'Filter', arr: [], cc: 'half', hue: 60},
+      equalizer: {catName: 'Equalizer', arr: [], cc: 'half', hue: 200},
       iir: {catName: 'IIR filter', arr: [], cc: 'half', hue: 330},
-      delay: {catName: 'Delay', arr: [], cc: '', hue: 160},
-      convolver: {catName: 'Convolver/Reverb', arr: [], cc: 'half', hue: 300},
-      noise: {catName: 'Noise', arr: [], cc: '', hue: 30},
-      eflfo: {catName: 'EF/LFO', arr: [], cc: '', hue: 120},
+      delay: {catName: 'Delay', arr: [], cc: 'half', hue: 160},
+      convolver: {catName: 'Convolver/Reverb', arr: [], cc: '', hue: 300},
+      noise: {catName: 'Noise', arr: [], cc: 'half', hue: 30},
+      eflfo: {catName: 'EF/LFO', arr: [], cc: 'half', hue: 120},
       generator: {catName: 'Generator', arr: [], cc: 'half', hue: 45},
-      distortion: {catName: 'Distortion', arr: [], cc: '', hue: 0},
-      complex: {catName: 'Complex', arr: [], cc: '', hue: 15},
-      device: {catName: 'Device', arr: [], cc: '', hue: 240},
+      distortion: {catName: 'Distortion', arr: [], cc: 'half', hue: 0},
+      complex: {catName: 'Complex', arr: [], cc: 'half', hue: 15},
+      device: {catName: 'Device', arr: [], cc: 'half', hue: 240},
       visual: {catName: 'Visual', arr: [], cc: 'half', hue: 300},
       misc: {catName: 'Misc', arr: [], cc: 'half', hue: 90}
     }
@@ -267,14 +267,13 @@ export const extendUi = ui => {
       match('scope,spectr', 'visual')
       match('blank,gain,ratio', 'basic')
       match('conv,reverb,cabi', 'convolver')
-      match('lfo,ef,wahwah','eflfo')
+      match('lfo,ef,wah,vibr','eflfo')
       match('ring,over', 'distortion')
       match('dela', 'delay')
       match('wave,oscilla', 'generator')
       match('eq', 'equalizer')
       match('noise,crush,pink', 'noise')
       match('samp,rec,bpm', 'device')
-      match('wahbass,autowah,vibr', 'misc')
       cats[cat].arr.push(fxname)
     }
     const catArr = cats.propertiesToArr()
