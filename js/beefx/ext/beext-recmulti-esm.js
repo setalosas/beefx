@@ -13,7 +13,9 @@ const {max, round, floor} = Math
 const {AudioWorkletNode, requestAnimationFrame: RAF} = window
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType, connectArr, concatAudioBuffers, getJsPath, nowa} = BeeFX(waCtx)
+  const beeFx = BeeFX(waCtx)
+  const {registerFxType, connectArr, concatAudioBuffers, getJsPath, nowa} = beeFx
+  const {radioDef, createRadioCmds} = beeFx
   
   const logOn = false
   const clog = (...args) => logOn && console.log(...args)
@@ -232,6 +234,15 @@ onWaapiReady.then(waCtx => {
         ? `Recorder`
         : `Sampler` + (usePitchShift ? ' (note)' : '')
     const sampName = isSampler ? 'Sampler' : isRecorder ? 'Stop' : 'Playback'
+    
+    const beatCmdsDef = {
+      beatH: radioDef('off', 'Beat', 1 / 2),
+      beat1: radioDef('off', 'Beat', 1),
+      beat2: radioDef('off', 'Bt 2', 2),
+      beat4: radioDef('off', 'Bt 4', 4),
+      beat8: radioDef('off', 'Bt 8', 8),
+      beatM: radioDef('active', 'Off', 0)
+    }
 
     const recMultiExt = { //8#aa8 -------loop -------
       def: {
@@ -248,6 +259,11 @@ onWaapiReady.then(waCtx => {
           trimRight: {defVal: 'on', type: 'cmd', name: 'Trim right (1s)'},
           startMod: {defVal: 0, min: -1, max: 1, unit: 's'},
           endMod: {defVal: 0, min: -1, max: 1, unit: 's'},
+          bpm: {defVal: 333, skipUi: true},
+          beatTime: {defVal: 60 / 333, skipUi: true},
+          beatDisp: {defVal: '333 / 180ms#def', type: 'box', width: 64},
+          ...beatCmdsDef,
+          fixBeatMod: {defVal: 0, skipUi: true},
           samplePlay: {defVal: 'off', type: 'cmd', name: 'Play'},
           sampleLoop: {defVal: 'off', type: 'cmd', subType: 'led', color: 80, name: 'Loop sample'},
           sampleStop: {defVal: 'off', type: 'cmd', name: 'Stop loop'}
@@ -266,6 +282,7 @@ onWaapiReady.then(waCtx => {
       },
       promises: isBpm ? [auWorkletPromise] : [], //: beeFx waits until this promise is resolved
       midi: {pars: isSampler ? ['startMod', 'endMod'] : []} ,
+      listen: ['source.bpm:bpm'],
       name: fxName,
       graphs: {
         wave: {
@@ -283,6 +300,13 @@ onWaapiReady.then(waCtx => {
 
     recMultiExt.setValue = (fx, key, value, {atm, int} = fx) => ({
       log: nop,
+      bpm: _ => {
+        fx.setValue('beatTime', 60 / (value || 333))
+        const mod = value === fx.exo.def.bpm.defVal ? '#def' : '#set'
+        fx.setValue('beatDisp', `${value} / ${round(atm.beatTime * 1000)}ms` + mod)
+      },
+      beatTime: _ => fx.recalcMarkers(),
+      fixBeatMod: _ => fx.recalcMarkers(),
       startMod: _ => fx.recalcMarkers(),
       endMod: _ => fx.recalcMarkers(),
       piano: _ => fx.setTone(value)
@@ -298,6 +322,9 @@ onWaapiReady.then(waCtx => {
       const disp = {}         //: graph display interval (sometimes we zoom)
       int.capture({final, disp, recorded}) //: as we will need these in the graph redraw
       int.capture({isSampler, isRecorder, isBpm})
+      if (isSampler) {
+        int.beatCmds = createRadioCmds(fx, beatCmdsDef)
+      }
         
       const initFx = _ => {
         int.chMax = isBpm ? 2 : 2 //: Can be 1 for Bpm, more tests needed.
@@ -350,7 +377,9 @@ onWaapiReady.then(waCtx => {
         relativize(sample)
 
         final.startAt = clamp(sample.startAt + atm.startMod, recorded.startAt, recorded.endAt)
-        final.endAt = clamp(sample.endAt + atm.endMod, final.startAt + .01, recorded.endAt)
+        final.endAt =  atm.fixBeatMod
+          ? clamp(final.startAt + atm.beatTime * atm.fixBeatMod, 0, recorded.endAt)
+          : clamp(sample.endAt + atm.endMod, final.startAt + .01, recorded.endAt)
         relativize(final)
         
         if (isInRec) {
@@ -632,6 +661,9 @@ onWaapiReady.then(waCtx => {
 
       fx.cmdProc = (fire, mode) => {
         if (fire === 'fire') {
+          if (int.beatCmds?.check(mode, val => fx.setValue('fixBeatMod', val))) {
+            return
+          }
           const action = {
             modeBypass: _ => setMainMode(mode),
             modeRecord: _ => setMainMode(mode),
