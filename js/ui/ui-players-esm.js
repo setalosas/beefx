@@ -9,7 +9,7 @@ import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
 const {undef, hashOfString, getRndDig, no} = Corelib
 const {wassert, weject, wejectNaN} = Corelib.Debug
-const {post, startEndThrottle, schedule, adelay} = Corelib.Tardis
+const {post, startEndThrottle, schedule, adelay, since, NoW} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
 const {div$, set$, q$} = DOMplusUltra
 const {round, abs} = Math
@@ -23,8 +23,12 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
   const logOn = false
   const logScrapingOn = false
   const logMediaStateOn = false
+  const logSyncOn = true
+  const logSyncVerboseOn = false
   const clog = (...args) => logOn && console.log(...args) // eslint-disable-line
   const slog = (...args) => logScrapingOn && console.log(...args) // eslint-disable-line
+  const ylog = (...args) => logSyncOn && console.log(...args) //
+  const zlog = (...args) => logSyncVerboseOn && console.log(...args) //
   
   //8#49cScraping the youtube DOM for video data
   /* 
@@ -126,7 +130,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
         const {title = '', videoTitle = '', videoId, volume, muted} = state
         const duration = d || 0.1 //Number.isNaN(d) ? 1 : d
         const info = `paused=${paused} curr=${currentTime.toFixed(2)}  dur=${duration.toFixed(2)} pbRate=${playbackRate} vol=${volume} muted=${muted} title=${title.substr(0, 40)} videoId=${videoId} videoTitle=${videoTitle.substr(0, 30)}`
-        slog(type, info)
+        zlog(type, info)
       }
     }
 
@@ -142,32 +146,42 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       const {ytPlayer} = sourceUi
       const diffToMaster = slave.currentTime - master.currentTime
       
-      if (abs(diffToMaster) > .06) {
-        const newSlaveTime = master.currentTime + .05
-        ytPlayer.seekTo(newSlaveTime, true)
-        
-        const diff = diffToMaster.toFixed(3)
-        const masterAt = master.currentTime.toFixed(3)
-        const slaveAt = slave.currentTime.toFixed(3)
-        const targetAt = newSlaveTime.toFixed(3)
-        const inf = `⚡️⚡️sync(${diff})-> slave:${slaveAt} master:${masterAt} new slave:${targetAt}`
-        slog(inf)
+      const konf = {
+        maxOkLag: .15, // .06
+        preRun: .1 // .05
+      }
+      if (abs(diffToMaster) > konf.maxOkLag) {
+        const elapsed = since(sourceUi.lastPlayerSyncAt || 0)
+        if (elapsed > 2500) {
+          const newSlaveTime = master.currentTime + konf.preRun
+          ytPlayer.seekTo(newSlaveTime, true)
+          sourceUi.lastPlayerSyncAt = NoW()
+          
+          const diff = diffToMaster.toFixed(3)
+          const masterAt = master.currentTime.toFixed(3)
+          const slaveAt = slave.currentTime.toFixed(3)
+          const targetAt = newSlaveTime.toFixed(3)
+          const inf = `⚡️⚡️sync(${diff})-> slave:${slaveAt} master:${masterAt} new slave:${targetAt}`
+          ylog(inf)
+        } else {
+          console.log('elapsed to small', elapsed)
+        }
       }
       if (master.paused !== slave.paused) {
         if (master.paused && slave.playerState === 1) { //: 1=playing
           ytPlayer.pauseVideo()
-          slog('⚡️⚡️sync pause!')
+          ylog('⚡️⚡️sync pause!')
         } else if (!master.paused && [2, 5].includes(slave.playerState)) {
           ytPlayer.playVideo()
-          slog('⚡️⚡️sync play!')
+          ylog('⚡️⚡️sync play!')
         }
       }
       if (abs(master.playbackRate - slave.playbackRate) > .01) {
-        slog('⚡️⚡️sync speed!', master.playbackRate.toFixed(3), slave.playbackRate.toFixed(3))
+        ylog('⚡️⚡️sync speed!', master.playbackRate.toFixed(3), slave.playbackRate.toFixed(3))
         ytPlayer.setPlaybackRate(master.playbackRate)
       }
       if (!slave.muted) {
-        slog('⚡️⚡️sync mute!')
+        ylog('⚡️⚡️sync mute!')
         ytPlayer.mute()
       }
     }
@@ -250,14 +264,14 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       const fp = 1 + getRndDig(6)
       mediaElement && post(_ => {
         mediaElement.addEventListener('onloadedmetadata', event => {
-          slog('ONLOADEDMETADATA', event)
+          zlog('ONLOADEDMETADATA', event)
           getMediaElementState(fp)
         })
         mediaElement.addEventListener('play', event => getMediaElementState(fp))
         mediaElement.addEventListener('pause', event => getMediaElementState(fp))
         mediaElement.addEventListener('seeked', event => getMediaElementState(fp))
         mediaElement.addEventListener('timeupdate', event => lazyGetMediaElementState(fp))
-        slog(`mediaObserver started listening to `, fp, mediaElement.title, mediaElement)
+        zlog(`mediaObserver started listening to `, fp, mediaElement.title, mediaElement)
         observer.fp = fp
         tick(fp)
       })
