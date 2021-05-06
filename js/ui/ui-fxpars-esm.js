@@ -52,18 +52,18 @@ export const createFxParControls = ui => {
         list.map(([value, name]) => 
           leaf$('option', {text: name, attr: {value, ...(name === act ? {selected: ''} : {})}}))))
           
-  const addBox = (parO, width) => 
-    parO.control$ = div$({class: 'bee-box', css: {width}})
+  const addBox = (parO, width, cc) => 
+    parO.control$ = div$({class: 'bee-box ' + cc, css: {width}})
 
   const addBoxWithLed = (parO, width, cc) => 
-    parO.control$ = div$({class: 'bee-box wled', text: ' ', css: {width}},
-      parO.led$ = div$({class: 'led-fx ' + cc}))
+    parO.control$ = div$({class: 'bee-box wled ' + cc, text: ' ', css: {width}},
+      parO.led$ = div$({class: 'led-fx'}))
     
-  const addCmd = (parO, name, callback) => 
-    parO.control$ = div$({class: 'bee-cmd', text: name, click: event => callback('fire')})
+  const addCmd = (parO, name, callback, cc) => 
+    parO.control$ = div$({class: 'bee-cmd ' + cc, text: name, click: _ => callback('fire')})
                      
-  const addCmdWithLed = (parO, name, callback, color = 0, blink = false) => 
-    parO.control$ = div$({class: 'bee-cmd wled', text: name, click: event => callback('fire')},
+  const addCmdWithLed = (parO, name, callback, color = 0, cc = '') => 
+    parO.control$ = div$({class: 'bee-cmd wled ' + cc, text: name, click: _ => callback('fire')},
       div$({class: 'led-fx fix-on', css: {__ledhue: color}}))
 
   const num2str = (num, maxwi = 4) => {
@@ -121,9 +121,15 @@ export const createFxParControls = ui => {
   
   //8#2aaRendering pars
   
+  const dbg = {
+    mismatchCnt: 0
+  }
+  
   const refreshDisplay = (fxPanelObj, key, assertFx) => {
     if (assertFx !== fxPanelObj.fx) {
-      return console.warn(`refreshDisplay: fx changed in fxPanelObj, skip!`, assertFx, fxPanelObj.fx)
+      dbg.mismatchCnt++ < 50 && 
+        console.warn(`refreshDisplay: fx/fxPanelObj differs, skip!`, key, assertFx, fxPanelObj.fx)
+      return
     }
     const {pars, fx} = fxPanelObj
     const parO = pars[key]
@@ -201,7 +207,7 @@ export const createFxParControls = ui => {
     const onValChanged = key => val => fx.setLinearValue(key, val)
     
     for (const key in def) {
-      const {type, size, short, subType, skipUi, unit, color, readOnly} = def[key]
+      const {type, size, short, subType, skipUi, unit, color, readOnly, cc = ''} = def[key]
       if (skipUi) {
         continue
       }
@@ -223,13 +229,13 @@ export const createFxParControls = ui => {
         },
         box: _ => {    //8#b8a7 ------- box --> non-input, output, plain div cmd -------
           subType === 'led'
-            ? addBoxWithLed(parO, (parO.parDef.width || 40) + 'px', parO.parDef.cc || '')
-            : addBox(parO, (parO.parDef.width || 40) + 'px')
+            ? addBoxWithLed(parO, (parO.parDef.width || 40) + 'px', cc)
+            : addBox(parO, (parO.parDef.width || 40) + 'px', cc)
         },
         cmd: _ => {    //8#b8c7 ------- cmd --> non-input, plain div cmd -------
           subType === 'led'
-            ? addCmdWithLed(parO, short, onValChanged(key), parO.parDef.color)
-            : addCmd(parO, short, onValChanged(key))
+            ? addCmdWithLed(parO, short, onValChanged(key), parO.parDef.color, cc)
+            : addCmd(parO, short, onValChanged(key), cc)
         },
         strings: _ => { //8#ea7 ------- strings --> select box -------
           addListSelector(parO, short, '', subType, onValChanged(key))
