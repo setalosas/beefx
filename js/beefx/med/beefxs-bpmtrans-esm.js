@@ -8,20 +8,23 @@ import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
 const {nop} = Corelib // eslint-disable-line no-unused-vars
 const {startEndThrottle} = Corelib.Tardis
-const {log} = Math
+const {log, round} = Math
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, newFx} = BeeFX(waCtx)
 
   const bpmTransformerFx = { //8#e74 ------- bpmTransformer -------
     def: {
-      reset: {defVal: 'on', type: 'cmd', name: 'Reset'},
-      bpmOriginal: {defVal: 333, type: 'box', width: 24}, //: for disp only, int.bpmIn is the var
-      bpmDec: {defVal: '>>', type: 'box', width: 16},
-      bpmAdjusted: {defVal: 333, type: 'box', width: 32}, //: for disp only, int.bpmOut is the var
+      reset: {defVal: 'on', type: 'cmd', name: 'Rst'},
+      xDouble: {defVal: 'on', type: 'cmd', name: 'x2', width: 12},
+      xHalf: {defVal: 'on', type: 'cmd', name: '/2', width: 12},
+      bpmOriginal: {defVal: '333#def', type: 'box', width: 18}, //: disp only, ->int.bpmIn
+      bpmDec: {defVal: '>>#label', type: 'box', width: 11},
+      bpmAdjusted: {defVal: '333#def', type: 'box', width: 26}, //: disp only, ->int.bpmOut
       decBpm: {defVal: 'on', type: 'cmd', name: '-1'},
       incBpm: {defVal: 'on', type: 'cmd', name: '+1'},
-      autoTune: {defVal: 'off', subType: 'led', color: 25, type: 'cmd'},
+      setFromAdj: {defVal: 'on', type: 'cmd', name: '🔅', cc: 'emoji'},
+      autoTune: {defVal: 'off', subType: 'led', color: 25, type: 'cmd', name: 'auTune'},
       pitch: {defVal: 100, min: 100 - 16 * 2, max: 100 + 16 * 2, unit: '%', name: 'Pitch Adj.'},
       bpmModifier: {defVal: 0, min: -30, max: 30, readOnly: true, skipUi: true},
       controller: {defVal: null, type: 'object', skipUi: true},
@@ -43,6 +46,14 @@ onWaapiReady.then(waCtx => {
   //:  - pitchShifter (fx)
   
   bpmTransformerFx.setValue = (fx, key, value, {int, atm} = fx) => ({
+    xDouble: _ => value === 'fire' && fx.setValue('bpmOriginal', round(int.bpmIn * 2) + '#set'),
+    xHalf: _ => value === 'fire' && fx.setValue('bpmOriginal', round(int.bpmIn / 2) + '#set'),
+    setFromAdj: _ => {
+      if (value === 'fire') {
+        fx.setValue('bpmOriginal', round(int.bpmOut))
+        fx.setValue('pitch', 100)
+      }
+    },
     pitch: _ => fx.pitchChanged(value),
     bpmOriginal: _ => fx.bpmOrigChanged(value), // 123#set -> 123
     bpmModifier: _ => fx.bpmModChanged(value),
