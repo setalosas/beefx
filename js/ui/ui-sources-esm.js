@@ -59,13 +59,20 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   }))]
   
   const init = _ => {
-    set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, sourceIxArr.map(ix => 
-      sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
-        sourceUis[ix].info$ = div$({class: 'src-info'}),
-        sourceUis[ix].media$ = div$({class: 'src-media'}),
-        sourceUis[ix].ctrl$ = div$({class: 'src-ctrl'}),
-        sourceUis[ix].stage$ = div$({class: 'src-stage'})
-    ])))
+    set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, [
+      ui.syncToolsFrame$ = div$({class: 'source-frame synctools-frame off'}, [
+        ui.syncLoopStart = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync start loops',
+          click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStartLoop'})}),
+        ui.syncLoopEnd = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync stop loops', click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStopLoop'})})
+      ]),
+      ...sourceIxArr.map(ix => 
+        sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
+          sourceUis[ix].info$ = div$({class: 'src-info'}),
+          sourceUis[ix].media$ = div$({class: 'src-media'}),
+          sourceUis[ix].ctrl$ = div$({class: 'src-ctrl'}),
+          sourceUis[ix].stage$ = div$({class: 'src-stage'})
+      ]))
+    ])
   }
   
   init()
