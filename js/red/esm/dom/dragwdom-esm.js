@@ -26,6 +26,7 @@ const createDragWithDOM = _ => {
   const postDragStart = (event, src$, data) => {
     if (event.dataTransfer) {
       ddrag.dragOn = true
+      ddrag.dropped = false
       ddrag.draggedSrc = src$
       ddrag.dragDst = undef
       ddrag.dragModDst = undef
@@ -82,8 +83,13 @@ const createDragWithDOM = _ => {
     }
   }
   const postDrop = (event, dst$, callback) => {
-    set$(dst$, {declass: 'dragover dragovermod'})
-    callback(ddrag.draggedData, ddrag.lastMod, event)
+    if (!ddrag.dropped) {
+      ddrag.dropped = true
+      set$(dst$, {declass: 'dragover dragovermod'})
+      callback(ddrag.draggedData, ddrag.lastMod, event)
+    } else {
+      console.warn('skip drop duplicate', event.target, event, dst$)
+    }
   }
   
   const draggableHandler = (event, item$, data) => {
