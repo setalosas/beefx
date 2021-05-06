@@ -249,6 +249,13 @@ export const create = root => {
   stateManager.getProjectList = _ => {
     const ret = []
     store.iterateKeys('project#', projName => ret.push(projName.split('project#')[1]))
+    /*
+    const dbg = []
+    for (const projname of ret) {
+      dbg.push([projname, JSON.stringify(readProject(projname)).length])
+    }
+    console.table(dbg)
+    */
     return ret
   }
   stateManager.getProjectListExtended = _ => 
