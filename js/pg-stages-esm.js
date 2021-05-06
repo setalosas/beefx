@@ -103,13 +103,22 @@ export const createStageManager = root => {
       stage.changeFx({ix, type})
     } else {
       console.warn(`stageMan.changeFx: no stage (${stage.stageIx})`, {ix, type, stages})
-      debugger
+    }
+  }
+  stageMan.insertFxBefore = ({stageId, ix, type}) => {
+    const stage = getStageById(stageId)
+    if (stage) {
+      stage.insertFxBefore({ix, type})
+    } else {
+      console.warn(`stageMan.insertFxBeforeFx: no stage (${stage.stageIx})`, {ix, type, stages})
     }
   }
   
   stageMan.addFx = (stageId, type) => getStageById(stageId).changeFx({type})
 
   stageMan.getFxById = (stageId, ix) => getStageById(stageId).fxArr[ix]
+  
+  stageMan.onGlobalCommand = par => iterateStandardStages(stage => stage.onGlobalCommand(par))
 
   //8#76e -------- Stage factory --------
   
@@ -213,6 +222,16 @@ export const createStageManager = root => {
     
     const globalStageState = {}   //: store of last emitted values (for late arrivals)
       
+    stage.onGlobalCommand = ({cmd, par = 'fire'}) => {
+      for (const fx of fxArr) {
+        for (const [propRequest, local] of fx.meta.listeners) {
+          if (propRequest === cmd) {
+            fx.setValue(local, par)
+          }
+        }
+      }
+    }
+      
     stage.onGlobalChange = (prop, value) => { //: event in -> store & check all existing fxs
       globalStageState[prop] = value
       if (value) { //: 0 or undef -> no info
@@ -267,6 +286,19 @@ export const createStageManager = root => {
       return fx
     }
     
+    stage.insertFxBefore = ({ix = fxArr.length, type, params = {}}) => {
+      wassert(ix <= fxArr.length) //: the array can't have a gap
+      stage.decompose()
+      for (let iix = fxArr.length; iix > ix; iix--) {
+        fxArr[iix] = fxArr[iix - 1]
+      }
+      fxArr[ix] = undef
+      const fx = changeFxLow({ix, type, params})
+      const state = stage.saveState()
+      stage.loadState(state)
+      return fx
+    }
+    
     stage.saveState = _ => fxArr.map(fx => fx.getFullState())
     
     const destroyLastFx = _ => {
@@ -312,12 +344,9 @@ export const createStageManager = root => {
     }
     
     stage.rebuild = _ => { //: What is this for?
-      const state = stage.saveState()
-      iterateStages(istage => {
-        if (istage !== stage) {
-          istage.loadState(state)
-        }
-      })
+      const state = stage.saveState().filter(fxstate => fxstate.fxName !== 'fx_blank')
+      console.log(state)
+      stage.loadState(state)
     }
         
     stage.clone = _ => {
