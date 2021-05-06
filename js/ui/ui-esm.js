@@ -172,7 +172,7 @@ export const createUI = (root, exroot) => {
     const label = (name, text) => ui[name + '$'] = div$({class: 'mlabel', text})
     createBar('mainmenu', ui.mainmenuBar$, {}, [
       togg('mixer', 'Mixer...', {link: 'mixermenuBar'}),
-      togg('sync', 'Sync...', {link: 'syncFrame'}),
+      togg('sync', 'Sync...', {link: 'syncToolsFrame'}),
       togg('sourceList', 'Sources...', {onChg: ui.onVideoListToggled}),
       togg('proj', 'Projects..', {link: 'projmenuFrame'}),
       togg('fxfactory', 'Factory..', {link: 'factoryFrame', onChg: ui.onFactoryToggled}),
