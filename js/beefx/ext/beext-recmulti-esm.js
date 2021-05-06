@@ -236,11 +236,11 @@ onWaapiReady.then(waCtx => {
     const sampName = isSampler ? 'Sampler' : isRecorder ? 'Stop' : 'Playback'
     
     const beatCmdsDef = {
-      beatH: radioDef('off', 'Beat', 1 / 2),
       beat1: radioDef('off', 'Beat', 1),
       beat2: radioDef('off', 'Bt 2', 2),
       beat4: radioDef('off', 'Bt 4', 4),
       beat8: radioDef('off', 'Bt 8', 8),
+      beat16: radioDef('off', 'Bt 16', 16),
       beatM: radioDef('active', 'Off', 0)
     }
 
@@ -250,8 +250,8 @@ onWaapiReady.then(waCtx => {
         modeBypass: {defVal: 'active.ledon', type: 'cmd', subType: 'led', color: 140, name: 'Bypass'},
         modeRecord: {defVal: 'on', type: 'cmd', subType: 'led', color: 0, name: 'Record'},
         modeSampler: {defVal: 'off', type: 'cmd', subType: 'led', color: 180, name: sampName},
-        useScriptProc: {defVal: 'on', type: 'cmd', subType: 'led', name: 'scriptProcessor (slow)'},
-        useWorklet: {defVal: 'off', type: 'cmd', subType: 'led', name: 'audioWorklet (slow)'},
+        useScriptProc: {defVal: 'on', type: 'cmd', subType: 'led', color: 15, name: 'scriptProcessor (slow)'},
+        useWorklet: {defVal: 'off', type: 'cmd', subType: 'led', color: 330, name: 'audioWorklet (slow)'},
         wave: {type: 'graph'},
         ...(isSampler ? {
           trimLeft: {defVal: 'on', type: 'cmd', name: 'Trim left (1s)'},
@@ -267,6 +267,7 @@ onWaapiReady.then(waCtx => {
           samplePlay: {defVal: 'off', type: 'cmd', name: 'Play'},
           sampleLoop: {defVal: 'off', type: 'cmd', subType: 'led', color: 80, name: 'Loop sample'},
           sampleStop: {defVal: 'off', type: 'cmd', name: 'Stop loop'}
+          //syncStartLoop: {defVal: '', skipUi: true}
         } : {
           startMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true},
           endMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true}
@@ -282,7 +283,9 @@ onWaapiReady.then(waCtx => {
       },
       promises: isBpm ? [auWorkletPromise] : [], //: beeFx waits until this promise is resolved
       midi: {pars: isSampler ? ['startMod', 'endMod'] : []} ,
-      listen: ['source.bpm:bpm'],
+      listen: isSampler
+        ? ['source.bpm:bpm', 'global.syncStartLoop:sampleLoop', 'global.syncStopLoop:sampleStop']
+        : [],
       name: fxName,
       graphs: {
         wave: {
@@ -312,7 +315,7 @@ onWaapiReady.then(waCtx => {
       piano: _ => fx.setTone(value)
     }[key] || (_ => fx.cmdProc(value, key))) //: all commands sent to cmdProc
 
-    recMultiExt.onActivated = (fx, isActive) => isActive || fx.shutdownRecorder() //: cleanup!
+    recMultiExt.onActivated = (fx, isActive) => isActive || fx.shutdownFx() //: cleanup!
     
     recMultiExt.construct = (fx, pars, {int, atm} = fx) => {
       const recorded = {}     //: this is the full recorded sample
@@ -329,6 +332,7 @@ onWaapiReady.then(waCtx => {
       const initFx = _ => {
         int.chMax = isBpm ? 2 : 2 //: Can be 1 for Bpm, more tests needed.
         int.isRAFOn = false
+        int.detune = 0
         int.useScriptProcessor = false
         int.procFrames = 4096
         int.muteInputOn = true    //: so the next line will have a real effect
@@ -375,11 +379,16 @@ onWaapiReady.then(waCtx => {
           sample.endAt = max(recorded.endAt - .0 - trim.right, sample.startAt + .01)
         }
         relativize(sample)
-
-        final.startAt = clamp(sample.startAt + atm.startMod, recorded.startAt, recorded.endAt)
-        final.endAt =  atm.fixBeatMod
-          ? clamp(final.startAt + atm.beatTime * atm.fixBeatMod, 0, recorded.endAt)
-          : clamp(sample.endAt + atm.endMod, final.startAt + .01, recorded.endAt)
+        if (int.isBeatLoopModeOn) {
+          wassert(atm.fixBeatMod)
+          final.endAt = recorded.endAt
+          final.startAt = final.endAt - atm.fixBeatMod * atm.beatTime
+        } else {
+          final.startAt = clamp(sample.startAt + atm.startMod, recorded.startAt, recorded.endAt)
+          final.endAt = atm.fixBeatMod
+            ? clamp(final.startAt + atm.beatTime * atm.fixBeatMod, 0, recorded.endAt)
+            : clamp(sample.endAt + atm.endMod, final.startAt + .01, recorded.endAt)
+          }
         relativize(final)
         
         if (isInRec) {
@@ -403,13 +412,15 @@ onWaapiReady.then(waCtx => {
             fx.setValue('trimRight', int.trimmable ? 'on' : 'off')
           }
         }
-        if (recorded.len > 5 && !int.inBpm) {
-          if (atm.bpmRec !== 'on') {
-            post(_ => fx.setValue('bpmRec', 'on'))
-          }
-        } else {
-          if (atm.bpmRec === 'on') {
-            post(_ => fx.setValue('bpmRec', 'off'))
+        if (isBpm) {
+          if (recorded.len > 5 && !int.inBpm) {
+            if (atm.bpmRec !== 'on') {
+              post(_ => fx.setValue('bpmRec', 'on'))
+            }
+          } else {
+            if (atm.bpmRec === 'on') {
+              post(_ => fx.setValue('bpmRec', 'off'))
+            }
           }
         }
       }
@@ -465,7 +476,6 @@ onWaapiReady.then(waCtx => {
               appendBuffer(transBuff, frames)
             } else if (data.op === 'error') {
               exitRecordMode()
-              //fx.shutdownRecorder()
               //int.inBpm = false //: ...
               console.warn('Recorder got error from worklet:', data.msg, event)
             } else {
@@ -497,6 +507,11 @@ onWaapiReady.then(waCtx => {
           }
         }
       }
+      fx.shutdownFx = _ => { //: if inactivated
+        fx.shutdownRecorder()
+        setMainMode('modeBypass')
+        setRAF(false)
+      }
       
       const updateMode = mode => {
         clog('enter ' + mode)
@@ -524,6 +539,7 @@ onWaapiReady.then(waCtx => {
             fx.setValue('endMod', 0)
             fx.setValue('trimLeft', 'off')
             fx.setValue('trimRight', 'off')
+            atm.fixBeatMod && fx.setValue('sampleLoop', 'active')
           }
           resetMarkers()
           updateMode('modeRecord')
@@ -672,7 +688,15 @@ onWaapiReady.then(waCtx => {
             trimRight: _ => int.trimmable && trim.right++,
             trimReset: _ => trim.left = trim.right = 0,
             samplePlay: _ => int.mode === 'modeSampler' && playOnce(),
-            sampleLoop: _ => int.mode === 'modeSampler' && startPlayLoop(),
+            sampleLoop: _ => {
+              if (int.mode === 'modeRecord' && atm.fixBeatMod) {
+                setMainMode('modeSampler')
+                // startmod = endmod - atm.,fixBeatMod * time
+                startPlayLoop()
+              } else {
+                int.mode === 'modeSampler' && startPlayLoop()
+              }
+            },
             sampleStop: _ => int.mode === 'modeSampler' && endPlayLoop(),
             useScriptProc: _ => int.mode !== 'modeRecord' && setScriptProcMode(true),
             useWorklet: _ => int.mode !== 'modeRecord' && setScriptProcMode(false),
@@ -714,6 +738,7 @@ onWaapiReady.then(waCtx => {
         }
       }
       const endPlayLoop = _ => {
+        int.isBeatLoopModeOn = false
         void (int.isLoopPlaying && int.source?.stop())
         int.isLoopPlaying = false
         fx.setValue('sampleLoop', 'on')
