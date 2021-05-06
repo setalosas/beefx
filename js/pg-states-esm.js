@@ -20,6 +20,7 @@ const fxMap = {
   ax: 'ampExt',
   b: 'blank', 
   bi: 'biquad',
+  scope: 'oscilloscope',
   waveGen: 'waveGenerator',
   cheb: 'chebyshevIIR',
   spect: 'spectrum',
