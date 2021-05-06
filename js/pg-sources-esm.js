@@ -190,6 +190,8 @@ export const createSources = (playground, root) => {
   
   sources.changed = sourceIx => 
     iterateStagesWithSource(sourceIx, stage => stage.onGlobalChange('source.chg', sourceIx))
+    
+  //sources.emitGlobalCommand = ({cmd, pars}) => stageMan.onGlobalCommand(cmd, pars)
   
   sources.bpmInChanged = (sourceIx, bpm = defBpm) => { //: from ui-players/bpmDetect
     const source = sourceArr[sourceIx]
@@ -197,7 +199,7 @@ export const createSources = (playground, root) => {
     source.bpmIn = bpmInt
     source.beatTimeIn = 60 / bpmInt
     const {bpmFx} = sourceStageArr[sourceIx]
-    bpmFx.setValue('bpmOriginal', source.bpmIn + (source.bpmIn === defBpm ? '' : '#set'))
+    bpmFx.setValue('bpmOriginal', source.bpmIn + (source.bpmIn === defBpm ? '#def' : '#set'))
   }
   
   sources.bpmOutChanged = (sourceIx, bpm) => { //: from sourceStage.bpmFx.onValueChange
