@@ -242,7 +242,7 @@ onWaapiReady.then(waCtx => {
   const pitchShifterNoteFx = { //8#e94 ------- pitchShifter with semitones -------
     def: {
       realOffset: {defVal: 0, min: -1.1, max: 1.1, readOnly: true},
-      log: {defVal: '-', type: 'info'}, //+ ez mi?
+      log: {defVal: '-', type: 'info', skipUi: true}, //+ ez mi?
       piano: {defVal: 'Cm', type: 'piano'}
     },
     name: 'PitchShifter (note)'
