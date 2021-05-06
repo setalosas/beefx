@@ -45,7 +45,7 @@ const createPlayground = async root => {
   
   //8#a66 ----------- Change core playground Fxs -----------
     
-  pg.changeFx = (stageId, ix, type) => stageMan.changeFx({stageId, ix, type})
+  //pg.changeFx = (stageId, ix, type) => stageMan.changeFx({stageId, ix, type})
   
   pg.addFx = (stageId, name) => stageMan.addFx(stageId, name)
   
