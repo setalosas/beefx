@@ -153,7 +153,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       if (abs(diffToMaster) > konf.maxOkLag) {
         const elapsed = since(sourceUi.lastPlayerSyncAt || 0)
         if (elapsed > 2500) {
-          const newSlaveTime = master.currentTime + konf.preRun
+          const newSlaveTime = master.currentTime + (diffToMaster < 0 ? 2 : 1) * konf.preRun
           ytPlayer.seekTo(newSlaveTime, true)
           sourceUi.lastPlayerSyncAt = NoW()
           
