@@ -263,6 +263,8 @@ onWaapiReady.then(waCtx => {
     filterMode: _ => fx.setDelayTime('lagger', value === 'dyn' ? dynLag : 0)
   }[key] || (_ => fx.cmdProc(value, key)))
   
+  wobbleFx.onActivated = (fx, isActive) => fx.onActivated(isActive)
+  
   wobbleFx.construct = (fx, pars, {int, atm, exo} = fx) => {
     int.realBeatTime = atm.beatTime //: just for avoid div by zero at init
     int.lfo = waCtx.createOscillator()
@@ -393,7 +395,13 @@ onWaapiReady.then(waCtx => {
         }[mode]
         void action?.()
       }
-  }
+    }
+    fx.onActivated = isActive => { //: the lfo could be recreated / stopped too
+      if (isActive) {
+      } else {
+        int.isRAFOn = false
+      }
+    }
   }
   
   registerFxType('fx_wobble', wobbleFx)
