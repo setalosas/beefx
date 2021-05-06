@@ -738,6 +738,15 @@ body::after {
 .source-strip {
   text-align: center;
 }
+.source-strip .synctools-frame.source-frame {
+  background: rgba(255, 255, 255, 0.5);
+  width: 100px;
+  min-height: 70px;
+  padding: 4px;
+}
+.source-strip .synctools-frame.source-frame .bee-cmd {
+  display: block;
+}
 .source-strip .source-frame {
   position: relative;
   left: 0;
