@@ -18,7 +18,7 @@ const {addDraggable, addDragTarget} = DragWithDOM
 export const extendUi = ui => {
   const {root, pg} = ui
 
-  const logOn = false
+  const logOn = true
   const clog = (...args) => logOn && console.log(...args)
   
   const {createParsInPanel, addListSelector} = FxUiPars.createFxParControls(ui)
@@ -121,7 +121,8 @@ export const extendUi = ui => {
     const auxClass = truePropsToArr({isBlank, isGain, isOnOff, isFixed, isRemoveable, isAlterable, isFoldable, hasStageMark, isFolded, isEndRatio}).join(' ')
     
     const fxSelector$ = isAlterable &&
-      addListSelector({}, 'selfx', fxname, ui.namesDb.fxNames, nfx => pg.changeFx(stageIx, ix, nfx))
+      addListSelector({}, 'selfx', fxname, ui.namesDb.fxNames, 
+        nfx => pg.stageMan.changeFx({stageId: stageIx, ix, type: nfx}))
       
     const foldIcon$ = isFoldable &&
       div$({class: 'bfx-foldicon', click: event => {
@@ -133,8 +134,8 @@ export const extendUi = ui => {
         }
       }})
       
-    const remove$ = isRemoveable && 
-      div$({class: 'bfx-delete', click: _ => pg.changeFx(stageIx, ix, 'fx_blank')})
+    const remove$ = isRemoveable && div$({class: 'bfx-delete',
+      click: _ => pg.stageMan.changeFx({stageId: stageIx, ix, type: 'fx_blank'})})
       
     const bypassLed$ = isOnOff && 
       div$({class: 'led-fx bfxact fix-on', click: _ => ui.toggleFxPanelActiveState(fxPanelObj)})
@@ -186,10 +187,12 @@ export const extendUi = ui => {
         }
       }
     }
-    const dragDroppedOnNotFixedFx = (dstLetter, dstIx) => (data, mod) => {
+    const dragDroppedOnNotFixedFx = (dstLetter, dstIx) => (data, mod, event) => {
       const [source, fxname] = data.split('.') // eslint-disable-line no-unused-vars
       clog(`drag dropped on not fixed fx`, {data, mod, fxPanelObj})
-      pg.changeFx(dstLetter, dstIx, fxname)
+      event.shiftKey
+        ? pg.stageMan.insertFxBefore({stageId: dstLetter, ix: dstIx, type: fxname})
+        : pg.stageMan.changeFx({stageId: dstLetter, ix: dstIx, type: fxname})
     }
     
     //: we need a better stringifyable reference to the fx panels
@@ -198,6 +201,9 @@ export const extendUi = ui => {
     
     const dragger$ = isEndRatio && 
       addDraggable(div$({class: 'fx-dragger', attr: {drid}}), 'fromStage.' + stage.letter)
+      
+    //: This will add drag listeners again and again to the same fxrama.
+    //: Refaktoring will solve this (no reuse of fxrama).
     
     isEndRatio && addDragTarget(fxrama$, dragDroppedOnEndRatio(stage.letter))
     
