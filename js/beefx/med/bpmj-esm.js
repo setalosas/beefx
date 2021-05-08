@@ -20,6 +20,7 @@ const {OfflineAudioContext} = window
 
 export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
   const bpm = {}
+  const warnings = []
     
   const {duration, length, numberOfChannels, sampleRate} = buffer
 
@@ -58,7 +59,8 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
         }
       }
       if (!localPeaks.length) { // It's possible a silent part (all 0s). 
-        console.warn(`No local peaks found`, {localPeaks})  
+        warnings.push({msg: 'noPeaks', par: {i, parts}})
+        console.warn(`No local peaks found`, {i, parts})  
         continue
       }   
       let max = {
@@ -179,7 +181,7 @@ export const detectBPMj = (buffer, {minBpm = 66} = {}) => {
       //console.table(groups)
       
       const candidates = groups.sort((intA, intB) => intB.count - intA.count).slice(0, 20)
-      bpm.capture({candidates, groups, peaks})
+      bpm.capture({candidates, groups, peaks, warnings})
       
       //console.log(bpm)
       resolve(bpm)
