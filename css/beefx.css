@@ -511,7 +511,7 @@ body::after {
   margin: auto;
   width: fit-content;
 }
-.bfx-bigmid.factoryon {
+.beebody:not(.u2) .bfx-bigmid.factoryon {
   margin-left: 4px;
 }
 .bfx-horbar {
@@ -764,7 +764,7 @@ body::after {
   width: 254px;
   min-height: 70px;
 }
-.source-strip .source-frame:not([type])[ix="5"],
+.source-strip .source-frame:not([type])[ix="6"],
 .source-strip .source-frame:not([type])[ix="6"],
 .source-strip .source-frame:not([type])[ix="7"],
 .source-strip .source-frame:not([type])[ix="8"] {
