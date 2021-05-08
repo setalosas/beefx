@@ -197,6 +197,15 @@
   padding-bottom: 0;
   height: 15.5px;
 }
+.bee-box.nobord,
+.bee-cmd.nobord {
+  border: none;
+  box-shadow: none;
+}
+.bee-box.liteled .led-fx,
+.bee-cmd.liteled .led-fx {
+  --ledlite: hsl(var(--ledhue, 120), 80%, 90%);
+}
 .bee-box.wled .led-fx,
 .bee-cmd.wled .led-fx {
   position: absolute;
@@ -245,7 +254,6 @@
   position: absolute;
   right: 2px;
   top: -2px;
-  --ledlite: hsl(var(--ledhue, 120), 80%, 90%);
 }
 body:not(.invertcmd) .bee-cmd {
   color: rgba(0, 0, 0, 0.75);
