@@ -11,7 +11,7 @@ const {schedule} = Corelib.Tardis
 const {min, max, round} = Math
 
 onWaapiReady.then(waCtx => {
-  const {connectArr, registerFxType, nowa} = BeeFX(waCtx)
+  const {connectArr, registerFxType, nowa, radioDef, createRadioCmds} = BeeFX(waCtx)
   
   const beatDelayFx = { //8#96e ------- Perfect beat delay -------
     def: {
@@ -171,7 +171,7 @@ onWaapiReady.then(waCtx => {
   }
   pingPongDelayAFx.setValue = (fx, key, value) => ({
     delayLeft: _ => fx.int.leftDelay.delayTime.value = value / 1000, //: setAt makes this worse
-    delayRight: _ => fx.setDelayTime('rightDelay', value / 1000),    //: that's 100%
+    delayRight: _ => fx.setDelayTime('rightDelay', value / 1000),    //: that's 100%, this is ramp
     feedbackLeft: _ => fx.setAt('leftFeedback', 'gain', value),
     feedbackRight: _ => fx.setAt('rightFeedback', 'gain', value)
   }[key])
@@ -194,6 +194,89 @@ onWaapiReady.then(waCtx => {
   }
 
   registerFxType('fx_pingPongDelayA', pingPongDelayAFx)
+  
+  const beatCmdsDef = {
+    beatQ: radioDef('off', 'Bt /4', 1 / 4),
+    beatH: radioDef('off', 'Bt /2', 1 / 2),
+    beat1: radioDef('active', 'Beat', 1),
+    beat2: radioDef('off', 'Bt *2', 2),
+    beat4: radioDef('off', 'Bt *4', 4)
+  }
+  
+  const pingPongBeatDelayFx = { //8#0ac -------pingPongDelayC (syncable beat delay) -------
+    def: {
+      bpm: {defVal: 333, skipUi: true}, //: internal, from listening to the source
+      beatTime: {defVal: 60 / 333, skipUi: true}, //: internal, from bpm
+      beatTimeMod: {defVal: 1, skipUi: true},
+      bpmDisp: {defVal: '333 / 180ms#def', type: 'box', width: 66},
+      ...beatCmdsDef,
+      delayFactLeft: {defVal: 0, min: 0, max: 24, subType: 'int', unit: '/12', name: 'Factor L'},
+      delayFactRight: {defVal: 0, min: 0, max: 24, subType: 'int', unit: '/12', name: 'Factor R'},
+      delayDispLeft: {defVal: 'Left: 180ms#set', type: 'box', width: 70},
+      delayDispRight: {defVal: 'Right: 180ms#set', type: 'box', width: 70},
+      feedbackLeft: {defVal: .5, min: .01, max: 1.0, name: 'Feedback L'},
+      feedbackRight: {defVal: .5, min: .01, max: 1.0, name: 'Feedback R'}
+    },
+    midi: {pars: ['delayFactLeft,feedbackLeft', 'delayFactRight,feedbackRight']},
+    listen: ['source.bpm:bpm'],
+    name: 'Ping Pong Beat Delay'
+  }
+  pingPongBeatDelayFx.setValue = (fx, key, value) => ({
+    bpm: _ => fx.setValue('beatTime', 60 / (value || 333)),
+    beatTime: _ => fx.delayChanged(),
+    beatTimeMod: _ => fx.delayChanged(),
+    bpmDisp: nop,
+    delayDispLeft: nop,
+    delayDispRight: nop,
+    delayFactLeft: _ => fx.delayChanged(), //: setAt makes this worse
+    delayFactRight: _ => fx.delayChanged() ,    //: that's 100%, this is ramp
+    feedbackLeft: _ => fx.setAt('leftFeedback', 'gain', value),
+    feedbackRight: _ => fx.setAt('rightFeedback', 'gain', value)
+  }[key] || (_ => fx.cmdProc(value, key)))
+  
+  pingPongBeatDelayFx.construct = (fx, pars, {int, atm, exo} = fx) => {
+    int.merger = waCtx.createChannelMerger(2)
+    int.leftDelay = waCtx.createDelay(10)
+    int.rightDelay = waCtx.createDelay(10)
+    int.leftFeedback = waCtx.createGain()
+    int.rightFeedback = waCtx.createGain()
+    int.splitter = waCtx.createChannelSplitter(2)
+
+    int.splitter.connect(int.leftDelay, 0)
+    int.splitter.connect(int.rightDelay, 1)
+    connectArr(int.leftDelay, int.leftFeedback, int.rightDelay, int.rightFeedback, int.leftDelay)
+    int.leftFeedback.connect(int.merger, 0, 0)
+    int.rightFeedback.connect(int.merger, 0, 1)
+    fx.start.connect(int.splitter)
+    int.merger.connect(fx.output)
+    
+    const beatTimeDef = exo.def.beatTime.defVal
+    const beatTimeModDef = exo.def.beatTimeMod.defVal
+    const factLeftDef = exo.def.delayFactLeft.defVal
+    const factRightDef = exo.def.delayFactRight.defVal
+    
+    fx.delayChanged = _ => {
+      int.delayLeft = atm.beatTime * atm.beatTimeMod * atm.delayFactLeft / 12
+      int.delayRight = atm.beatTime * atm.beatTimeMod * atm.delayFactRight / 12
+      fx.int.leftDelay.delayTime.value = int.delayLeft
+      fx.int.rightDelay.delayTime.value = int.delayRight
+      const defChanged  = atm.beatTime !== beatTimeDef || atm.beatTimeMod !== beatTimeModDef
+      fx.setValue('bpmDisp', `${atm.bpm} /${round(atm.beatTime * 1000)}ms` + (atm.beatTime !== beatTimeDef ? '#set' : '#def'))
+      const leftMod = atm.delayFactLeft !== factLeftDef ? '#mod' : defChanged ? '#set' : '#def'
+      const rightMod = atm.delayFactRight !== factRightDef ? '#mod' : defChanged ? '#set' : '#def'
+      fx.setValue('delayDispLeft', `Left: ${round(int.delayLeft * 1000)}ms` + leftMod)
+      fx.setValue('delayDispRight', `Right: ${round(int.delayRight * 1000)}ms` + rightMod)
+    }
+    
+    const beatCmds = createRadioCmds(fx, beatCmdsDef, {onVal: 'active'})
+    
+    fx.cmdProc = (fire, mode) => {
+      if (fire === 'fire') {
+        beatCmds.check(mode, val => fx.setValue('beatTimeMod', val))
+      }
+    }
+  }
+  registerFxType('fx_pingPongBeatDelay', pingPongBeatDelayFx)
   
   const pingPongDelayBFx = { //8#0b8 -------pingPongDelayB (Tuna) -------
     def: {
@@ -233,6 +316,5 @@ onWaapiReady.then(waCtx => {
     int.merger.connect(fx.output)
     fx.start.connect(fx.output) //:dry
   }
-  
   registerFxType('fx_pingPongDelayB', pingPongDelayBFx)
 })
