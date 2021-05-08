@@ -181,7 +181,8 @@ export const createUI = (root, exroot) => {
       togg('autoplay', 'Autoplay', {cc: 'rt'}),
       togg('autostop', 'Autostop', {cc: 'rt'}),
       togg('syncSources', 'Sync sources', {cc: 'rt'}),
-      togg('syncBPM', 'Sync BPM', {cc: 'rt'})
+      togg('syncBPM', 'Sync BPM', {cc: 'rt'}),
+      togg('showStages', 'Show stages', {cc: 'rt', link: 'mid'})
     ])
     createBar('auxmenu', ui.auxmenuBar$, {}, [
       togg('stageSlots', 'Stage slots...', {link: 'stageSlotStrip', onChg: ui.onStageSlotsToggled}),
