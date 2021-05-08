@@ -61,6 +61,8 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   const init = _ => {
     set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, [
       ui.syncToolsFrame$ = div$({class: 'source-frame synctools-frame off'}, [
+        ui.syncPhase = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync LFO phases',
+          click: _ => stageMan.onGlobalCommand({cmd: 'global.syncPhase'})}),
         ui.syncLoopStart = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync start loops',
           click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStartLoop'})}),
         ui.syncLoopEnd = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync stop loops', click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStopLoop'})})
@@ -266,7 +268,9 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
     haltEvent(event)
     
     if (videoId?.length === 11 && sourceIx) {
-      root.onYoutube && root.stateManager.addToYoutubeVideoList(videoId)
+      root.onYoutube && (event.altKey
+          ? root.stateManager.removeFromYoutubeVideoList(videoId)
+          : root.stateManager.addToYoutubeVideoList(videoId))
       ui.changeVideoSource(sourceIx, {videoId, title, src})
     } else if (src && sourceIx) {
       ui.changeAudioSource(sourceIx, {src, title})
