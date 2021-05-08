@@ -243,15 +243,16 @@ onWaapiReady.then(waCtx => {
       beat16: radioDef('off', 'Bt 16', 16),
       beatM: radioDef('active', 'Off', 0)
     }
+    const ledCmd = (defVal, color) => ({defVal, type: 'cmd', subType: 'led', color})
 
     const recMultiExt = { //8#aa8 -------loop -------
       def: {
         log: {defVal: '-', type: 'info'},
-        modeBypass: {defVal: 'active.ledon', type: 'cmd', subType: 'led', color: 140, name: 'Bypass'},
-        modeRecord: {defVal: 'on', type: 'cmd', subType: 'led', color: 0, name: 'Record'},
-        modeSampler: {defVal: 'off', type: 'cmd', subType: 'led', color: 180, name: sampName},
-        useScriptProc: {defVal: 'on', type: 'cmd', subType: 'led', color: 15, name: 'scriptProcessor (slow)'},
-        useWorklet: {defVal: 'off', type: 'cmd', subType: 'led', color: 330, name: 'audioWorklet (slow)'},
+        modeBypass: {...ledCmd('active.ledon', 140), name: 'Bypass'},
+        modeRecord: {...ledCmd('on', 0), name: 'Record'},
+        modeSampler: {...ledCmd('off', 180), name: sampName},
+        useScriptProc: {...ledCmd('on', 15), cc: 'liteled', name: 'scriptProcessor (slow)'},
+        useWorklet: {...ledCmd('off', 330), cc: 'liteled', name: 'audioWorklet (slow)'},
         wave: {type: 'graph'},
         ...(isSampler ? {
           trimLeft: {defVal: 'on', type: 'cmd', name: 'Trim left (1s)'},
@@ -265,17 +266,16 @@ onWaapiReady.then(waCtx => {
           ...beatCmdsDef,
           fixBeatMod: {defVal: 0, skipUi: true},
           samplePlay: {defVal: 'off', type: 'cmd', name: 'Play'},
-          sampleLoop: {defVal: 'off', type: 'cmd', subType: 'led', color: 80, name: 'Loop sample'},
+          sampleLoop: {...ledCmd('off', 80), name: 'Loop sample'},
           sampleStop: {defVal: 'off', type: 'cmd', name: 'Stop loop'}
-          //syncStartLoop: {defVal: '', skipUi: true}
         } : {
           startMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true},
           endMod: {defVal: 0, min: -1, max: 1, unit: 's', skipUi: true}
         }),
         ...(isBpm ? {
-          bpm10: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 20, name: 'BPM 10s'},
-          bpm15: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 40, name: 'BPM 15s'},
-          bpm25: {defVal: 'on.ledoff', type: 'cmd', subType: 'led', color: 95, name: 'BPM 25s'},
+          bpm10: {...ledCmd('on.ledoff', 20), name: 'BPM 10s'},
+          bpm15: {...ledCmd('on.ledoff', 40), name: 'BPM 15s'},
+          bpm25: {...ledCmd('on.ledoff', 95), name: 'BPM 25s'},
           bpmRec: {defVal: 'on', type: 'cmd', name: 'BPM this'},
           bpmGraph: {type: 'graph'}
         } : {}),
@@ -756,7 +756,7 @@ onWaapiReady.then(waCtx => {
     }
     return recMultiExt
   }
-  registerFxType('fx_samplerPiano', createRecorderVariant('sampler', {usePitchShift: true}))
+  registerFxType('fx_samplerNote', createRecorderVariant('sampler', {usePitchShift: true}))
   registerFxType('fx_sampler', createRecorderVariant('sampler', {usePitchShift: false}))
   registerFxType('fx_recorder', createRecorderVariant('recorder'))
   registerFxType('fx_bpm', createRecorderVariant('bpm'))
