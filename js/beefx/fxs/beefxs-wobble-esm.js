@@ -156,7 +156,7 @@ onWaapiReady.then(waCtx => {
       beatTimeMod: {defVal: 0, skipUi: true},
       bpmDisp: {defVal: '333#def', type: 'box', width: 24},
       ...beatCmdsDef,
-      lfoLabel: {defVal: 'LFO:#label.ledon#0,0.5s', type: 'box', subType: 'led', width: 24},
+      lfoLabel: {defVal: 'LFO:#label.ledon#0,0.5s', type: 'box', subType: 'led', cc: 'liteled', width: 24},
       ...lfoTypeCmdsDef,
       lfoType: {defVal: 'sine', skipUi: true}, //: only for state save/reload
       lfoFreq: {defVal: .5, min: .25, max: 100, subType: 'exp', unit: 'Hz', name: 'LFO freq'},
@@ -166,6 +166,7 @@ onWaapiReady.then(waCtx => {
       phaseDisp: {defVal: '0 / 180ms#def', type: 'box', width: 80},
       reverse: {defVal: 'off', type: 'cmd', subType: 'led', name: 'Reverse'},
       sign: {defVal: 1, skipUi: true}, //: only for state save/reload
+      syncPhase: {type: 'cmd', skipUi: true},
       lfoGraph: {type: 'graph'},
       excursion: {defVal: 600, min: 0, max: 3600, subType: 'int', unit: 'cent'},
       ...biquadTypeCmdsDef,
@@ -178,7 +179,7 @@ onWaapiReady.then(waCtx => {
       filterMode: {defVal: 'stat', skipUi: true} //: only for state save/reload
     },
     midi: {pars: ['lfoFreq,phaseDeg', 'excursion,filterGain', 'filterFreq,filterQ']},
-    listen: ['source.bpm:bpm']
+    listen: ['source.bpm:bpm', 'global.syncPhase:syncPhase']
   }
   const graphCommon = {
     graphType: 'freq',
@@ -248,7 +249,7 @@ onWaapiReady.then(waCtx => {
     },
     phaseDeg: _ => fx.recalcPhase(),
     sign: _ => fx.setValue('reverse', atm.sign === -1 ? 'active.ledon' : 'off'),
-    lfoType: _ => value !== 'ext' && (int.lfo.type = value), //: no visuals (cmds done)
+    lfoType: _ => value !== 'ext' && int.lfo && (int.lfo.type = value), //: no visuals (cmds done)
     lfoFreq: _ => fx.lfoFreqChanged(),
     excursion: _ => {
       fx.setAt('lfoGain', 'gain', value * atm.sign)
@@ -263,13 +264,11 @@ onWaapiReady.then(waCtx => {
     filterMode: _ => fx.setDelayTime('lagger', value === 'dyn' ? dynLag : 0)
   }[key] || (_ => fx.cmdProc(value, key)))
   
-  wobbleFx.onActivated = (fx, isActive) => fx.onActivated(isActive)
+  wobbleFx.onActivated = (fx, isActive) => isActive ? fx.startOsc() : fx.stopOsc()
   
   wobbleFx.construct = (fx, pars, {int, atm, exo} = fx) => {
+    int.isValid = false
     int.realBeatTime = atm.beatTime //: just for avoid div by zero at init
-    int.lfo = waCtx.createOscillator()
-    int.lfo.type = 'sine'
-    int.lfo.start()
     int.lfoGain = waCtx.createGain()
     int.filter = waCtx.createBiquadFilter()
     int.filter.type = 'lowpass'
@@ -290,9 +289,8 @@ onWaapiReady.then(waCtx => {
     int.lfoScope = waCtx.createAnalyser()
     int.lfoScope.fftSize = int.fftSize
     int.lfoFreqData = new Uint8Array(int.lfoScope.frequencyBinCount) 
-    int.isRAFOn = true
-    beeRAF(_ => drawCustomGraphFrame(fx))
-    connectArr(int.lfo, int.lfoGain, int.phaseDelay)
+    //: lfo should bee the first (but only activation will create and connect it)
+    connectArr(int.lfoGain, int.phaseDelay)
     connectArr(int.phaseDelay, int.filter.detune)
     connectArr(int.phaseDelay, int.attenuator, int.lfoScope)
     connectArr(fx.start, int.filter, int.lagger, fx.output)
@@ -351,7 +349,7 @@ onWaapiReady.then(waCtx => {
     const secureStateChange = _ => { //: non-destructive aftermath of state change
       fx.updateBeatCmds()
       fx.recalcPhase()
-      fx.setAt('lfo', 'frequency', atm.lfoFreq)
+      int.lfo && fx.setAt('lfo', 'frequency', atm.lfoFreq)
       fx.valueChanged('filterGraph') //: this is for the vertical LFO freq line
       fx.setValue('lfoLabel', `LFO:#label.ledon#290,${round(int.realBeatTime * 1000) / 1000}s`)
     }
@@ -386,6 +384,10 @@ onWaapiReady.then(waCtx => {
           return
         }
         const action = {
+          syncPhase: _ => {
+            fx.stopOsc()
+            fx.startOsc()
+          },
           reverse: _ => {
             fx.setValue('sign', -atm.sign)
             fx.setValue('excursion') //: this will recalc the filter and redraw
@@ -396,10 +398,25 @@ onWaapiReady.then(waCtx => {
         void action?.()
       }
     }
-    fx.onActivated = isActive => { //: the lfo could be recreated / stopped too
-      if (isActive) {
-      } else {
+    fx.startOsc = _ => {
+      if (!int.isValid) {
+        int.isValid = true
+        int.lfo = waCtx.createOscillator()
+        int.lfo.type = atm.lfoType
+        int.lfo.frequency.value = atm.lfoFreq
+        int.lfo.connect(int.lfoGain)
+        int.lfo.start()
+        int.isRAFOn = true
+        beeRAF(_ => drawCustomGraphFrame(fx))
+      }
+    }
+    fx.stopOsc = _ => {
+      if (int.isValid) {
+        int.isValid = false
         int.isRAFOn = false
+        int.lfo.disconnect(int.lfoGain)
+        int.lfo.stop()
+        delete int.lfo
       }
     }
   }
