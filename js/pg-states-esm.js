@@ -79,8 +79,8 @@ const stagePresets = { //: These compressed defs are ugly, but it's easier to ov
   youtubeDefault: {
     A: 'pitchShifterNote,odwac,scope',
     B: 'conv,bi,scope',
-    C: 'dattoroReverb,comp,scope',
-    D: 'sampler,ax,scope'},
+    C: 'dattoroReverb,pingPongBeatDelay,scope',
+    D: 'samplerNote,ax,scope'},
   youtubeMinimal: {ABCD: 'g,b,b'},
   presetBigBlank: {ABCD: 'g,bi,b,b,b,b'},
   presetFull: {
@@ -200,6 +200,10 @@ export const create = root => {
     root.youtubeVideoList[videoId] = true
     store.save('youtubevideolist', root.youtubeVideoList)
   }
+  stateManager.removeFromYoutubeVideoList =  videoId => {
+    delete root.youtubeVideoList[videoId]
+    store.save('youtubevideolist', root.youtubeVideoList)
+  }
   
   //8#67a Project storage
   
@@ -265,7 +269,7 @@ export const create = root => {
       const {projDesc = ''} = lastSaved
       const versions = revisions.propertiesToArr().length
       return {projName, projDesc, versions, lastSavedAt}
-    })
+    }).sort((a, b) => a.lastSavedAt < b.lastSavedAt ? 1 : -1)
   
   //8#4a9 Stage slots storage
   
