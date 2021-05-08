@@ -19,7 +19,7 @@ onWaapiReady.then(waCtx => {
       xDouble: {defVal: 'on', type: 'cmd', name: 'x2', width: 12},
       xHalf: {defVal: 'on', type: 'cmd', name: '/2', width: 12},
       bpmOriginal: {defVal: '333#def', type: 'box', width: 18}, //: disp only, ->int.bpmIn
-      bpmDec: {defVal: '>>#label', type: 'box', width: 11},
+      bpmDec: {defVal: '➜#label', type: 'box', width: 11, cc: 'emoji nobord'},
       bpmAdjusted: {defVal: '333#def', type: 'box', width: 26}, //: disp only, ->int.bpmOut
       decBpm: {defVal: 'on', type: 'cmd', name: '-1'},
       incBpm: {defVal: 'on', type: 'cmd', name: '+1'},
