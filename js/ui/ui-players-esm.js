@@ -148,7 +148,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       
       const konf = {
         maxOkLag: .15, // .06
-        preRun: .1 // .05
+        preRun: .07 // .05
       }
       if (abs(diffToMaster) > konf.maxOkLag) {
         const elapsed = since(sourceUi.lastPlayerSyncAt || 0)
@@ -164,7 +164,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
           const inf = `⚡️⚡️sync(${diff})-> slave:${slaveAt} master:${masterAt} new slave:${targetAt}`
           ylog(inf)
         } else {
-          console.log('elapsed to small', elapsed)
+          //console.log('elapsed to small', elapsed)
         }
       }
       if (master.paused !== slave.paused) {
@@ -260,6 +260,8 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       
     const init = _ => { //: this works for both video and audio
       const mediaElement = sourceUi.audio$ || sourceUi.video$
+      //: TODO: We need an Ui control for this:
+      sourceUi.audio$ && (sourceUi.audio$.volume = .7)
       observer.mediaElement = mediaElement
       const fp = 1 + getRndDig(6)
       mediaElement && post(_ => {
@@ -327,6 +329,13 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       void sourceUi.audio$?.play()
       void sourceUi.video$?.play()
     }
+    sourceUi._async_play = async _ => {
+      sourceUi.isMocked && void sourceUi.ytPlayer?.mute?.()
+      
+      await void sourceUi.ytPlayer?.playVideo?.() //: playVideo is not valid if pressed too early
+      await void sourceUi.audio$?.play()
+      await void sourceUi.video$?.play()
+    }
     sourceUi._seek = sec => {
       void sourceUi.ytPlayer?.seekTo?.(sec, true) //: on youtube this will be doubled with video$
       sourceUi.audio$ && (sourceUi.audio$.currentTime = sec)
@@ -358,6 +367,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
     sourceUi.stop = _ => syncedControl('_pause')
     sourceUi.pause = _ => syncedControl('_pause')
     sourceUi.play = _ => syncedControl('_play')
+    sourceUi.async_play = _ => syncedControl('_async_play')
     sourceUi.seek = sec => syncedControl('_seek', sec)
     sourceUi.speed = pbr => syncedControl('_setPlaybackRate', wejectNaN(pbr))
     sourceUi.seekRel = sec => syncedControl('_seekRel', sec)
@@ -380,13 +390,21 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       setUi(nodeKey, {attr: {state: 'calc'}})
       sourceUi.bpmFx.setValue('pitch', 100)  //: set standard speed for detection
       calcSec = [0, 10, 20][calcSec] || calcSec
-      if (getState().paused) {
+      const wasPaused = getState().paused
+      if (wasPaused) {
+        console.log('BPM have to start video')
         const sec = (getState().duration || 100) / 3
         sourceUi.seek(sec)
-        sourceUi.play()
-        await adelay(100)
+        console.log('BPM starts waiting for play')
+        await sourceUi.async_play()
+        console.log('BPM awaited play, waiting .5s')
+        await adelay(500)
+        console.log('BPM awaited .5s')
+      } else {
+        console.log('BPM found video already playing')
       }
       createBpmDetector()
+      console.log('BPM calls bpmDetector.privilegedReq', sourceUi, getState().title)
       sourceUi.bpmDetector.startPrivilegedBpmRequest(calcSec)
         .then(bpm => {
           sources.bpmInChanged(sourceIx, bpm)
@@ -398,6 +416,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
           setUi('bpmX', {text: '-Error-', attr: {state: 'err'}})
         })
         .finally(_ => {
+          wasPaused && sourceUi.pause()
           destroyBpmDetector()
           setUi(nodeKey, {attr: {state: 'done'}})
         })
