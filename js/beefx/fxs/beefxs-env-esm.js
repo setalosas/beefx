@@ -92,8 +92,10 @@ onWaapiReady.then(waCtx => {
       excursionOctaves: {defVal: 2, min: 1, max: 6, name: 'excursionOct'},
       resonance: {defVal: 10, min: 1, max: 100, subType: 'exp'},
       automode: {defVal: true, type: 'boolean'},
-      envelope: {defVal: .2, min: 0, max: 1, readOnly: true, name: 'envFollower'},
-      sweep: {defVal: .2, min: 0, max: 1, name: 'sweep'},
+      linThrottle: {defVal: 1, min: .5, max: 2.5},
+      expThrottle: {defVal: .5, min: 1, max: 5, subType: 'exp'},
+      envelope: {defVal: .2, min: 0, max: 1.2, readOnly: true, name: 'envFollower'},
+      sweep: {defVal: .2, min: 0, max: 1.2, name: 'sweep'},
       sensitivity: {defVal: 3, min: .1, max: 10, subType: 'exp'},
       filterGraph: {type: 'graph'}
     },
@@ -152,6 +154,9 @@ onWaapiReady.then(waCtx => {
     excursionOctaves: _ => int.freqParsChanged(),
     sweep: _ => fx.setSweep(value, true),
     envelope: nop,
+    throttle: nop,
+    linThrottle: nop,
+    expThrottle: nop,
     resonance: _ => {
       int.filterPeaking.Q.value = value
       int.freqParsChanged()
@@ -199,8 +204,9 @@ onWaapiReady.then(waCtx => {
     
     fx.setSweep = (sweep, isManual = false) => {
       if (!isManual) { //: sweep is env as it comes from the envelopeFollower
-        fx.setValue('envelope', sweep)
-        fx.setValue('sweep', pow(clamp(sweep, 0, 1), atm.sensitivity))
+        const throttledSweep = pow(sweep, 1 / atm.expThrottle) / atm.linThrottle
+        fx.setValue('envelope', throttledSweep)
+        fx.setValue('sweep', pow(clamp(throttledSweep, 0, 1), atm.sensitivity))
       }
       int.setFilterFreq()
     }
