@@ -24,7 +24,8 @@ export const createTestMidi = ui => {
   const onMidi = (track, controller, value) => {
     if (controller === 'vol') {
       const stage = ui.pg.stageMan.checkStageByLetter(String.fromCharCode(64 + track))
-      void stage?.endRatio?.setValue('gain', value / 127) 
+      //void stage?.endRatio?.setValue('gain', value / 127) 
+      void stage?.fxArr[0]?.setValue('gain', Math.max(.0001, 2.0 * value / 127))
     }
     if (midi.activeFpo) {
       const {fx} = midi.activeFpo
