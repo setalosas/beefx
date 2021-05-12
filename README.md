@@ -77,6 +77,8 @@ This is an unreleased library, there is no npm package yet, you can download the
 
 Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course, but it's dynamic include from Google servers.)
 
+(I'm working on a React version, but it's in a very preliminary phase yet.)
+
 # Performance
 
 The Web Audio API is quite effective, audio graphs consisting of more than 1000 nodes are running without problem on the playground. Of course complex filters can be implemented badly and there are a few problematic, especially the ones using ScriptProcessorNode or AudioWorkletNode (e.g. Recorder, BPM detector, Sampler) or the Convolver, but most of the effects are surprisingly cheap in CPU.
