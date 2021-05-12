@@ -77,7 +77,9 @@ export const css$ = (node, css) => {
 }
 export const set$ = (node, pars = {}, children) => {
   pars.class = pars.class || pars.cclass
-  const {css, attr, deattr, text, html, class: cclass = [], declass = [], on = {}, click} = pars
+  const {css, attr = {}, id, text, html, value, class: cclass = [], on = {}, click} = pars
+  const {deattr, declass = []} = pars
+  id && (attr.id = id)
   const classList = isArr(cclass) ? cclass : cclass ? cclass.split(' ').filter(a => a) : []
   const declassList = isArr(declass) ? declass : declass ? declass.split(' ').filter(a => a) : []
   
@@ -96,6 +98,7 @@ export const set$ = (node, pars = {}, children) => {
     node.textContent = text + ''
   }
   isStr(html) && (node.innerHTML = html)
+  typeof value !== Ø && (node.value = value)
   for (const eventType in on) {
     node.addEventListener(eventType, on[eventType])
   }
