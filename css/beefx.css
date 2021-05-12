@@ -848,7 +848,7 @@ body::after {
   transform: scale(0.83) translateY(8px);
 }
 .source-strip .source-frame[type=audio] .src-media {
-  height: 70px;
+  height: 100px;
   background-size: 100%;
   background-repeat: no-repeat;
   background-position-y: 13.5px;
@@ -862,9 +862,11 @@ body::after {
   display: block;
 }
 .source-strip .source-frame[type] .src-ctrl {
-  height: 70px;
-  margin-top: -33px;
+  height: 90px;
+  margin-top: -53px;
   background: rgba(0, 0, 0, 0.5);
+}
+.source-strip .source-frame[type] .src-ctrl:hover {
   backdrop-filter: blur(2px);
 }
 .source-strip .source-frame .src-ctrl {
@@ -877,6 +879,9 @@ body::after {
   position: relative;
   padding: 1px 0 1px 0;
   z-index: 1;
+}
+.source-strip .source-frame .src-ctrl .above1 {
+  text-align: left;
 }
 .source-strip .source-frame .src-ctrl .src-navtop {
   position: relative;
@@ -908,6 +913,9 @@ body::after {
   background-color: rgba(255, 153, 0, 0.4);
   filter: hue-rotate(0deg) saturate(2);
 }
+.source-strip .source-frame .src-ctrl .bee-cmd.n-loop[loopon="true"] {
+  background: #800;
+}
 .source-strip .source-frame .src-ctrl .bee-cmd[state=on] {
   color: #ffffff;
   text-shadow: 0 0 1px rgba(255, 255, 255, 0.75), 0 0 3px rgba(255, 255, 255, 0.75), 0 0 6px rgba(255, 255, 255, 0.75);
@@ -938,7 +946,6 @@ body::after {
   text-shadow: 0 0 3px currentColor;
   --c1: rgba(255, 255, 255, 0.75);
   --c2: rgba(255, 255, 255, 0.25);
-  animation: bpm-flicker var(--bt, 1s) infinite alternate cubic-bezier(1, 0, 0, 1);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.bpm-cmd[state=calc] {
   pointer-events: none;
@@ -994,17 +1001,30 @@ body::after {
   right: 2px;
   top: -11px;
 }
+.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::after,
+.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::before {
+  content: '';
+  pointer-events: none;
+  user-select: none;
+}
 .source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::after {
   position: absolute;
   left: 0;
   top: 0;
-  content: '';
   width: var(--prog);
   height: 100%;
   border-radius: 4px;
-  pointer-events: none;
-  user-select: none;
   background: rgba(255, 255, 255, 0.75);
+}
+.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::before {
+  position: absolute;
+  left: var(--in, 0);
+  top: 35%;
+  width: var(--inout);
+  height: 30%;
+  border-radius: 4px;
+  background: var(--loop, transparent);
+  z-index: 1;
 }
 .source-strip .source-frame .src-stage {
   position: relative;
