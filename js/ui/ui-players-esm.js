@@ -429,7 +429,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
     const lastDOM = {}
     
     sourceUi.onStateChanged = state => {
-      const {title, duration, muted, paused, videoId} = observer.currState
+      const {title, duration, muted, paused, videoId} = getState() // observer.currState
       title && setUi('info', {text: title})
       setUi('duration', {text: secToString(duration)})
       setUi('muted', {attr: {state: muted ? 'alert' : 'off'}})
@@ -445,14 +445,21 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
     }
     
     sourceUi.onTimeChanged = _ => {
-      const {currentTime, duration} = observer.currState
+      const {currentTime, duration} = getState() //observer.currState
+      if (clip.loop && clip.outPt < currentTime) {
+        sourceUi.seek(clip.inPt)
+      }
       if (currentTime !== lastDOM.currentTime || duration !== lastDOM.duration) {
         lastDOM.capture({currentTime, duration})
         setUi('dragBar', {css: {__prog: 100 * currentTime / (duration || 1) + '%'}})
         setUi('current', {text: secToString(currentTime)})
       }
     }
-
+    const clip = {
+      inPt: 0,
+      outPt: 0,
+      loop: false
+    }
     const buildUi = _ => {
       const dragBar = event => (event.type === 'click' || event.buttons & 1) &&
         sourceUi.seekPt(round(1000 * event.offsetX / event.target.clientWidth) / 10)
@@ -460,9 +467,39 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       const absSeekS = sec => _ => sourceUi.seek(sec)
       const relSeekS = sec => _ => sourceUi.seekRel(sec)
       const relSeekB = bt => _ => source.beatTimeIn && sourceUi.seekRel(bt * source.beatTimeIn)  
+      const secToFix1 = sec => round(10 * sec) / 10
+      const inOutChanged = _ => setUi('dragBar', {css: {
+        __in: 100 * clip.inPt / (getState().duration || 1) + '%',
+        __inout: 100 * (clip.outPt - clip.inPt) / (getState().duration || 1) + '%',
+        __loop: clip.loop ? '#e22' : '#e92'
+      }})
+      const setIn = _ => {
+        clip.inPt = getState().currentTime
+        inOutChanged()
+        setUi('inPt', {text: '➜' + secToFix1(clip.inPt)})
+      }
+      const setOut = _ => {
+        clip.outPt = getState().currentTime
+        inOutChanged()
+        setUi('outPt', {text: '➜' + secToFix1(clip.outPt)})
+      }
+      const gotoIn = _ => sourceUi.seek(clip.inPt)
+      const gotoOut = _ => sourceUi.seek(clip.outPt)
+      const toggleLoop = _ => {
+        clip.loop = !clip.loop
+        setUi('loop', {attr: {loopon: clip.loop}})
+        inOutChanged()
+      }
           
       set$(sourceUi.ctrl$, {html: ``}, [
-        sourceUi.navNoneed$ = div$({class: 'src-above'}, [
+        div$({class: 'src-above above1'}, [
+          div$({class: 'bee-cmd n-incmd', text: 'In', click: setIn}),
+          sourceUi.inPt$ = div$({class: 'bee-cmd n-indisp emoji', text: '➜0', click: gotoIn}),
+          sourceUi.loop$ = div$({class: 'bee-cmd n-loop', text: 'Loop', click: toggleLoop}),
+          div$({class: 'bee-cmd n-outcmd rt', text: 'Out', click: setOut}),
+          sourceUi.outPt$ = div$({class: 'bee-cmd n-outdisp rt emoji', text: '➜0', click: gotoOut})
+        ]),
+        div$({class: 'src-above above2'}, [
           div$({class: 'bee-cmd n-start', text: 'Start', click: absSeekS(0)}),
           div$({class: 'bee-cmd n-m30s', text: '-30s', click: relSeekS(-30)}),
           div$({class: 'bee-cmd n-m10s', text: '-10s', click: relSeekS(-10)}),
