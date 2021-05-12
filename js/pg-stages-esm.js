@@ -10,7 +10,6 @@ const {undef, isStr} = Corelib
 const {wassert, weject} = Corelib.Debug
 const {startEndThrottle, post} = Corelib.Tardis
 void post
-
   /*
   StageManager can have many stages of different types (normal, source, internal, headless, etc).
   A Stage is a sequential chain of beeFxs (or beeExts) + scaffolding.
@@ -44,12 +43,6 @@ export const createStageManager = root => {
   }
   
   //8#c84 -------- StageMan start --------
-  //8#c84   + scaffolding (start, input, source, end, ratio, vis, mayday)
-  //8#900 must be used in playground, in patashnik for tracks, in playground mixer, etc
-  //8#da6 stage metods:
-  //8#dca - create + init  
-  //8#cb9 - scaffolding  
-  //8#ba8 --- mayday
   
   const stages = []
   const stageLetterHash = {}
