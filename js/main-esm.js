@@ -8,7 +8,7 @@ import {DOMplusUltra, onWaapiReady, Playground} from './improxy-esm.js'
 
 DOMplusUltra.onDomReady(async _ => {
   const config = {
-    showEndSpectrums: true,
+    showEndSpectrums: false,
     presetDisplayOn: true,
     maxSources: 8
   }
