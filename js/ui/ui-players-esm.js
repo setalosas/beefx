@@ -7,7 +7,7 @@
    
 import {Corelib, DOMplusUltra} from '../improxy-esm.js'
 
-const {undef, hashOfString, getRndDig, no} = Corelib
+const {undef, hashOfString, getRndDig, no, isObj} = Corelib
 const {wassert, weject, wejectNaN} = Corelib.Debug
 const {post, startEndThrottle, schedule, adelay, since, NoW} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
@@ -490,36 +490,44 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
         setUi('loop', {attr: {loopon: clip.loop}})
         inOutChanged()
       }
+      const beecmd$ = (...args) => {
+        const pars = args[0].nodeType ? args[1] : args[0]
+        wassert(isObj(pars))
+        pars.class = 'bee-cmd ' + (pars.class || '')
+        pars.attr = pars.attr || {}
+        pars.st && (pars.attr.state = pars.st) //: -> not dynamic (React rerenders it each time)
+        return div$(...args)
+      }
           
       set$(sourceUi.ctrl$, {html: ``}, [
         div$({class: 'src-above above1'}, [
-          div$({class: 'bee-cmd n-incmd', text: 'In', click: setIn}),
-          sourceUi.inPt$ = div$({class: 'bee-cmd n-indisp emoji', text: '➜0', click: gotoIn}),
-          sourceUi.loop$ = div$({class: 'bee-cmd n-loop', text: 'Loop', click: toggleLoop}),
-          div$({class: 'bee-cmd n-outcmd rt', text: 'Out', click: setOut}),
-          sourceUi.outPt$ = div$({class: 'bee-cmd n-outdisp rt emoji', text: '➜0', click: gotoOut})
+          beecmd$({class: 'n-incmd', text: 'In', click: setIn}),
+          sourceUi.inPt$ = beecmd$({class: 'n-indisp emoji', text: '➜0', click: gotoIn}),
+          sourceUi.loop$ = beecmd$({class: 'n-loop', text: 'Loop', click: toggleLoop}),
+          beecmd$({class: 'n-outcmd rt', text: 'Out', click: setOut}),
+          sourceUi.outPt$ = beecmd$({class: 'n-outdisp rt emoji', text: '➜0', click: gotoOut})
         ]),
         div$({class: 'src-above above2'}, [
-          div$({class: 'bee-cmd n-start', text: 'Start', click: absSeekS(0)}),
-          div$({class: 'bee-cmd n-m30s', text: '-30s', click: relSeekS(-30)}),
-          div$({class: 'bee-cmd n-m10s', text: '-10s', click: relSeekS(-10)}),
-          div$({class: 'bee-cmd n-m2b', text: '-2b', click: relSeekB(-2)}),
-          div$({class: 'bee-cmd n-m1b', text: '-1b', click: relSeekB(-1)}),
-          div$({class: 'bee-cmd n-p1b', text: '+1b', click: relSeekB(1)}),
-          div$({class: 'bee-cmd n-p2b', text: '+2b', click: relSeekB(2)}),
-          div$({class: 'bee-cmd n-p10s', text: '+10s', click: relSeekS(10)}),
-          div$({class: 'bee-cmd n-p30s', text: '+30s', click: relSeekS(30)})
+          beecmd$({class: 'n-start', text: 'Start', click: absSeekS(0)}),
+          beecmd$({class: 'n-m30s', text: '-30s', click: relSeekS(-30)}),
+          beecmd$({class: 'n-m10s', text: '-10s', click: relSeekS(-10)}),
+          beecmd$({class: 'n-m2b', text: '-2b', click: relSeekB(-2)}),
+          beecmd$({class: 'n-m1b', text: '-1b', click: relSeekB(-1)}),
+          beecmd$({class: 'n-p1b', text: '+1b', click: relSeekB(1)}),
+          beecmd$({class: 'n-p2b', text: '+2b', click: relSeekB(2)}),
+          beecmd$({class: 'n-p10s', text: '+10s', click: relSeekS(10)}),
+          beecmd$({class: 'n-p30s', text: '+30s', click: relSeekS(30)})
         ]),
         div$({class: 'src-navtop'}, [
           sourceUi.bpm1$ = 
-            div$({class: 'bee-cmd bpm-cmd bpm1', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
+            beecmd$({class: 'bpm-cmd bpm1', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
           sourceUi.bpm2$ = 
-            div$({class: 'bee-cmd bpm-cmd bpm2', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
-          sourceUi.bpmX$ = div$({class: 'bee-cmd', text: 'syncBPM', click: sourceUi.syncBpm}),
-          sourceUi.play$ = div$({class: 'bee-cmd cc-play', text: 'Play', click: sourceUi.play}),
-          sourceUi.stop$ = div$({class: 'bee-cmd cc-stop', text: 'Stop', click: sourceUi.stop}),
+            beecmd$({class: 'bpm-cmd bpm2', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
+          sourceUi.bpmX$ = beecmd$({class: '', text: 'syncBPM', click: sourceUi.syncBpm}),
+          sourceUi.play$ = beecmd$({class: 'cc-play', text: 'Play', click: sourceUi.play}),
+          sourceUi.stop$ = beecmd$({class: 'cc-stop', text: 'Stop', click: sourceUi.stop}),
           sourceUi.muted$ = 
-            div$({class: 'bee-cmd cc-mute', text: 'Mute', click: sourceUi.toggleMute}),
+            beecmd$({class: 'cc-mute', text: 'Mute', click: sourceUi.toggleMute}),
           div$({class: 'bee-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
         ]),
         sourceUi.thumb$ = div$({class: 'nav-thumb'}, [
