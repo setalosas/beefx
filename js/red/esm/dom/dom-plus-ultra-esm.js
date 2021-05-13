@@ -82,7 +82,7 @@ export const set$ = (node, pars = {}, children) => {
   const declassList = isArr(declass) ? declass : declass ? declass.split(' ').filter(a => a) : []
   
   classList.length && node.classList.add(...classList)
-  declass.length && node.classList.remove(...declassList)
+  declassList.length && node.classList.remove(...declassList)
   for (const key in attr) {
     node.setAttribute(key, attr[key])
   }
