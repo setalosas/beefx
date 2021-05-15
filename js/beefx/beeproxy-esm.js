@@ -1,9 +1,8 @@
+/* eslint-disable spaced-comment, object-curly-spacing */
+
 import * as Corelib from './red/esm/stdlib/corelib-esm.js'
-import * as DOMplusUltra from './red/esm/dom/dom-plus-ultra-esm.js'
 
 import { onReady as onWaapiReady } from './wautils-esm.js'
-import { createGraphBase } from './vis/graphbase-esm.js'
-import * as Visualizer from './vis/visualizer-esm.js'
 import { createBeeDebug } from './beefx-debug-esm.js'
 import * as beeCommon from './beefx-common-esm.js'
 import { BeeFX } from './beefx-esm.js'
@@ -38,6 +37,7 @@ import './ext/beext-recmulti-esm.js'
 import './med/beefxs-bpmtrans-esm.js'
 
 export {
-  Corelib, DOMplusUltra, onWaapiReady, createBeeDebug, beeCommon, BeeFX,
-  Chebyshev, detectBPMj, BPM, Visualizer, createGraphBase
+  Corelib, onWaapiReady,
+  createBeeDebug, beeCommon, BeeFX,
+  Chebyshev, detectBPMj, BPM
 }
