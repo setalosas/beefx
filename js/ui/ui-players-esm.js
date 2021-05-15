@@ -5,285 +5,27 @@
    standard/no-callback-literal, object-curly-newline */
 /* eslint-disable no-unused-vars */   
    
-import {Corelib, DOMplusUltra} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, Observer, R} from '../improxy-esm.js'
 
-const {undef, hashOfString, getRndDig, no, isObj} = Corelib
+const {undef, isObj} = Corelib
 const {wassert, weject, wejectNaN} = Corelib.Debug
-const {post, startEndThrottle, schedule, adelay, since, NoW} = Corelib.Tardis
+const {adelay} = Corelib.Tardis
 const {secToString} = Corelib.DateHumanizer
-const {div$, set$, q$} = DOMplusUltra
-const {round, abs} = Math
+const {div$, set$, state$} = DOMplusUltra
+const {round} = Math
 
 //8#49f -------------------------- Players ui --------------------------
 
-export const extendUi = ui => { //: Extends the sourceUi object with player functionality
+export const extendUi = async ui => { //: Extends the sourceUi object with player functionality
   const {pg} = ui
   const {sources, stageMan, beeFx} = pg // eslint-disable-line no-unused-vars
+  const {createMediaObserver} = Observer
+  const {React, ReactDOM} = await R.isReady
   
   const logOn = false
-  const logScrapingOn = false
-  const logMediaStateOn = false
-  const logSyncOn = true
-  const logSyncVerboseOn = false
+  const logBPM = true
   const clog = (...args) => logOn && console.log(...args) // eslint-disable-line
-  const slog = (...args) => logScrapingOn && console.log(...args) // eslint-disable-line
-  const ylog = (...args) => logSyncOn && console.log(...args) //
-  const zlog = (...args) => logSyncVerboseOn && console.log(...args) //
-  
-  //8#49cScraping the youtube DOM for video data
-  /* 
-  Oddly it's not trivial to find out the currently played video id and title on Youtube.
-  If we first load Youtube, we can get them from meta tags of the head, but if we navigate
-  inside Youtube, the head won't exactly follow which video is played.
-  There is always exactly one video tag (even it's invisible) and this element is persistent
-  through the session (even if the video in it or the page changes) but it won't give away
-  directly the title and the id. 
-  So first we have to find out whether the played video is in the normal or mini player.
-  Then we can choose the h1 element containing the title (as both player has one).
-  If the video is played in the mini player, there is no direct way to find out the video id.
-  We have to iterate through the mini player's playlist and find the item containing the already
-  found title and extract the id with the href associated to the playlist item.
-  This method can fail if there are two videos in that playlist (~queue) with the very same title.
-  However, as Google changes the inner structure of the Youtube DOM quite regularly,
-  it's not worth it to make bigger efforts here - these infos are not _that_ important.
-  This method works now (03/2021) but there's no guarantee that it will work in the future.
-  */  
-  const scrapingYoutubeForVideoInfo = _ => {
-    const real = {}
-    const h1Big = q$('h1 .ytd-video-primary-info-renderer')?.textContent
-    const h1Mini = q$('h1 .miniplayer-title')?.textContent
-    const miniplayer = q$('ytd-miniplayer')
-    const videoInMiniplayer = miniplayer?.querySelector('ytd-player')
-
-    if (videoInMiniplayer) {
-      real.videoTitle = h1Mini
-      slog(`🟦 ${real.videoTitle = h1Mini}`)
-      const wcEndPoints = [...miniplayer.querySelectorAll('a#wc-endpoint')]
-      for (const wcEndPoint of wcEndPoints) {
-        const videoId = wcEndPoint.getAttribute('href')?.split('?v=')[1]?.substr(0, 11)
-        const title = wcEndPoint.querySelector('#video-title')?.getAttribute('title')
-        title === h1Mini && (real.videoId = videoId)
-      }
-       slog(`🔷${real.videoId}`)
-    } else {
-      real.videoTitle = h1Big
-      real.videoId = q$('.ytd-page-manager[video-id]')?.getAttribute('video-id')
-      slog(`🟥${real.videoTitle}`)
-      slog(`🔶 ${real.videoId}`)
-    }
-    return real
-  }
-  
-  const createMediaObserver = (sourceUi) => {
-    const observer = {
-      sourceUi, //: for debug only
-      videoState: undef,
-      audioState: undef,
-      iframeState: undef,
-      lastState: {},
-      currState: {},
-      videoHash: '',
-      audioHash: '',
-      iframeHash: ''
-    }
-    const observerTickPeriod = 500 // 1000
-    
-    const logSyncOn = false
-    const slog = (...args) => logSyncOn && console.log(...args)
-    
-    const getYtPlayerState = _ => {
-      const ytp = sourceUi.ytPlayer
-      const currentTime = ytp.getCurrentTime()
-      const duration = ytp.getDuration()
-      const {title, video_id: videoId} = ytp.getVideoData()
-      const volume = ytp.getVolume()
-      const playbackRate = ytp.getPlaybackRate()
-      const muted = ytp.isMuted()
-      const playerState = ytp.getPlayerState()
-      // -1: unstarted // 0: ended // 1: playing // 2: paused // 3: buffering // 5: video cued
-      return observer.iframeState = {
-        paused: playerState !== 1, playerState, currentTime, duration, playbackRate,
-        title, videoId, volume, muted, isIframeState: true
-      }
-    }
-    
-    const getVideoElementState = _ => { //: youtube.com video
-      const {paused, volume, title, muted, currentTime, duration, playbackRate} = sourceUi.video$
-      const {videoTitle, videoId} = scrapingYoutubeForVideoInfo()
-      return observer.videoState = {
-        paused, currentTime, duration, playbackRate,
-        title, videoTitle, videoId, volume: volume * 100, muted, isVideoState: true
-      }
-    }
-    
-    const getAudioElementState = _ => {
-      const {paused, volume, title, muted, currentTime, duration, playbackRate} = sourceUi.audio$
-      return observer.audioState = {
-        paused, currentTime, duration, playbackRate,
-        title, videoTitle: '', videoId: '', volume: volume * 100, muted, isAudioState: true
-      }  
-    }
-    const logState = type => {
-      const state = observer[type + 'State']
-      if (state) {
-        const {paused, currentTime = 0.1, duration: d, playbackRate} = state
-        const {title = '', videoTitle = '', videoId, volume, muted} = state
-        const duration = d || 0.1 //Number.isNaN(d) ? 1 : d
-        const info = `paused=${paused} curr=${currentTime.toFixed(2)}  dur=${duration.toFixed(2)} pbRate=${playbackRate} vol=${volume} muted=${muted} title=${title.substr(0, 40)} videoId=${videoId} videoTitle=${videoTitle.substr(0, 30)}`
-        zlog(type, info)
-      }
-    }
-
-    observer.getState = _ => sourceUi.video$ 
-      ? observer.videoState 
-      : sourceUi.audio$ 
-        ? observer.audioState
-        : sourceUi.iframe$
-          ? observer.iframeState : {}
-
-    const syncMocked = _ => {
-      const {iframeState: slave, audioState: master} = observer
-      const {ytPlayer} = sourceUi
-      const diffToMaster = slave.currentTime - master.currentTime
-      
-      const konf = {
-        maxOkLag: .15, // .06
-        preRun: .07 // .05
-      }
-      if (abs(diffToMaster) > konf.maxOkLag) {
-        const elapsed = since(sourceUi.lastPlayerSyncAt || 0)
-        if (elapsed > 2500) {
-          const newSlaveTime = master.currentTime + (diffToMaster < 0 ? 2 : 1) * konf.preRun
-          ytPlayer.seekTo(newSlaveTime, true)
-          sourceUi.lastPlayerSyncAt = NoW()
-          
-          const diff = diffToMaster.toFixed(3)
-          const masterAt = master.currentTime.toFixed(3)
-          const slaveAt = slave.currentTime.toFixed(3)
-          const targetAt = newSlaveTime.toFixed(3)
-          const inf = `⚡️⚡️sync(${diff})-> slave:${slaveAt} master:${masterAt} new slave:${targetAt}`
-          ylog(inf)
-        } else {
-          //console.log('elapsed to small', elapsed)
-        }
-      }
-      if (master.paused !== slave.paused) {
-        if (master.paused && slave.playerState === 1) { //: 1=playing
-          ytPlayer.pauseVideo()
-          ylog('⚡️⚡️sync pause!')
-        } else if (!master.paused && [2, 5].includes(slave.playerState)) {
-          ytPlayer.playVideo()
-          ylog('⚡️⚡️sync play!')
-        }
-      }
-      if (abs(master.playbackRate - slave.playbackRate) > .01) {
-        ylog('⚡️⚡️sync speed!', master.playbackRate.toFixed(3), slave.playbackRate.toFixed(3))
-        ytPlayer.setPlaybackRate(master.playbackRate)
-      }
-      if (!slave.muted) {
-        ylog('⚡️⚡️sync mute!')
-        ytPlayer.mute()
-      }
-    }
-      
-    const getMediaElementState = (fp = 0) => {
-      if (!fp) {
-        return console.error(`getMediaElement: dead observer?`, observer)
-      }
-      if (sourceUi.iframe$) {
-        getYtPlayerState() //: no need to store in currState, the video / audio will overwrite it
-      }
-      if (sourceUi.video$) {
-        getVideoElementState()
-        observer.currState = {...observer.videoState}
-      } else if (sourceUi.audio$) {
-        getAudioElementState()
-        observer.currState = {...observer.audioState}
-
-        if (sourceUi.isMocked) {   //: this is the syncing point as it's a quite low level
-          if (sourceUi.iframe$) {
-            syncMocked()
-          } else {
-            console.warn(`getMediaElementState(): no iframe in mocked mode!`, observer)
-          }
-        }
-      }
-      const {currState, iframeState} = observer
-      if (currState.videoId?.length !== 11) {
-        currState.videoId = iframeState?.videoId
-      }
-      currState.title = currState.title || iframeState?.title || ''
-      if (Number.isNaN(currState.duration)) {
-        currState.duration = iframeState?.duration
-      }
-      
-      observer.currStateReduced = {...observer.currState, currentTime: 0}
-
-      const stateHashReduced = hashOfString(JSON.stringify(observer.currStateReduced))
-      const hasTimeChanged = observer.lastState.currentTime !== observer.currState.currentTime
-      const hasAllChanged = observer.mediaStateHashReduced !== stateHashReduced
-      if (hasTimeChanged || hasAllChanged) {
-        if (logMediaStateOn && hasAllChanged) {
-          const tab = []
-          observer.currState && tab.push(observer.currState)
-          observer.audioState && tab.push(observer.audioState)
-          observer.videoState && tab.push(observer.videoState)
-          observer.iframeState && tab.push(observer.iframeState)
-          console.table(tab)
-        }
-        hasAllChanged && sourceUi.onStateChanged()
-        hasTimeChanged && sourceUi.onTimeChanged()
-        observer.mediaStateHashReduced = stateHashReduced
-        observer.lastState = observer.currState
-        
-        //if (playground.isSlave) { //: multi-window sync, disabled
-          //sendGeneral('state', state)
-          //console.log(`🚀state sent from slave`)
-        //
-      }
-      if (logOn) {
-        logState('last')
-        const fps = fp === observer.fp ? `${fp}✔️` : `${fp}❌ (${observer.fp})`
-        clog(`------${sourceUi.sourceIx}--${fps}----${observer.lastState.title}`)
-      }
-    }
-    const lazyGetMediaElementState = startEndThrottle(getMediaElementState, observerTickPeriod)
-    
-    const tick = fp => {
-      if (observer.fp === fp) {
-        lazyGetMediaElementState(fp)
-        schedule(2000).then(_ => tick(fp))
-      } else {
-        console.warn('observer tick aborted', fp, observer.fp)
-      }
-    }
-      
-    const init = _ => { //: this works for both video and audio
-      const mediaElement = sourceUi.audio$ || sourceUi.video$
-      //: TODO: We need an Ui control for this:
-      sourceUi.audio$ && (sourceUi.audio$.volume = .7)
-      observer.mediaElement = mediaElement
-      const fp = 1 + getRndDig(6)
-      mediaElement && post(_ => {
-        mediaElement.addEventListener('onloadedmetadata', event => {
-          zlog('ONLOADEDMETADATA', event)
-          getMediaElementState(fp)
-        })
-        mediaElement.addEventListener('play', event => getMediaElementState(fp))
-        mediaElement.addEventListener('pause', event => getMediaElementState(fp))
-        mediaElement.addEventListener('seeked', event => getMediaElementState(fp))
-        mediaElement.addEventListener('timeupdate', event => lazyGetMediaElementState(fp))
-        zlog(`mediaObserver started listening to `, fp, mediaElement.title, mediaElement)
-        observer.fp = fp
-        tick(fp)
-      })
-    }
-    init()
-    
-    observer.destroy = _ => observer.fp = 0
-    
-    return observer
-  }
+  const ilog = (...args) => logBPM && console.log(...args) //
   
   ui.recreateSourcePlayer = sourceUi => {
     const {sourceIx} = sourceUi
@@ -306,10 +48,10 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       }
     }
     destroyBpmDetector()
-
+    
     void sourceUi.mediaObserver?.destroy()
     const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
-    
+
     const getState = _ => observer.getState()
 
     sourceUi.master = undef //: sync - not used
@@ -362,7 +104,7 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       ? forcedSyncedControl(funKey, ...args)
       : sourceUi[funKey](...args)
       
-    //8#67f High level (synced) control methods
+    //8#67f ---------- High level (synced) control methods ----------
     
     sourceUi.stop = _ => syncedControl('_pause')
     sourceUi.pause = _ => syncedControl('_pause')
@@ -381,162 +123,321 @@ export const extendUi = ui => { //: Extends the sourceUi object with player func
       sourceUi.seek(duration * pt / 100)
     }
     
+    //8#c7c ---------- Calculate BPM ----------
+    
     sourceUi.doBpm = async (calcSec = 15) => {
       if (sourceUi.inBpm) {
         return
       }
       sourceUi.inBpm = true
-      const nodeKey = 'bpm' + calcSec
-      setUi(nodeKey, {attr: {state: 'calc'}})
-      sourceUi.bpmFx.setValue('pitch', 100)  //: set standard speed for detection
+      const bpmKey = 'bpm' + calcSec
+      bpmChanged({[bpmKey + 'state']: 'calc'})
+      sourceUi.bpmFx.setValue('pitch', 100)  //: reset to standard speed for detection
       calcSec = [0, 10, 20][calcSec] || calcSec
-      const wasPaused = getState().paused
+      const {paused: wasPaused} = getState()
       if (wasPaused) {
-        console.log('BPM have to start video')
+        ilog('BPM have to start video') //: BPM detection is still buggy -> logs
         const sec = (getState().duration || 100) / 3
         sourceUi.seek(sec)
-        console.log('BPM starts waiting for play')
+        ilog('BPM starts waiting for play')
         await sourceUi.async_play()
-        console.log('BPM awaited play, waiting .5s')
+        ilog('BPM awaited play, waiting .5s')
         await adelay(500)
-        console.log('BPM awaited .5s')
+        ilog('BPM awaited .5s')
       } else {
-        console.log('BPM found video already playing')
+        ilog('BPM found video already playing')
       }
       createBpmDetector()
-      console.log('BPM calls bpmDetector.privilegedReq', sourceUi, getState().title)
+      ilog('BPM calls bpmDetector.privilegedReq', sourceUi, getState().title)
       sourceUi.bpmDetector.startPrivilegedBpmRequest(calcSec)
         .then(bpm => {
           sources.bpmInChanged(sourceIx, bpm)
-          setUi(nodeKey, {css: {__bt: 30 / bpm + 's'}})
-          setUi('bpmX', {text: 'syncBPM', attr: {state: 'on'}}) //: syncBpm
+          bpmChanged({[bpmKey + 'css']: {'--bt': 30 / bpm + 's'}})
+          bpmChanged({bpmXtext: 'syncBPM', bpmXstate: 'on'})
         })
         .catch(msg => {
-          console.warn(`Player BPM detection failed:`, msg)
-          setUi('bpmX', {text: '-Error-', attr: {state: 'err'}})
+          ilog(`🥵Player BPM detection failed:`, msg)
+          bpmChanged({bpmXtext: '-Error-', bpmXstate: 'err'})
         })
         .finally(_ => {
           wasPaused && sourceUi.pause()
           destroyBpmDetector()
-          setUi(nodeKey, {attr: {state: 'done'}})
+          bpmChanged({[bpmKey + 'state']: 'done'})
         })
     }
-    sourceUi.syncBpm = _ => {
-      forcedSyncedControl('_setPitchToBpm', sourceUi.bpmFx.int.bpmOut)
-    }
+    sourceUi.syncBpm = _ => forcedSyncedControl('_setPitchToBpm', sourceUi.bpmFx.int.bpmOut)
 
-    const setUi = ui.setHost(sourceUi)
+    const domState = {
+      info: state$(sourceUi.info$),
+      masterThumb: sourceUi.masterThumb$ ? state$(sourceUi.masterThumb$) : null
+    }
     const lastDOM = {}
     
     sourceUi.onStateChanged = state => {
       const {title, duration, muted, paused, videoId} = getState() // observer.currState
-      title && setUi('info', {text: title})
-      setUi('duration', {text: secToString(duration)})
-      setUi('muted', {attr: {state: muted ? 'alert' : 'off'}})
-      setUi('play', {attr: {state: paused ? 'on' : 'off'}})
-      setUi('stop', {attr: {state: paused ? 'off' : 'on'}})
-      
+      title && domState.info.set({text: title})
+      playerDragChanged({durText: secToString(duration)})
+      playerCtrlChanged({
+        mutedState: muted ? 'alert' : 'off',
+        playState: paused ? 'on' : 'off',
+        stopState: paused ? 'off' : 'on'
+      })
       if (videoId !== lastDOM.videoId && videoId?.length === 11 && sourceUi.masterThumb$) {
         lastDOM.videoId = videoId
         const backgroundImage = `url('//img.youtube.com/vi/${videoId}/mqdefault.jpg')`
-        setUi('masterThumb', {css: {backgroundImage}})
+        void domState.masterThumb?.set({css: {backgroundImage}})
       }
       sourceUi.onTimeChanged()
     }
     
     sourceUi.onTimeChanged = _ => {
       const {currentTime, duration} = getState() //observer.currState
-      if (clip.loop && clip.outPt < currentTime) {
+      if (clip.loopOn && clip.outPt > 0 && clip.outPt < currentTime) {
         sourceUi.seek(clip.inPt)
-      }
-      if (currentTime !== lastDOM.currentTime || duration !== lastDOM.duration) {
-        lastDOM.capture({currentTime, duration})
-        setUi('dragBar', {css: {__prog: 100 * currentTime / (duration || 1) + '%'}})
-        setUi('current', {text: secToString(currentTime)})
+      } else {
+        playerDragChanged({
+          currText: secToString(currentTime),
+          progCss: {'--prog': 100 * currentTime / (duration || 1) + '%'}
+        })
       }
     }
-    const clip = {
+    
+    const mergeStateWith = (target, changes) => { //+neide
+      for (const key in changes) {
+        target[key] = changes[key]
+      }
+    }
+    const ref2state = (ref, target) => {
+      for (const key in ref) {
+        target[key] = state$(ref[key].current)
+      }
+    }
+    
+    R.BeeCmdRef = React.forwardRef(({cc, text, attr = {}, st, click, css}, ref) => { //: NOT USED
+      console.log({cc, ref})
+      st && (attr.state = st)
+      for (const key in attr) {
+        typeof attr[key] === 'boolean' && (attr[key] += '') //: REAKT :-(
+      }
+      const cmdProps = {className: 'bee-cmd ' + cc, style: css, ...attr, ref, onClick: click}
+      return R.div(cmdProps, text)
+    }).render
+    
+    const BeeCmd = ({cc, text, attr = {}, st, click: onClick, onRef, css: style, re}) => {
+      st && (attr.state = st)
+      const className = 'bee-cmd ' + (cc || '')
+      for (const key in attr) {
+        typeof attr[key] === 'boolean' && (attr[key] += '') //: REAKT :-(
+      }
+      const ref = React.createRef()
+      const onMouseEnter = _ => onRef?.(ref?.current)
+      
+      return R.div({className, style, ...attr, ref, re, onMouseEnter, onClick}, text)
+    }
+
+    const playerControls = { //8#b802 -----Player controls ------
+      playState: 'off',
+      stopState: 'off',
+      mutedState: 'off',
+      re: {
+        play: {},
+        stop: {},
+        muted: {}
+      }
+    }
+    const playerCtrlChanged = ctrlChange => {
+      mergeStateWith(playerControls, ctrlChange)
+      if (R.useReact) {
+        updatePlayerRxDOM()
+      } else {
+        domState.muted.set({attr: {state: playerControls.mutedState}})
+        domState.play.set({attr: {state: playerControls.playState}})
+        domState.stop.set({attr: {state: playerControls.stopState}})
+      }
+    }
+    const PlayerCtrlBar = props => {
+      const {bpm1state, bpm1css, bpm2state, bpm2css, bpmXtext, bpmXstate, re: br} = props.bpm
+      const {playState, stopState, mutedState, re: pr} = props.playerControls
+      const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className)
+      
+      return R.div({className: 'ctrlbar'}, 
+        BeeCmd({cc: 'bpm-cmd bpm1', onRef, re: br.bpm1, text: 'BPM', css: bpm1css, st: bpm1state,
+          click: _ => sourceUi.doBpm(1)}),
+        BeeCmd({cc: 'bpm-cmd bpm2', onRef, re: br.bpm2, text: 'BPM.X', css: bpm2css, st: bpm2state,
+          click: _ => sourceUi.doBpm(2)}),
+        BeeCmd({cc: '', re: br.bpmX, text: bpmXtext, st: bpmXstate, click: sourceUi.syncBpm}),
+        BeeCmd({cc: 'cc-play', re: pr.play, text: 'Play', st: playState, click: sourceUi.play}),
+        BeeCmd({cc: 'cc-stop', re: pr.stop, text: 'Stop', st: stopState, click: sourceUi.stop}),
+        BeeCmd({cc: 'cc-mute', re: pr.muted, text: 'Mute', st: mutedState, click: sourceUi.toggleMute}),
+        BeeCmd({cc: 'cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
+      )
+    }
+    const drag = { //8#2b2 ----- DragBar ------
+      currText: '',
+      durText: '',
+      progCss: {},
+      loopCss: {},  
+      css: {},
+      re: {
+        dragBar: {},
+        current: {},
+        duration: {}
+      }
+    }
+    const playerDragChanged = navChange => {
+      mergeStateWith(drag, navChange)
+      drag.css = {...drag.progCss, ...drag.loopCss}
+      if (R.useReact) {
+        //console.log('calling dirty')
+        //void drag.setDirty?.()
+        updatePlayerRxDOM()
+      } else {
+        domState.dragBar.set({css: drag.css})
+        domState.current.set({text: drag.currText})
+        domState.duration.set({text: drag.durText})
+      }
+    }
+    const dragBar = event => {
+      if (event.type === 'click' || event.buttons & 1) {
+        const {offsetX = event.nativeEvent.offsetX} = event
+        sourceUi.seekPt(round(1000 * offsetX / event.target.clientWidth) / 10)
+      }
+    }
+    const PlayerDragBar = props => {
+      const {re, durText, currText, css} = props
+      console.log('NEW DRAGBAR RENDER')
+      
+      const [dirty, setDirty] = React.useState(0)
+      //drag.setDirty = _ => setDirty(dirty + 1)
+      
+      return R.div({className: 'nav-drag'},
+        R.div({className: 'drag-bar', style: css, re: re.dragBar, onMouseMove: dragBar, onClick: dragBar},
+          R.div({className: 'curr time', re: re.current}, currText),
+          R.div({className: 'dur time', re: re.duration}, durText)
+        )
+      )
+    }
+    const bpm = { //8#7a8 ----- BPM ------
+      bpm1state: '',
+      bpm2state: '',
+      bpm1css: {},
+      bpm2css: {},
+      bpmXtext: 'syncBPM',
+      bpmXstate: '',
+      re: {
+        bpm1: {},
+        bpm2: {},
+        bpmX: {}
+      }
+    }
+    const bpmChanged = bpmChange => {
+      mergeStateWith(bpm, bpmChange)
+      if (R.useReact) {
+        updatePlayerRxDOM()
+      } else {
+        domState.bpm1.set({attr: {state: bpm.bpm1state}, css: bpm.bpm1css})
+        domState.bpm2.set({attr: {state: bpm.bpm2state}, css: bpm.bpm2css})
+        domState.bpmX.set({attr: {state: bpm.bpmXstate}, text: bpm.bpmXtext})
+      }
+    } 
+    const clip = { //8#79e ----- Loop ------
       inPt: 0,
       outPt: 0,
-      loop: false
+      loopOn: false,
+      re: {
+        inPt: {},
+        outPt: {},
+        loopOn: {}
+      }    
     }
-    const buildUi = _ => {
-      const dragBar = event => (event.type === 'click' || event.buttons & 1) &&
-        sourceUi.seekPt(round(1000 * event.offsetX / event.target.clientWidth) / 10)
-        
-      const absSeekS = sec => _ => sourceUi.seek(sec)
-      const relSeekS = sec => _ => sourceUi.seekRel(sec)
-      const relSeekB = bt => _ => source.beatTimeIn && sourceUi.seekRel(bt * source.beatTimeIn)  
-      const secToFix1 = sec => round(10 * sec) / 10
-      const inOutChanged = _ => setUi('dragBar', {css: {
-        __in: 100 * clip.inPt / (getState().duration || 1) + '%',
-        __inout: 100 * (clip.outPt - clip.inPt) / (getState().duration || 1) + '%',
-        __loop: clip.loop ? '#e22' : '#e92'
+    const loopChanged = clipChange => {
+      mergeStateWith(clip, clipChange)
+      const {duration} = getState()
+      playerDragChanged({loopCss: {
+        '--in': 100 * clip.inPt / (duration || 1) + '%',
+        '--inout': 100 * (clip.outPt - clip.inPt) / (duration || 1) + '%',
+        '--loop': clip.loopOn ? '#e22' : '#e92'
       }})
-      const setIn = _ => {
-        clip.inPt = getState().currentTime
-        inOutChanged()
-        setUi('inPt', {text: '➜' + secToFix1(clip.inPt)})
+      if (R.useReact) {
+        updatePlayerRxDOM()
+      } else {
+        domState.inPt.set({text: '➜' + secToFix1(clip.inPt)})
+        domState.outPt.set({text: '➜' + secToFix1(clip.outPt)})
+        domState.loopOn.set({attr: {loopon: clip.loopOn}})
       }
-      const setOut = _ => {
-        clip.outPt = getState().currentTime
-        inOutChanged()
-        setUi('outPt', {text: '➜' + secToFix1(clip.outPt)})
+    }
+    const setIn = _ => loopChanged({inPt: getState().currentTime})
+    const setOut = _ => loopChanged({outPt: getState().currentTime})
+    const toggleLoop = _ => loopChanged({loopOn: !clip.loopOn})
+    const gotoIn = _ => sourceUi.seek(clip.inPt)
+    const gotoOut = _ => sourceUi.seek(clip.outPt)
+
+    const PlayerLoopBar = ({inPt, outPt, loopOn: loopon, re}) => R.div({className: 'loopbar'}, 
+      BeeCmd({cc: 'n-incmd', text: 'In', click: setIn}),
+      BeeCmd({cc: 'n-indisp emoji', re: re.inPt, text: '➜' + secToFix1(inPt), click: gotoIn}),
+      BeeCmd({cc: 'n-loop', re: re.loopOn, text: 'Loop', attr: {loopon}, click: toggleLoop}),
+      BeeCmd({cc: 'n-outcmd rt', text: 'Out', click: setOut}),
+      BeeCmd({cc: 'n-outdisp rt emoji', re: re.outPt, text: '➜' + secToFix1(outPt), click: gotoOut})
+    )
+     //8#a55 ----- NavBar ------
+     
+    const absSeekS = sec => _ => sourceUi.seek(sec)
+    const relSeekS = sec => _ => sourceUi.seekRel(sec)
+    const relSeekB = bt => _ => source.beatTimeIn && sourceUi.seekRel(bt * source.beatTimeIn)  
+    const secToFix1 = sec => round(10 * sec) / 10
+    
+    const PlayerNavBar = props => {
+      const {absSeekS, relSeekS, relSeekB} = props
+      return R.div({className: 'navbar'}, 
+        BeeCmd({cc: 'n-start', text: 'Start', click: absSeekS(0)}),
+        BeeCmd({cc: 'n-m30s', text: '-30s', click: relSeekS(-30)}),
+        BeeCmd({cc: 'n-m10s', text: '-10s', click: relSeekS(-10)}),
+        BeeCmd({cc: 'n-m2b', text: '-2b', click: relSeekB(-2)}),
+        BeeCmd({cc: 'n-m1b', text: '-1b', click: relSeekB(-1)}),
+        BeeCmd({cc: 'n-p1b', text: '+1b', click: relSeekB(1)}),
+        BeeCmd({cc: 'n-p2b', text: '+2b', click: relSeekB(2)}),
+        BeeCmd({cc: 'n-p10s', text: '+10s', click: relSeekS(10)}),
+        BeeCmd({cc: 'n-p30s', text: '+30s', click: relSeekS(30)})
+      )
+    }
+     //8#755 ----------- The Player ------------
+    
+    const playerState = {clip, bpm, playerControls, drag}
+    
+    const Player = _ => { //: called only once
+      try {
+        const player = R.Frag({},
+          PlayerLoopBar(playerState.clip),
+          PlayerNavBar({absSeekS, relSeekS, relSeekB}),
+          PlayerCtrlBar(playerState),
+          PlayerDragBar(playerState.drag)
+        )
+        if (!R.useReact) {
+          ref2state(clip.re, domState)
+          ref2state(playerControls.re, domState)
+          ref2state(bpm.re, domState)
+          ref2state(drag.re, domState)
+        }
+        return player
+      } catch (err) {
+        console.error(err)
+        debugger
       }
-      const gotoIn = _ => sourceUi.seek(clip.inPt)
-      const gotoOut = _ => sourceUi.seek(clip.outPt)
-      const toggleLoop = _ => {
-        clip.loop = !clip.loop
-        setUi('loop', {attr: {loopon: clip.loop}})
-        inOutChanged()
+    }
+      
+    const updatePlayerRxDOM = _ => {
+      console.log('NEW FULL RENDER:')
+      ReactDOM.render(Player(playerState), sourceUi.rxRoot$)
+    }
+    
+    const buildUi = _ => {
+      if (R.useReact) {
+        set$(sourceUi.ctrl$, {html: ``}, sourceUi.rxRoot$ = div$({class: 'rx-root'}))
+        updatePlayerRxDOM()
+      } else {
+        set$(sourceUi.ctrl$, {html: ``}, sourceUi.rxRoot$ = div$({class: ''}))
+        set$(sourceUi.rxRoot$, {}, Player())
       }
-      const beecmd$ = (...args) => {
-        const pars = args[0].nodeType ? args[1] : args[0]
-        wassert(isObj(pars))
-        pars.class = 'bee-cmd ' + (pars.class || '')
-        pars.attr = pars.attr || {}
-        pars.st && (pars.attr.state = pars.st) //: -> not dynamic (React rerenders it each time)
-        return div$(...args)
-      }
-          
-      set$(sourceUi.ctrl$, {html: ``}, [
-        div$({class: 'src-above above1'}, [
-          beecmd$({class: 'n-incmd', text: 'In', click: setIn}),
-          sourceUi.inPt$ = beecmd$({class: 'n-indisp emoji', text: '➜0', click: gotoIn}),
-          sourceUi.loop$ = beecmd$({class: 'n-loop', text: 'Loop', click: toggleLoop}),
-          beecmd$({class: 'n-outcmd rt', text: 'Out', click: setOut}),
-          sourceUi.outPt$ = beecmd$({class: 'n-outdisp rt emoji', text: '➜0', click: gotoOut})
-        ]),
-        div$({class: 'src-above above2'}, [
-          beecmd$({class: 'n-start', text: 'Start', click: absSeekS(0)}),
-          beecmd$({class: 'n-m30s', text: '-30s', click: relSeekS(-30)}),
-          beecmd$({class: 'n-m10s', text: '-10s', click: relSeekS(-10)}),
-          beecmd$({class: 'n-m2b', text: '-2b', click: relSeekB(-2)}),
-          beecmd$({class: 'n-m1b', text: '-1b', click: relSeekB(-1)}),
-          beecmd$({class: 'n-p1b', text: '+1b', click: relSeekB(1)}),
-          beecmd$({class: 'n-p2b', text: '+2b', click: relSeekB(2)}),
-          beecmd$({class: 'n-p10s', text: '+10s', click: relSeekS(10)}),
-          beecmd$({class: 'n-p30s', text: '+30s', click: relSeekS(30)})
-        ]),
-        div$({class: 'src-navtop'}, [
-          sourceUi.bpm1$ = 
-            beecmd$({class: 'bpm-cmd bpm1', text: 'BPM', click: _ => sourceUi.doBpm(1)}),
-          sourceUi.bpm2$ = 
-            beecmd$({class: 'bpm-cmd bpm2', text: 'BPM.X', click: _ => sourceUi.doBpm(2)}),
-          sourceUi.bpmX$ = beecmd$({class: '', text: 'syncBPM', click: sourceUi.syncBpm}),
-          sourceUi.play$ = beecmd$({class: 'cc-play', text: 'Play', click: sourceUi.play}),
-          sourceUi.stop$ = beecmd$({class: 'cc-stop', text: 'Stop', click: sourceUi.stop}),
-          sourceUi.muted$ = 
-            beecmd$({class: 'cc-mute', text: 'Mute', click: sourceUi.toggleMute}),
-          div$({class: 'bee-cmd cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
-        ]),
-        sourceUi.thumb$ = div$({class: 'nav-thumb'}, [
-          sourceUi.dragBar$ = div$({class: 'drag-bar', on: {mousemove: dragBar, click: dragBar}}, [
-            sourceUi.current$ = div$({class: 'curr time'}),
-            sourceUi.duration$ = div$({class: 'dur time'})
-          ])
-        ])
-      ])
     }
     buildUi()
   }
