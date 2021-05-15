@@ -96,7 +96,7 @@ export const createUI = (root, exroot) => {
     
     Im.StagesUi.extendUi(ui) //: ui subs won't be stand-alone objects, ui obj will be extended
     Im.FxUi.extendUi(ui)
-    Im.PlayersUi.extendUi(ui)
+    await Im.PlayersUi.extendUi(ui)
     await Im.SourcesUi.extendUi(ui)
     Im.StatesUi.extendUi(ui)
     
