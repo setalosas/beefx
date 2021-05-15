@@ -735,6 +735,9 @@ body::after {
 .dragged {
   background: yellow;
 }
+.rx-root:hover {
+  box-shadow: 0 0 16px 8px #7de1ff !important;
+}
 .source-strip {
   text-align: center;
 }
@@ -875,15 +878,15 @@ body::after {
   top: 0;
   margin-top: -33px;
 }
-.source-strip .source-frame .src-ctrl .src-above {
+.source-strip .source-frame .src-ctrl > div {
   position: relative;
   padding: 1px 0 1px 0;
   z-index: 1;
 }
-.source-strip .source-frame .src-ctrl .above1 {
+.source-strip .source-frame .src-ctrl .loopbar {
   text-align: left;
 }
-.source-strip .source-frame .src-ctrl .src-navtop {
+.source-strip .source-frame .src-ctrl .ctrlbar {
   position: relative;
   width: 100%;
   height: 22px;
@@ -959,7 +962,7 @@ body::after {
   --c2: #000000;
   opacity: .8;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb {
+.source-strip .source-frame .src-ctrl .nav-drag {
   position: relative;
   width: 100%;
   height: 50px;
@@ -968,7 +971,7 @@ body::after {
   background-color: rgba(255, 255, 255, 0.25);
   background-size: cover;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar {
   position: absolute;
   left: 2px;
   top: 10px;
@@ -980,7 +983,7 @@ body::after {
   border-radius: 4px;
   cursor: pointer;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar .time {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar .time {
   font-size: 15px;
   font-weight: 700;
   pointer-events: none;
@@ -989,25 +992,25 @@ body::after {
   color: #ffffff;
   text-shadow: 0 0 1px #000000, 0 0 2px #000000, 0 0 4px #000000;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar .curr {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar .curr {
   position: absolute;
   left: 50%;
   top: -11px;
   transform: translateX(-50%);
   color: #ffb;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar .dur {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar .dur {
   position: absolute;
   right: 2px;
   top: -11px;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::after,
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::before {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar::after,
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar::before {
   content: '';
   pointer-events: none;
   user-select: none;
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::after {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar::after {
   position: absolute;
   left: 0;
   top: 0;
@@ -1016,7 +1019,7 @@ body::after {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.75);
 }
-.source-strip .source-frame .src-ctrl .nav-thumb .drag-bar::before {
+.source-strip .source-frame .src-ctrl .nav-drag .drag-bar::before {
   position: absolute;
   left: var(--in, 0);
   top: 35%;
