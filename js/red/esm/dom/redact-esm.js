@@ -7,20 +7,19 @@
 import * as Corelib from '../stdlib/corelib-esm.js'
 import * as DOMplusUltra from './dom-plus-ultra-esm.js'
 
-const {nop, isStr} = Corelib
-const {pinky} = Corelib.Tardis
+const {nop, isStr, sanitize} = Corelib
 const {leaf$} = DOMplusUltra
 void isStr
 
 //8#87d Redapt - React/DOMplusUltra adapter - currently selects React if 'react' is in the URL
 
-export const R = {
-  useReact: window.location.href.includes('react'),
-  isReady: pinky.promise('redact'),
-  isProduction: false
-}
-
-void (async _ => {
+export const Redact = (async _ => {
+  const R =  {
+    useReact: window.location.href.includes('react'),
+    //isReady: pinky.promise('redact'),
+    isProduction: false
+  }
+  
   if (R.useReact) {
      if (R.isProduction) {
       await import('https://cdn.skypack.dev/react')
@@ -60,17 +59,21 @@ void (async _ => {
         return R.c(tag, par, ...children)
       }
       par.cclass = par.className
-      par.css = par.style
+      par.style && (par.css = par.style)
+      delete par.className
+      delete par.style
       par.on = {
         click: par.onClick,
         mouseenter: par.onMouseEnter,
         mousemove: par.onMouseMove,
         change: par.onChange
       }
+      sanitize(par.on)
+      sanitize(par)
       try {
         const node = leaf$(tag, par, children)
         par.re && (par.re.current = node)
-        console.log(node, tag, par, children)
+        //console.log(node, tag, par, children)
         return node
       } catch (err) {
         console.error(err)
@@ -86,6 +89,6 @@ void (async _ => {
     R.Frag = (...args) => R.c('frag', ...args)
     R.X = fun => fun()
   }
-  pinky.redact.resolve(R)
-  console.log(`Redact resolved`)
+  //pinky.redact.resolve(R)
+  return R
 })()
