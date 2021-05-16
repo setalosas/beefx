@@ -965,7 +965,7 @@ body::after {
 .source-strip .source-frame .src-ctrl .nav-drag {
   position: relative;
   width: 100%;
-  height: 50px;
+  height: 30px;
   border-radius: 8px;
   overflow: hidden;
   background-color: rgba(255, 255, 255, 0.25);
