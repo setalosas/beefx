@@ -76,8 +76,8 @@ export const css$ = (node, css) => {
   }
 }
 export const set$ = (node, pars = {}, children) => {
-  pars.class = pars.class || pars.cclass
-  const {css, attr = {}, id, text, html, value, class: cclass = [], on = {}, click} = pars
+  const cclass = pars.class || pars.cclass || []
+  const {css, attr = {}, id, text, html, value, on = {}, click} = pars
   const {deattr, declass = []} = pars
   id && (attr.id = id)
   const classList = isArr(cclass) ? cclass : cclass ? cclass.split(' ').filter(a => a) : []
@@ -153,8 +153,8 @@ export const state$ = node => {
   reHash()
   
   state.set = pars => {
-    pars.class = pars.class || pars.cclass
-    const {css, attr = {}, text, html, value, class: cclass = []} = pars
+    const cclass = pars.class || pars.cclass || []
+    const {css, attr = {}, text, html, value} = pars
     const {deattr = {}, declass = []} = pars
     const classList = isArr(cclass) ? cclass : cclass ? cclass.split(' ').filter(a => a) : []
     const declassList = isArr(declass) ? declass : declass ? declass.split(' ').filter(a => a) : []
