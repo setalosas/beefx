@@ -1,6 +1,6 @@
 # beeFX Web Audio library & playground
 
-beeFX is a collection of filters, audio effects, visualisers and other fun stuff for the Web Audio API.
+beeFX is a collection of filters, audio effects, visualisers and other tools for the Web Audio API with a standrdized widget UI.
 
 ![image](https://github.com/setalosas/beefx/blob/main/doc/dem8.jpg)
 
@@ -76,6 +76,8 @@ Currently the playground can be used with local audio files, youtube videos, aud
 This is an unreleased library, there is no npm package yet, you can download the repo and try it (the index.html gives you a static site, the manifest allows you to use this same folder as a Chrome extension on Youtube, the js/beefx folder contains the core library without the playground and UI elements. It's possible to use this subfolder without the other parts, at least I use it in a bigger sequencer app as a library.
 
 Note: **no dependencies**, so you don't have to install anything. No external libraries, frameworks or packagers used, it's pure ES6 Javascript and this repo contains every line of code used in the library or the playground - no surprises. (Ok, there is one exception: we include the Youtube API for the Youtube embeds of course, but it's dynamic include from Google servers.)
+
+I'm working on a React version, but it's in a very preliminary phase yet. The Player controls are converted, but they work with or without React. The React version is pulled in only if there is a 'react' string in the url (?react at the end of it for example).
 
 # Performance
 
