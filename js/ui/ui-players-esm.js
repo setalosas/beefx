@@ -5,7 +5,7 @@
    standard/no-callback-literal, object-curly-newline */
 /* eslint-disable no-unused-vars */   
    
-import {Corelib, DOMplusUltra, Observer, R} from '../improxy-esm.js'
+import {Corelib, DOMplusUltra, Observer, Redact} from '../improxy-esm.js'
 
 const {undef, isObj} = Corelib
 const {wassert, weject, wejectNaN} = Corelib.Debug
@@ -20,7 +20,8 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
   const {pg} = ui
   const {sources, stageMan, beeFx} = pg // eslint-disable-line no-unused-vars
   const {createMediaObserver} = Observer
-  const {React, ReactDOM} = await R.isReady
+  const R = await Redact
+  const {React, ReactDOM, X: RX} = R // .isReady
   
   const logOn = false
   const logBPM = true
@@ -238,13 +239,10 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     })
     
     const reduceUpdate = obj => {
-      obj.update = _ => console.log('Updater not used', obj)
+      obj.update = _ => console.warn('Updater not used', obj)
       obj.useUpdate = _ => {
         const [curr, update] = React.useState(0)
-        obj.update = _ => {
-          console.log('updating:', obj)
-          update(curr + 1)
-        }
+        obj.update = _ => update(curr + 1)
         return {curr, update}
       }
       return obj
@@ -444,18 +442,12 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       }
     }
       
-    const updatePlayerRxDOM = _ => {
-      console.log('NEW FULL RENDER:')
-      ReactDOM.render(Player(playerState), sourceUi.rxRoot$)
-    }
-    
     const buildUi = _ => {
       if (R.useReact) {
         set$(sourceUi.ctrl$, {html: ``}, sourceUi.rxRoot$ = div$({class: 'rx-root'}))
-        updatePlayerRxDOM()
+        ReactDOM.render(Player(playerState), sourceUi.rxRoot$)
       } else {
-        set$(sourceUi.ctrl$, {html: ``}, sourceUi.rxRoot$ = div$({class: ''}))
-        set$(sourceUi.rxRoot$, {}, Player())
+        set$(sourceUi.ctrl$, {html: ``}, div$({class: ''}, Player()))
       }
     }
     buildUi()
