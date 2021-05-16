@@ -83,7 +83,7 @@ const createModule = _ => { //: Extends the sourceUi object with player function
       audioHash: '',
       iframeHash: ''
     }
-    const observerTickPeriod = 500 // 1000
+    const observerTickPeriod = 300 // 1000
     
     const getYtPlayerState = _ => {
       const ytp = sourceUi.ytPlayer
@@ -141,12 +141,13 @@ const createModule = _ => { //: Extends the sourceUi object with player function
       const diffToMaster = slave.currentTime - master.currentTime
       
       const konf = {
+        coolDown: 2500, // this is in ms
         maxOkLag: .15, // .06
         preRun: .07 // .05
       }
       if (abs(diffToMaster) > konf.maxOkLag) {
         const elapsed = since(sourceUi.lastPlayerSyncAt || 0)
-        if (elapsed > 2500) {
+        if (elapsed > konf.coolDown) {
           const newSlaveTime = master.currentTime + (diffToMaster < 0 ? 2 : 1) * konf.preRun
           ytPlayer.seekTo(newSlaveTime, true)
           sourceUi.lastPlayerSyncAt = NoW()
@@ -246,7 +247,7 @@ const createModule = _ => { //: Extends the sourceUi object with player function
     const tick = fp => {
       if (observer.fp === fp) {
         lazyGetMediaElementState(fp)
-        schedule(2000).then(_ => tick(fp))
+        schedule(observerTickPeriod).then(_ => tick(fp))
       } else {
         console.warn('observer tick aborted', fp, observer.fp)
       }
