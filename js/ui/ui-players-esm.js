@@ -223,7 +223,9 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       return R.div(cmdProps, text)
     }).render
     
-    const BeeCmd = ({cc, text, attr = {}, st, click: onClick, onRef, css: style, re}) => {
+    const RX = R.X
+    
+    const BeeCmd = ({cc, text, attr = {}, st, click: onClick, onRef, css: style, re}) => RX(_ => {
       st && (attr.state = st)
       const className = 'bee-cmd ' + (cc || '')
       for (const key in attr) {
@@ -233,9 +235,22 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       const onMouseEnter = _ => onRef?.(ref?.current)
       
       return R.div({className, style, ...attr, ref, re, onMouseEnter, onClick}, text)
-    }
+    })
+    
+    const reduceUpdate = obj => {
+      obj.update = _ => console.log('Updater not used', obj)
+      obj.useUpdate = _ => {
+        const [curr, update] = React.useState(0)
+        obj.update = _ => {
+          console.log('updating:', obj)
+          update(curr + 1)
+        }
+        return {curr, update}
+      }
+      return obj
+    }  
 
-    const playerControls = { //8#b802 -----Player controls ------
+    const playerControls = reduceUpdate({ //8#b802 -----Player controls ------
       playState: 'off',
       stopState: 'off',
       mutedState: 'off',
@@ -244,21 +259,24 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         stop: {},
         muted: {}
       }
-    }
+    })
     const playerCtrlChanged = ctrlChange => {
       mergeStateWith(playerControls, ctrlChange)
       if (R.useReact) {
-        updatePlayerRxDOM()
+        playerControls.update()
       } else {
         domState.muted.set({attr: {state: playerControls.mutedState}})
         domState.play.set({attr: {state: playerControls.playState}})
         domState.stop.set({attr: {state: playerControls.stopState}})
       }
     }
-    const PlayerCtrlBar = props => {
+    const PlayerCtrlBar = props => RX(_ => {
       const {bpm1state, bpm1css, bpm2state, bpm2css, bpmXtext, bpmXstate, re: br} = props.bpm
       const {playState, stopState, mutedState, re: pr} = props.playerControls
-      const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className)
+      
+      const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className) //: test
+      playerControls.useUpdate()
+      bpm.useUpdate()
       
       return R.div({className: 'ctrlbar'}, 
         BeeCmd({cc: 'bpm-cmd bpm1', onRef, re: br.bpm1, text: 'BPM', css: bpm1css, st: bpm1state,
@@ -271,8 +289,8 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         BeeCmd({cc: 'cc-mute', re: pr.muted, text: 'Mute', st: mutedState, click: sourceUi.toggleMute}),
         BeeCmd({cc: 'cc-flood', text: 'Flood', click: _ => sources.floodStages(sourceUi)})
       )
-    }
-    const drag = { //8#2b2 ----- DragBar ------
+    })
+    const drag = reduceUpdate({ //8#2b2 ----- DragBar ------
       currText: '',
       durText: '',
       progCss: {},
@@ -283,41 +301,36 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         current: {},
         duration: {}
       }
-    }
+    })
     const playerDragChanged = navChange => {
       mergeStateWith(drag, navChange)
       drag.css = {...drag.progCss, ...drag.loopCss}
       if (R.useReact) {
-        //console.log('calling dirty')
-        //void drag.setDirty?.()
-        updatePlayerRxDOM()
+        drag.update()
       } else {
         domState.dragBar.set({css: drag.css})
         domState.current.set({text: drag.currText})
         domState.duration.set({text: drag.durText})
       }
     }
-    const dragBar = event => {
+    const onDrag = event => {
       if (event.type === 'click' || event.buttons & 1) {
         const {offsetX = event.nativeEvent.offsetX} = event
         sourceUi.seekPt(round(1000 * offsetX / event.target.clientWidth) / 10)
       }
     }
-    const PlayerDragBar = props => {
+    const PlayerDragBar = props => RX(_ => {
       const {re, durText, currText, css} = props
-      console.log('NEW DRAGBAR RENDER')
-      
-      const [dirty, setDirty] = React.useState(0)
-      //drag.setDirty = _ => setDirty(dirty + 1)
+      drag.useUpdate()
       
       return R.div({className: 'nav-drag'},
-        R.div({className: 'drag-bar', style: css, re: re.dragBar, onMouseMove: dragBar, onClick: dragBar},
+        R.div({className: 'drag-bar', style: css, re: re.dragBar, onMouseMove: onDrag, onClick: onDrag},
           R.div({className: 'curr time', re: re.current}, currText),
           R.div({className: 'dur time', re: re.duration}, durText)
         )
       )
-    }
-    const bpm = { //8#7a8 ----- BPM ------
+    })
+    const bpm = reduceUpdate({ //8#7a8 ----- BPM ------
       bpm1state: '',
       bpm2state: '',
       bpm1css: {},
@@ -329,18 +342,18 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         bpm2: {},
         bpmX: {}
       }
-    }
+    })
     const bpmChanged = bpmChange => {
       mergeStateWith(bpm, bpmChange)
       if (R.useReact) {
-        updatePlayerRxDOM()
+        bpm.update()
       } else {
         domState.bpm1.set({attr: {state: bpm.bpm1state}, css: bpm.bpm1css})
         domState.bpm2.set({attr: {state: bpm.bpm2state}, css: bpm.bpm2css})
         domState.bpmX.set({attr: {state: bpm.bpmXstate}, text: bpm.bpmXtext})
       }
     } 
-    const clip = { //8#79e ----- Loop ------
+    const clip = reduceUpdate({ //8#79e ----- Loop ------
       inPt: 0,
       outPt: 0,
       loopOn: false,
@@ -349,7 +362,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         outPt: {},
         loopOn: {}
       }    
-    }
+    })
     const loopChanged = clipChange => {
       mergeStateWith(clip, clipChange)
       const {duration} = getState()
@@ -359,7 +372,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         '--loop': clip.loopOn ? '#e22' : '#e92'
       }})
       if (R.useReact) {
-        updatePlayerRxDOM()
+        clip.update()
       } else {
         domState.inPt.set({text: '➜' + secToFix1(clip.inPt)})
         domState.outPt.set({text: '➜' + secToFix1(clip.outPt)})
@@ -372,13 +385,18 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     const gotoIn = _ => sourceUi.seek(clip.inPt)
     const gotoOut = _ => sourceUi.seek(clip.outPt)
 
-    const PlayerLoopBar = ({inPt, outPt, loopOn: loopon, re}) => R.div({className: 'loopbar'}, 
-      BeeCmd({cc: 'n-incmd', text: 'In', click: setIn}),
-      BeeCmd({cc: 'n-indisp emoji', re: re.inPt, text: '➜' + secToFix1(inPt), click: gotoIn}),
-      BeeCmd({cc: 'n-loop', re: re.loopOn, text: 'Loop', attr: {loopon}, click: toggleLoop}),
-      BeeCmd({cc: 'n-outcmd rt', text: 'Out', click: setOut}),
-      BeeCmd({cc: 'n-outdisp rt emoji', re: re.outPt, text: '➜' + secToFix1(outPt), click: gotoOut})
-    )
+    const PlayerLoopBar = props => RX(_ => {
+      const {inPt, outPt, loopOn: loopon, re} = props
+      clip.useUpdate()
+      
+      return R.div({className: 'loopbar'}, 
+        BeeCmd({cc: 'n-incmd', text: 'In', click: setIn}),
+        BeeCmd({cc: 'n-indisp emoji', re: re.inPt, text: '➜' + secToFix1(inPt), click: gotoIn}),
+        BeeCmd({cc: 'n-loop', re: re.loopOn, text: 'Loop', attr: {loopon}, click: toggleLoop}),
+        BeeCmd({cc: 'n-outcmd rt', text: 'Out', click: setOut}),
+        BeeCmd({cc: 'n-outdisp rt emoji', re: re.outPt, text: '➜' + secToFix1(outPt), click: gotoOut})
+      )
+    })
      //8#a55 ----- NavBar ------
      
     const absSeekS = sec => _ => sourceUi.seek(sec)
@@ -386,8 +404,9 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     const relSeekB = bt => _ => source.beatTimeIn && sourceUi.seekRel(bt * source.beatTimeIn)  
     const secToFix1 = sec => round(10 * sec) / 10
     
-    const PlayerNavBar = props => {
+    const PlayerNavBar = props => RX(_ => {
       const {absSeekS, relSeekS, relSeekB} = props
+      
       return R.div({className: 'navbar'}, 
         BeeCmd({cc: 'n-start', text: 'Start', click: absSeekS(0)}),
         BeeCmd({cc: 'n-m30s', text: '-30s', click: relSeekS(-30)}),
@@ -399,19 +418,19 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         BeeCmd({cc: 'n-p10s', text: '+10s', click: relSeekS(10)}),
         BeeCmd({cc: 'n-p30s', text: '+30s', click: relSeekS(30)})
       )
-    }
+    })
      //8#755 ----------- The Player ------------
     
     const playerState = {clip, bpm, playerControls, drag}
     
     const Player = _ => { //: called only once
       try {
-        const player = R.Frag({},
+        const player = RX(_ => R.Frag({},
           PlayerLoopBar(playerState.clip),
           PlayerNavBar({absSeekS, relSeekS, relSeekB}),
           PlayerCtrlBar(playerState),
           PlayerDragBar(playerState.drag)
-        )
+        ))
         if (!R.useReact) {
           ref2state(clip.re, domState)
           ref2state(playerControls.re, domState)

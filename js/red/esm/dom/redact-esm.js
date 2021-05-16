@@ -12,7 +12,7 @@ const {pinky} = Corelib.Tardis
 const {leaf$} = DOMplusUltra
 void isStr
 
-//8#87d Redact - React/DOMplusUltra adapter - currently selects React if 'react' is in the URL
+//8#87d Redapt - React/DOMplusUltra adapter - currently selects React if 'react' is in the URL
 
 export const R = {
   useReact: window.location.href.includes('react'),
@@ -31,7 +31,7 @@ void (async _ => {
     }
     const {React, ReactDOM} = window
     R.capture({React, ReactDOM})
-    
+
     R.c = React.createElement
     
     R.extend = sa => sa.split(',').map(tag => R[tag] = (...args) => {
@@ -42,8 +42,11 @@ void (async _ => {
     R.extendComp = CC => R[CC.name] = (...args) => R.c(CC, ...args)
     R.ext = R.extendComp
     R.Frag = (...args) => R.c(React.Fragment, ...args)
+    R.X = fun => R.c(fun)
   } else {
     R.React = {
+      useState: _ => [{}, nop],
+      useRef: _ => [{}, nop],
       createRef: _ => ({isRef: true}),
       forwardRef: fun => ({render: fun})
     }
@@ -81,6 +84,7 @@ void (async _ => {
     R.extendComp = CC => R[CC.name] = (...args) => R.c(CC, ...args)
     R.ext = R.extendComp
     R.Frag = (...args) => R.c('frag', ...args)
+    R.X = fun => fun()
   }
   pinky.redact.resolve(R)
   console.log(`Redact resolved`)
