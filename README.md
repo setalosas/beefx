@@ -4,6 +4,10 @@ beeFX is a collection of filters, audio effects, visualisers and other tools for
 
 ![image](https://github.com/setalosas/beefx/blob/main/doc/dem8.jpg)
 
+You can watch a longer video demo here:
+
+[![youtube](https://github.com/setalosas/beefx/blob/main/doc/beevid.jpg | width=640)](https://www.youtube.com/watch?v=ZxTfdHzt3Ic)
+
 # The components of beeFX
 
 The original goal of this project was to make an extendable library of audio effects. As these filters are quite difficult to test without an existing audio environment, it appeared a good idea to create a test app. So the playground subproject was born to implement a testing tool, but then it grew beyond this original goal and became a full stand-alone interactive testing bed / experimenting lab with lots of Ui elements and attached components.
