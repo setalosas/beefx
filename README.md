@@ -1,6 +1,6 @@
 # beeFX Web Audio library & playground
 
-beeFX is a collection of filters, audio effects, visualisers and other tools for the Web Audio API with a standrdized widget UI.
+beeFX is a collection of filters, audio effects, visualisers and other tools for the Web Audio API with a unified widget UI.
 
 ![image](https://github.com/setalosas/beefx/blob/main/doc/dem8.jpg)
 
