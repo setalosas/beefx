@@ -53,6 +53,13 @@ const stagePresets = { //: These compressed defs are ugly, but it's easier to ov
   preset4xbScope: {ABCD: 'b,scope'},
   preset3rec: {A: 'osc,sampler,scope', B: 'osc,recorder,scope', C: 'osc,sampler,scope'},
   preset2xpitch: {AB: 'b,pitchShifterNote,scope'},
+  presetSix: {
+    A: 'bpm,samplerNote',
+    B: 'bi,wahWahEF,gain,scope',
+    C: 'pingPongBeatDelay,convolver,scope',
+    D: 'beatDelay,pitchShifterNote,odwac,scope',
+    E: 'beatDelay,pingPongBeatDelay,eqb4,spectrum',
+    F: 'beatDelay,wobble,scope'},
   prTakeFive: {
     A: 'g,comp,b',
     B: 'g,bi,b',
@@ -128,7 +135,6 @@ const stagePresets = { //: These compressed defs are ugly, but it's easier to ov
     CG: 'scope,eq10,scope',
     DH: 'scope,eqb4,scope'}
 }
-
 export const create = root => {
   const {ui, pg} = root
   const {stageMan} = pg
@@ -177,7 +183,7 @@ export const create = root => {
     }
     if (name) {
       if (name === 'last') {
-        const startup = store.load('onStartup') || {type: 'actPreset', presetName: 'presets4xb'}
+        const startup = store.load('onStartup') || {type: 'actPreset', presetName: 'presetSix'}
         if (startup.type === 'actPreset') {
           const lastStored = startup.presetName
           resolve({actPreset: setupHash[lastStored]})
