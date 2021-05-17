@@ -51,9 +51,9 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     destroyBpmDetector()
     
     void sourceUi.mediaObserver?.destroy()
-    const observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
+    const _observer = sourceUi.mediaObserver = createMediaObserver(sourceUi)
 
-    const getState = _ => observer.getState()
+    const getState = _ => _observer.getState() //: This is the first and last time we use _observer.
 
     sourceUi.master = undef //: sync - not used
     sourceUi.slave = undef
@@ -84,7 +84,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       sourceUi.audio$ && (sourceUi.audio$.currentTime = sec)
       sourceUi.video$ && (sourceUi.video$.currentTime = sec)
     }
-    sourceUi._seekRel = relSec => sourceUi._seek(observer.currState.currentTime + relSec)
+    sourceUi._seekRel = relSec => sourceUi._seek(getState().currentTime + relSec)
 
     sourceUi._setPlaybackRate = pbr => {//+ check this out
       void sourceUi.ytPlayer?.setPlaybackRate?.(pbr)
@@ -168,14 +168,14 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     }
     sourceUi.syncBpm = _ => forcedSyncedControl('_setPitchToBpm', sourceUi.bpmFx.int.bpmOut)
 
-    const domState = {
+    const domState = { //: Direct references to certain nodes. DOM changes are cached here (state$).
       info: state$(sourceUi.info$),
       masterThumb: sourceUi.masterThumb$ ? state$(sourceUi.masterThumb$) : null
     }
     const lastDOM = {}
     
     sourceUi.onStateChanged = state => {
-      const {title, duration, muted, paused, videoId} = getState() // observer.currState
+      const {title, duration, muted, paused, videoId} = getState()
       title && domState.info.set({text: title})
       playerDragChanged({durText: secToString(duration)})
       playerCtrlChanged({
@@ -192,7 +192,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     }
     
     sourceUi.onTimeChanged = _ => {
-      const {currentTime, duration} = getState() //observer.currState
+      const {currentTime, duration} = getState()
       if (clip.loopOn && clip.outPt > 0 && clip.outPt < currentTime) {
         sourceUi.seek(clip.inPt)
       } else {
@@ -214,7 +214,8 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       }
     }
     
-    R.BeeCmdRef = React.forwardRef(({cc, text, attr = {}, st, click, css}, ref) => { //: NOT USED
+    //: NOT USED- just for reference
+    R.BeeCmdRef = React.forwardRef(({cc, text, attr = {}, st, click, css}, ref) => {
       console.log({cc, ref})
       st && (attr.state = st)
       for (const key in attr) {
@@ -223,8 +224,6 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       const cmdProps = {className: 'bee-cmd ' + cc, style: css, ...attr, ref, onClick: click}
       return R.div(cmdProps, text)
     }).render
-    
-    const RX = R.X
     
     const BeeCmd = ({cc, text, attr = {}, st, click: onClick, onRef, css: style, re}) => RX(_ => {
       st && (attr.state = st)
@@ -237,6 +236,10 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       
       return R.div({className, style, ...attr, ref, re, onMouseEnter, onClick}, text)
     })
+    
+    //: ReduceUpdate transforms a state object adding an externlly callable custom hook.
+    //: So onXXXchange methods can signal for the component when there is a state change.
+    //: (The state is always outside the component in our case.)
     
     const reduceUpdate = obj => {
       obj.update = _ => console.warn('Updater not used', obj)
@@ -252,7 +255,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       playState: 'off',
       stopState: 'off',
       mutedState: 'off',
-      re: {
+      re: { //: re is ~ref, but we won't want to mix up with React refs.
         play: {},
         stop: {},
         muted: {}
@@ -274,7 +277,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       
       const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className) //: test
       playerControls.useUpdate()
-      bpm.useUpdate()
+      bpm.useUpdate() //: This component depends on two external states, hence the two updater.
       
       return R.div({className: 'ctrlbar'}, 
         BeeCmd({cc: 'bpm-cmd bpm1', onRef, re: br.bpm1, text: 'BPM', css: bpm1css, st: bpm1state,
