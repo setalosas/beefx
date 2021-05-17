@@ -103,7 +103,7 @@ onWaapiReady.then(waCtx => {
       arr = isArr(arr[0]) ? arr[0] : arr
       const chainArr = [fx, ...arr.filter(f => f !== fx)] //: no duplicates!
       const chainLen = chainArr.length
-      const corr = max(1, ~~(chainLen / 2))
+      const corr = max(1, ~~(chainLen / 4))
       const sumGain = maxGain * corr + minGain * (chainLen - 1)
       const resetGain = sumGain / chainLen
       int.shared = {chainArr, chainLen, sumGain, resetGain, isWarModeOn: 1}
