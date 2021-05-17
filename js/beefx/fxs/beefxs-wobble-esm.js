@@ -4,7 +4,7 @@
    no-void, quotes, no-floating-decimal, import/first, space-unary-ops, 
    standard/no-callback-literal, object-curly-newline */
    
-import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
+import {Corelib, BeeFX, onWaapiReady, CT} from '../beeproxy-esm.js'
 
 const {nop} = Corelib
 const {wassert} = Corelib.Debug
@@ -13,6 +13,7 @@ void startEndThrottle
 void schedule
 void wassert
 void nop
+void CT
 const {round, abs, min} = Math
 
 //: WobbleFx is a multifunctional interactive wobble effect.
@@ -327,9 +328,12 @@ onWaapiReady.then(waCtx => {
         fx.setValue('lfoFreq', wassert(1 / int.realBeatTime)) //: setValue -> lfoFreqChanged
         int.stateChangeOrigin = ''
         
-        wassert(dbg.realBeatTime === int.realBeatTime)
-        wassert(dbg.beatTime === atm.beatTime)
-        wassert(dbg.beatTimeMod === atm.beatTimeMod)
+        //=ct.start        
+        //:wassert(dbg.realBeatTime === int.realBeatTime)
+        //:wassert(dbg.beatTime === atm.beatTime)
+        //:wassert(dbg.beatTimeMod === atm.beatTimeMod)
+        //:CT.ct.warn('BEATTIMECHANGED')
+        //=ct.end
       } else {
         //: nothing to do if in manual mode
       }
@@ -373,29 +377,32 @@ onWaapiReady.then(waCtx => {
       quadFilterMod('Q', true, atm.filterQ)
       quadFilterMod('type', false, atm.filterType)
       fx.valueChanged('filterGraph')
+      //=ct.call wobble:postModFilters(fx) freq(10)
     }
     
     fx.cmdProc = (fire, mode) => {
       if (fire === 'fire') {
-        if (beatCmds.check(mode, val => fx.setValue('beatTimeMod', val)) ||
-          lfoCmds.check(mode, val =>  fx.setValue('lfoType', val)) ||
-          biquadCmds.check(mode, val => fx.setValue('filterType', val)) ||
-          filterModeCmds.check(mode, val => fx.setValue('filterMode', val))) {
-          return
+        if (
+          !beatCmds.check(mode, val => fx.setValue('beatTimeMod', val)) &&
+          !lfoCmds.check(mode, val =>  fx.setValue('lfoType', val)) &&
+          !biquadCmds.check(mode, val => fx.setValue('filterType', val)) &&
+          !filterModeCmds.check(mode, val => fx.setValue('filterMode', val))
+        ) {
+          const action = {
+            syncPhase: _ => {
+              fx.stopOsc()
+              fx.startOsc()
+            },
+            reverse: _ => {
+              fx.setValue('sign', -atm.sign)
+              fx.setValue('excursion') //: this will recalc the filter and redraw
+            },
+            statFreqGraph: _ => fx.setFilterGraphMode(false),
+            dynFreqGraph: _ => fx.setFilterGraphMode(true)
+          }[mode]
+          void action?.()
         }
-        const action = {
-          syncPhase: _ => {
-            fx.stopOsc()
-            fx.startOsc()
-          },
-          reverse: _ => {
-            fx.setValue('sign', -atm.sign)
-            fx.setValue('excursion') //: this will recalc the filter and redraw
-          },
-          statFreqGraph: _ => fx.setFilterGraphMode(false),
-          dynFreqGraph: _ => fx.setFilterGraphMode(true)
-        }[mode]
-        void action?.()
+        //=ct.ins wobble:postFire
       }
     }
     fx.startOsc = _ => {

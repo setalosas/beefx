@@ -6,7 +6,7 @@ import * as DOMplusUltra from './red/esm/dom/dom-plus-ultra-esm.js'
 import { DragWithDOM } from './red/esm/dom/dragwdom-esm.js'
 import { Redact } from './red/esm/dom/redact-esm.js'
 
-import { BeeFX, BPM, onWaapiReady } from './beefx/beeproxy-esm.js'
+import { BeeFX, BPM, onWaapiReady, CT } from './beefx/beeproxy-esm.js'
 
 import { createGraphBase } from './vis/graphbase-esm.js'
 import * as Visualizer from './vis/visualizer-esm.js'
@@ -29,10 +29,11 @@ import * as StatesUi from './ui/ui-states-esm.js'
 import { createUI } from './ui/ui-esm.js'
 
 import * as Playground from './playground-esm.js'
+import '../contest/ct-esm.js'
 
 export {
   Corelib, Store, DOMplusUltra, Redact, DragWithDOM, Midi, TestMidi,
   onWaapiReady, BeeFX, BPM, Visualizer, createGraphBase,
   Sources, StateManager, StageManager, Playground,
-  StagesUi, FxUiPars, FxUi, Observer, PlayersUi, SourcesUi, StatesUi, createUI
+  StagesUi, FxUiPars, FxUi, Observer, PlayersUi, SourcesUi, StatesUi, createUI, CT
 }

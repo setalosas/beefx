@@ -1,6 +1,7 @@
 /* eslint-disable spaced-comment, object-curly-spacing */
 
 import * as Corelib from './red/esm/stdlib/corelib-esm.js'
+import { CT } from './red/esm/stdlib/contest-esm.js'
 
 import { onReady as onWaapiReady } from './wautils-esm.js'
 import { createBeeDebug } from './beefx-debug-esm.js'
@@ -39,5 +40,5 @@ import './med/beefxs-bpmtrans-esm.js'
 export {
   Corelib, onWaapiReady,
   createBeeDebug, beeCommon, BeeFX,
-  Chebyshev, detectBPMj, BPM
+  Chebyshev, detectBPMj, BPM, CT
 }
