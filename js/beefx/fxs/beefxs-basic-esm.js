@@ -71,14 +71,15 @@ onWaapiReady.then(waCtx => {
     },
     midi: {pars: ['gain,Q', 'frequency,detune']},
     name: 'BiquadFilter',
-    graphs: {}
-  }
-  biquadFx.graphs.freqGraph = {
-    graphType: 'freq',
-    filter: 'biquad',
-    minDb: -43,
-    maxDb: 53,
-    diynamic: .8
+    graphs: {
+      freqGraph: {
+        graphType: 'freq',
+        filter: 'biquad',
+        minDb: -43,
+        maxDb: 53,
+        diynamic: .8
+      }
+    }
   }
   //: const detuneFactor = Math.log(2) / 1200
   //: const hz = Math.pow2(detune / 1200)
