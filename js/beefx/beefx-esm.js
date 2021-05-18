@@ -6,7 +6,7 @@
 
 import {Corelib, createBeeDebug, beeCommon} from './beeproxy-esm.js'
 
-const {isFun, isArr, merge} = Corelib
+const {isFun, isStr, isArr, merge} = Corelib
 const {wassert} = Corelib.Debug
 const {pow} = Math
 void isArr
@@ -91,16 +91,18 @@ const createBeeFX = waCtx => {
     fx.relax = _ => fx.isRelaxed = true //: not used, but will be (performance!)
     fx.revive = _ => fx.isRelaxed = false
     
-    fx.setAt = (node, key, value) => fx.int[node][key].setTargetAtTime(value, nowa(), .01)
+    fx._setAt = (node, key, value) => node[key].setTargetAtTime(value, nowa(), .01)
     
     if (debug.checkSetAt) { //: override if testing
-      fx.setAt = (node, key, value) => {
-        wassert(fx?.int?.[node]?.[key])
+      fx._setAt = (node, key, value) => {
+        wassert(node?.[key])
         Number.isNaN(value)
           ? console.warn(`fx.setAt: value is NaN`, {key, value, node, zh: fx.zholger})
-          : fx.int[node][key].setTargetAtTime(value, nowa(), .01)
+          : node[key].setTargetAtTime(value, nowa(), .01)
       }
     }
+
+    fx.setAt = (node, key, value) => fx._setAt(isStr(node) ? fx.int[node] : node, key, value)
     
     //: Have to find out the optimal way of setting delayTime (probably it depends on use case)
       

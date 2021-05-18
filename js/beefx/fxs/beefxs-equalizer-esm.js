@@ -9,7 +9,7 @@ import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 const {nop, getIncArray} = Corelib
 
 onWaapiReady.then(waCtx => {
-  const {registerFxType} = BeeFX(waCtx)
+  const {registerFxType, connectArr} = BeeFX(waCtx)
   
   const eqPresetNames = [['flat', 'flat']] //: not yet
   
@@ -53,9 +53,9 @@ onWaapiReady.then(waCtx => {
     
     eqFx.setValue = (fx, key, varr, {int} = fx, [ix = -1, value] = varr.map ? varr : []) => ({
       preset: nop, //: fx.setValueArray!
-      gain: _ => ix !== -1 && fx.setAt('bandNode' + ix, 'gain', value),
-      detune: _ => ix !== -1 && fx.setAt('bandNode' + ix, 'detune', value),
-      Q: _ => ix !== -1 && (int['bandNode' + ix].Q.value = value)
+      gain: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'gain', value),
+      detune: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'detune', value),
+      Q: _ => ix !== -1 && (int.bandNodes[ix].Q.value = value)
     }[key])
     
     const bandTable = {
@@ -65,17 +65,15 @@ onWaapiReady.then(waCtx => {
       classic10: {Q: 2.5, freqs: [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]}
     }
     eqFx.construct = (fx, pars, {int} = fx) => {
-      let prevNode = fx.start
+      int.bandNodes = []
       for (let i = 0; i < bands; i++) {
         const bandNode = waCtx.createBiquadFilter()
         bandNode.frequency.value = bandTable[variant + bands].freqs[i] 
         bandNode.type = 'peaking'
         bandNode.Q.value = bandTable[variant + bands].Q
-        prevNode.connect(bandNode)
-        prevNode = bandNode
-        int['bandNode' + i] = bandNode 
+        int['bandNode' + i] = int.bandNodes[i] = bandNode
       }
-      prevNode.connect(fx.output) 
+      connectArr(fx.start, ...int.bandNodes, fx.output)
     }
     return eqFx
   }
