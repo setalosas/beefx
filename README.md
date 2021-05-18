@@ -49,7 +49,7 @@ Extensions:
 
 Everything in the Core must work in headless mode, the Extension part contains components which can or cannot be used without Ui.
 
-In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control beeFX filters, it's basically works the same way as for every similar library.
+In the wiki there is (or soon will be) a detailed desciption of how to create, connect and control beeFX filters, it's basically works the same way as every similar library.
 
 ## The beeFX Playground
 
