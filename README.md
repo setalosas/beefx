@@ -65,8 +65,6 @@ The playground also contains infrastructure elements for building a multi-stage 
 
 This repo itself is the playground at this moment, but I plan to put the components into different repos after the first development phase.
 
-VID
-
 ## The beeFX Chrome Extension for Youtube
 
 The playground as a site has limits in the use of copyrighted music - of course I cannot include real songs with it. There is no much fun trying out a complex effect pipeline with free music or singing through the microphone, so from the beginning there was an option for upload and use any user files (mp3 or wav). However, not too many users have mp3s on their computer these days. So it seemed natural to use Youtube videos as audio sources - but here comes a wall again: embedded youtube iframes are closed, there is no way to access their audio output. Except of course if the playground runs on the youtube.com domain.
