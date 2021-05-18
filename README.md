@@ -59,7 +59,7 @@ In the wiki there is (or soon will be) a detailed desciption of how to create, c
 
 Starting as a testing tool, the playground grew into an application where the user can define different audio sources and chains of effects for them in different channels (stages), something like a mixer board with effect modules.
 
-The UI elements are not part of the core effect modules, they are generated automatically from the effects definition data (so the definition data containes properties which are only useful for the user interface, but this part is very thin).
+The UI elements are not part of the core effect modules, they are generated automatically from the effects definition data (so the definition data containes properties which are only useful for the user interface, but this part is very thin and can be omitted when adding new efffects).
 
 The playground also contains infrastructure elements for building a multi-stage audio chain with sources (and players). This is not needed at all when using the effect library, just an option.
 
@@ -87,13 +87,14 @@ I'm working on a React version, but it's in a very preliminary phase yet. The Pl
 
 The Web Audio API is quite effective, audio graphs consisting of more than 1000 nodes are running without problem on the playground. Of course complex filters can be implemented badly and there are a few problematic, especially the ones using ScriptProcessorNode or AudioWorkletNode (e.g. Recorder, BPM detector, Sampler) or the Convolver, but most of the effects are surprisingly cheap in CPU.
 
-For the playground of course the DOM is the bottleneck in most cases.
+For the playground of course the DOM is the bottleneck in most cases (especially if used with lots of heavy visualizations).
 
 (I don't know how to make an exact performance test with audio graphs, the current method is that for each element type I put 16 pieces of them into the playground at the same time and let it run for a minute - the table with the results will be included in the Wiki. There must be a better way than comparing the CPU graph screenshots.)
 
 # Browsers
 
 The playground is intented to run in Chrome and for now I don't plan test other browsers. However:
+* It works in Chrome, Chromium, Chrome Dev and Canary.
 * It works in Firefox but the UI controls are ugly.
 * It works in Edge, but a few effects have some sound artifacts. (I will find out why as Edge is more comfortable for development than Chrome as it's much faster.)
 * It works in Android Chrome on phones too if someone has quite small fingers (or a huge phone).
