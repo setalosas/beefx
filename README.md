@@ -4,7 +4,7 @@ beeFX is a collection of filters, audio effects, visualisers and other tools for
 
 ![image](https://github.com/setalosas/beefx/blob/main/doc/dem8.jpg)
 
-You can watch a longer video demo here:
+You can find a longer video demo here:
 
 [![youtube](https://github.com/setalosas/beefx/blob/main/doc/beevid.png)](https://www.youtube.com/watch?v=ZxTfdHzt3Ic)
 
