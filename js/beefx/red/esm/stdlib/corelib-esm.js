@@ -40,6 +40,15 @@ export const getRndDig = dig => getRnd(pow(10, dig - 1), pow(10, dig) - 1)
 
 export const rndColor = a => `rgba(${getRnd(255)}, ${getRnd(255)}, ${getRnd(255)}, ${a || 1})`
 
+export const getHsp = (huePt, sat, lite) => {
+  const hue = Math.round(huePt *  360)
+  const darkness = 40 - Math.abs(255 - hue)//: primitive correction for perceived lightness
+  if (darkness > 0) {
+    lite += (100 - lite) * darkness / 40 / 2  //: in the radius(40) of hue 255
+  }
+  return `${hue}, ${sat}%, ${lite}%`
+}
+
 export const hashOfString = (str, salt = '') => {
   str += salt
   let hash = 0
