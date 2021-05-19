@@ -6,7 +6,7 @@
    
 import {Corelib, BeeFX, onWaapiReady} from '../beeproxy-esm.js'
 
-const {nop, getIncArray} = Corelib
+const {nop, getIncArray, getHsp} = Corelib
 
 onWaapiReady.then(waCtx => {
   const {registerFxType, connectArr} = BeeFX(waCtx)
@@ -26,27 +26,19 @@ onWaapiReady.then(waCtx => {
       },
       midi: {arrays: variant === 'classic' ? 'gain' : 'gain,detune,Q'},
       name,
-      graphs: {}
-    }
-    const getColor = (huePt, sat, lite) => {
-      const hue = Math.round(huePt *  360)
-      const darkness = 40 - Math.abs(255 - hue)//: primitive correction for perceived lightness
-      if (darkness > 0) {
-        lite += (100 - lite) * darkness / 40 / 2  //: in the radius(40) of hue 255
+      graphs: {
+        multiGraph: getIncArray(0, bands - 1).map(ix => ({
+          graphType: 'freq',
+          filter: 'bandNode' + ix, // fx => fx.int.bandNodes[ix]
+          minDb: -26,
+          maxDb: 28,
+          diynamic: .8,
+          renderSet: {doClear: ix === 0, doGrid: ix === 0, doGraph: true},
+          phaseCurveColor: `hsla(${getHsp(ix / bands, 99, 75)}, .5)`,
+          magCurveColor: `hsl(${getHsp(ix / bands, 90, 55)})`
+        }))
       }
-      return `${hue}, ${sat}%, ${lite}%`
     }
-    eqFx.graphs.multiGraph = getIncArray(0, bands - 1).map(ix => ({
-      graphType: 'freq',
-      filter: 'bandNode' + ix,
-      minDb: -26,
-      maxDb: 28,
-      diynamic: .8,
-      renderSet: {doClear: ix === 0, doGrid: ix === 0, doGraph: true},
-      phaseCurveColor: `hsla(${getColor(ix / bands, 99, 75)}, .5)`,
-      magCurveColor: `hsl(${getColor(ix / bands, 90, 55)})`
-    }))
-    
     //: That array extraction is confusing.
     
     eqFx.setValue = (fx, key, varr, {int} = fx, [ix = -1, value] = varr.map ? varr : []) => ({
@@ -54,7 +46,7 @@ onWaapiReady.then(waCtx => {
       gain: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'gain', value),
       detune: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'detune', value),
       Q: _ => ix !== -1 && (int.bandNodes[ix].Q.value = value)
-    }[key])
+    }[key]) //isArr(key] ? key[0] : key
     
     const bandTable = {
       british4: {Q: 1, freqs: [80, 640, 2560, 8192]}, // 5120
