@@ -141,7 +141,9 @@ const createBeeFX = waCtx => {
       if (def[key]) {
         const {arrayKey = key, ix = -1, type} = def[key]
         if (type !== 'graph') {
-          const fun = exo.setValue(fx, arrayKey, arrayKey === key ? value : [ix, value])
+          const fun = arrayKey === key
+            ? exo.setValue(fx, key, value)
+            : exo.setArrayValue(fx, arrayKey, [ix, value])
           if (fun) {
             fun()
             fx.valueChanged(key) //: no value here as in fun() atm[key] may have changed

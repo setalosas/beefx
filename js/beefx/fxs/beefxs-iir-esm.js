@@ -121,54 +121,52 @@ onWaapiReady.then(waCtx => {
       },
       midi: {arrays: variant === 'manual' ? 'a,b' : 'aMod,bMod'},
       name,
-      graphs: {}
-    }
-    IIR.graphs.previewGraph = {
-      graphType: 'freq',
-      filter: 'IIR',
-      minDb: -36,
-      maxDb: 40,
-      diynamic: .5,
-      curveColor: ({fx}) => fx.int.isPreviewStable ? '#de0' : '#f90',
-      postRender: ({fx, ccext}) => {
-        ccext.drawText('Preview', 'yellow', 'left', '28px', 70, -14)
-        fx.int.isPreviewStable || ccext.drawText('Unstable!', 'orange', 'left', '28px', 70, -54)
+      graphs: {
+        previewGraph: {
+          graphType: 'freq',
+          filter: 'IIR',
+          minDb: -36,
+          maxDb: 40,
+          diynamic: .5,
+          curveColor: ({fx}) => fx.int.isPreviewStable ? '#de0' : '#f90',
+          postRender: ({fx, ccext}) => {
+            ccext.drawText('Preview', 'yellow', 'left', '28px', 70, -14)
+            fx.int.isPreviewStable || ccext.drawText('Unstable!', 'orange', 'left', '28px', 70, -54)
+          }
+        },
+        liveGraph: {
+          graphType: 'freq',
+          filter: 'IIRLive',
+          minDb: -36,
+          maxDb: 40,
+          diynamic: .5,
+          curveColor: ({fx}) => fx.int.isLiveStable ? '#4e4' : fx.int.isLiveDead ? '#f44' : '#d80',
+          postRender: ({ccext}) => ccext.drawText('Live', '#9e4', 'left', '28px', 70, -14)
+        }
       }
     }
-    IIR.graphs.liveGraph = {
-      graphType: 'freq',
-      filter: 'IIRLive',
-      minDb: -36,
-      maxDb: 40,
-      diynamic: .5,
-      curveColor: ({fx}) => fx.int.isLiveStable ? '#4e4' : fx.int.isLiveDead ? '#f44' : '#d80',
-      postRender: ({ccext}) => ccext.drawText('Live', '#9e4', 'left', '28px', 70, -14)
-    }
+    IIR.setArrayValue = (fx, key) => ({
+      //: chebyshev:
+      aMod: fx.coeffModsChanged,
+      bMod: fx.coeffModsChanged,
+      //: manual:
+      a: fx.coeffsChanged,
+      b: fx.coeffsChanged
+    }[key])
 
     IIR.setValue = (fx, key, value, {int} = fx) => ({
-      //: common iir
+      //: common iir:
       warning: nop,
       log: nop,
       autoGen: _ => value === 'fire' && fx.toggleAutoGen(),
-      reGenerate: _ => {
-        console.log(`regenerate called with `, value)
-        value === 'fire' && fx.regenerateLive() //: regen even if not stable
-      },
-      exTerminate: _ => {
-        console.log(`exTerminate called with`, value)
-        value === 'fire' && fx.terminateLive()//: switch it off NOW (manual)
-      },
+      reGenerate: _ => value === 'fire' && fx.regenerateLive(), //: regen even if not stable
+      exTerminate: _ => value === 'fire' && fx.terminateLive(),//: switch it off NOW (manual)
       //: chebyshev:
-      aMod: _ => fx.coeffModsChanged(),
-      bMod: _ => fx.coeffModsChanged(),
       filterType: _ => fx.chebyshevParsChanged(),
       cutOffFreq: _ => fx.chebyshevParsChanged(),
       ripplePt: _ => fx.chebyshevParsChanged(),
-      
       //: manual:
-      preset: _ => fx.loadFromPreset(value),
-      a: _ => fx.coeffsChanged(),
-      b: _ => fx.coeffsChanged()
+      preset: _ => fx.loadFromPreset(value)
     }[key])
     
     IIR.construct = (fx, {initial}, {int, atm} = fx) => {

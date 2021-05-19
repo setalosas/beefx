@@ -39,21 +39,24 @@ onWaapiReady.then(waCtx => {
         }))
       }
     }
-    //: That array extraction is confusing.
-    
-    eqFx.setValue = (fx, key, varr, {int} = fx, [ix = -1, value] = varr.map ? varr : []) => ({
-      preset: nop, //: fx.setValueArray!
-      gain: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'gain', value),
-      detune: _ => ix !== -1 && fx.setAt(int.bandNodes[ix], 'detune', value),
-      Q: _ => ix !== -1 && (int.bandNodes[ix].Q.value = value)
-    }[key]) //isArr(key] ? key[0] : key
-    
+
+    eqFx.setArrayValue = (fx, key, [ix, value], {int} = fx) => ({
+      gain: _ => fx.setAt(int.bandNodes[ix], 'gain', value),
+      detune: _ => fx.setAt(int.bandNodes[ix], 'detune', value),
+      Q: _ => int.bandNodes[ix].Q.value = value
+    }[key])
+
+    eqFx.setValue = (fx, key, value, {int} = fx) => ({
+      preset: nop //: NYI
+    }[key])
+            
     const bandTable = {
       british4: {Q: 1, freqs: [80, 640, 2560, 8192]}, // 5120
       classic4: {Q: .5, freqs: [30, 240, 1920, 15360]},
       classic6: {Q: 1.2, freqs: [20, 80, 320, 1280, 5120, 15360]},
       classic10: {Q: 2.5, freqs: [31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]}
     }
+
     eqFx.construct = (fx, pars, {int} = fx) => {
       int.bandNodes = []
       for (let i = 0; i < bands; i++) {

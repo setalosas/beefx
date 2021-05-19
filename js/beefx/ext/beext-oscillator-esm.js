@@ -106,9 +106,9 @@ onWaapiReady.then(waCtx => {
       imag: {defVal: 0, min: -1, max: 1, arrayIx: [0, 7], unit: 'cos'}
     }
   }
+  waveGeneratorFx.setArrayValue = fx => fx.regen //: keys: imag & real
+  
   waveGeneratorFx.setValue = (fx, key, value, {int} = fx) => ({
-    real: _ => fx.regen(),
-    imag: _ => fx.regen(),
     frequency: _ => int.isValid && fx.setAt('oscillator', 'frequency', value),
     normalize: _ => fx.regen(),
     on: _ => value ? fx.rebuild() : fx.destroy()
