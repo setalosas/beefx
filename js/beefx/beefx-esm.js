@@ -6,7 +6,7 @@
 
 import {Corelib, createBeeDebug, beeCommon} from './beeproxy-esm.js'
 
-const {isFun, isStr, isArr, merge} = Corelib
+const {isFun, isStr, isArr, merge, nop} = Corelib
 const {wassert} = Corelib.Debug
 const {pow} = Math
 void isArr
@@ -139,10 +139,12 @@ const createBeeFX = waCtx => {
       
       //: This is way too concise and unreadable. Refakt: separate the array branch.
       if (def[key]) {
-        const {arrayKey = key, ix = -1, type} = def[key]
-        if (type !== 'graph') {
+        if (def[key].type !== 'graph') {
+          const {arrayKey = key, arrayIx, ix = -1} = def[key]
           const fun = arrayKey === key
-            ? exo.setValue(fx, key, value)
+            ? arrayIx 
+              ? nop //: this is an array but called with the array base props (won't set that)
+              : exo.setValue(fx, key, value)
             : exo.setArrayValue(fx, arrayKey, [ix, value])
           if (fun) {
             fun()
