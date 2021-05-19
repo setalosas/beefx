@@ -13,17 +13,15 @@ onWaapiReady.then(waCtx => {
   
   const eqPresetNames = [['flat', 'flat']] //: not yet
   
-  const createEqualizer = ({name, variant, bands}) => { //8#482 ------equalizer type factory ------
+  const createEqualizer = ({name, variant, bands}) => { //8#482 ---- equalizer type factory ----
+    const gain = {defVal: 0, min: -24, max: 24, arrayIx: [0, bands - 1], unit: 'dB'}
+    const preset = {defVal: eqPresetNames[0][1], type: 'strings', subType: eqPresetNames}
+    const detune = {defVal: 0, min: -1200, max: 1200, arrayIx: [0, bands - 1], unit: 'cent', color: 120}
+    const Q = {defVal: 1, min: .01, max: 100, arrayIx: [0, bands - 1], subType: 'exp'}
+    
     const eqFx = {
       def: {
-        ...(variant === 'classic' ? {
-          preset: {defVal: eqPresetNames[0][1], type: 'strings', subType: eqPresetNames},
-          gain: {defVal: 0, min: -24, max: 24, arrayIx: [0, bands - 1], unit: 'dB'}
-        } : {
-          gain: {defVal: 0, min: -24, max: 24, arrayIx: [0, bands - 1], unit: 'dB'},
-          detune: {defVal: 0, min: -1200, max: 1200, arrayIx: [0, bands - 1], unit: 'cent', color: 120},
-          Q: {defVal: 1, min: .01, max: 100, arrayIx: [0, bands - 1], subType: 'exp'}
-        }),
+        ...(variant === 'classic' ? {preset, gain} : {gain, detune, Q}),
         multiGraph: {type: 'graph'}
       },
       midi: {arrays: variant === 'classic' ? 'gain' : 'gain,detune,Q'},
