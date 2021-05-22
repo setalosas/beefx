@@ -179,7 +179,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       title && domState.info.set({text: title})
       playerDragChanged({durText: secToString(duration)})
       playerCtrlChanged({
-        mutedState: muted ? 'alert' : 'off',
+        mutedState: muted ? 'on' : 'off',
         playState: paused ? 'on' : 'off',
         stopState: paused ? 'off' : 'on'
       })

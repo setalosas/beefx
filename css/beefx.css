@@ -517,118 +517,73 @@ body::after {
   position: relative;
   left: 0;
   top: 0;
-  padding: 2px 4px;
+  padding: 2px 2px;
   border-radius: 6px;
-  background: rgba(240, 240, 176, 0.8);
-  box-shadow: inset 0 0 1px 0px rgba(0, 0, 0, 0.5);
+  background: #e6e6e6;
+  box-shadow: inset 0 0 1px 0px rgba(0, 0, 0, 0.25);
 }
 .bfx-horbar .mitem {
   position: relative;
   display: inline-block;
-  padding: 1px 2px;
-  margin: 2px;
-  border-radius: 4px;
   vertical-align: top;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  cursor: pointer;
   user-select: none;
+  padding: 1px 4px .5px;
+  margin: 1px 2px;
   font-size: 13px;
   font-weight: 400;
-  padding: 1px 3px 0;
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 5px 0.5px rgba(255, 255, 255, 0.5);
-  color: #666666;
-  background: #f0f0b0;
+  background: #e6e6e6;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: -1px -1px 2px 1px rgba(255, 255, 255, 0.4), 1px 1px 2px 1px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: -1px -1px 2px 1px rgba(255, 255, 255, 0.8), 1px 1px 2px 1px rgba(0, 0, 0, 0.26666667);
+  color: #4d4d4d;
+  cursor: pointer;
 }
 .bfx-horbar .mitem:hover {
-  color: #fc4;
-  background-color: rgba(0, 0, 0, 0.5);
+  filter: contrast(1.4) invert(0);
 }
 .bfx-horbar .mitem.act {
-  color: #ffa;
-}
-.bfx-horbar .mitem.act {
-  background: rgba(25, 25, 179, 0.25);
+  background: #ffea80;
 }
 .bfx-horbar .mframe {
   position: relative;
   display: inline-block;
-  padding: 1px 2px;
-  margin: 2px;
-  border-radius: 4px;
   vertical-align: top;
-  font-size: 12px;
+  user-select: none;
+  padding: 1px 4px .5px;
+  margin: 1px 2px;
+  font-size: 13px;
   font-weight: 400;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: rgba(255, 255, 255, 0.9);
-  background-color: rgba(0, 0, 0, 0.5);
-}
-.bfx-horbar .mframe:hover {
-  color: #fc4;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-.bfx-horbar .mframe.act {
-  color: #ffa;
 }
 .bfx-horbar .mlabel {
   position: relative;
   display: inline-block;
-  padding: 1px 2px;
-  margin: 2px;
-  border-radius: 4px;
   vertical-align: top;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  user-select: none;
+  padding: 1px 4px .5px;
+  margin: 1px 2px;
+  color: #209fdf;
+  padding: 2px 4px 0;
   font-size: 13px;
   font-weight: 400;
   border-color: transparent;
 }
 .bfx-horbar .minput {
   margin: 3px 0 0;
-  padding: 2px 1px 0px 2px;
+  padding: 0px 1px 0px 3px;
   outline: none;
   border: none;
-  color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.25);
+  font: 400 11px roboto condensed;
+  color: #df2020;
+  background-color: transparent;
   font-size: 13px;
   font-weight: 400;
 }
 .bfx-horbar .rt {
   float: right;
 }
-.bfx-horbar::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  content: '';
-  backdrop-filter: blur(2px);
-  z-index: -1;
-}
-.bfx-mainmenu {
-  background: #dbdbdb;
-}
-.bfx-auxmenu {
-  background: #e0e0e0;
-}
-.bfx-projmenu {
-  background: #e6e6e6;
+.source-strip {
+  background: rgba(230, 230, 230, 0.75);
+  padding-top: 4px;
 }
 .bfx-mixermenu {
   background: #666666;
@@ -742,7 +697,7 @@ body::after {
   text-align: center;
 }
 .source-strip .synctools-frame.source-frame {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.75);
   width: 100px;
   min-height: 70px;
   padding: 4px;
@@ -781,12 +736,12 @@ body::after {
   height: 100%;
   font-size: 20px;
   font-weight: 700;
-  color: yellow;
+  color: #ffea80;
   pointer-events: none;
   user-select: none;
   border-radius: 8px;
   text-align: left;
-  box-shadow: inset 0px 2px 3px 0px yellow;
+  box-shadow: inset 0px 2px 3px 0px #ffffff;
   content: '\00a0\00a0' attr(ix);
   z-index: 1;
   line-height: 0;
@@ -803,8 +758,9 @@ body::after {
   z-index: 1;
   padding: 2px 4px 0;
   color: #000000;
-  background-color: #ff8;
+  background-color: #ffea80;
   content: attr(info);
+  box-shadow: 0 0 2px 0px rgba(0, 0, 0, 0.5);
 }
 .source-strip .source-frame .src-info {
   position: absolute;
@@ -851,7 +807,7 @@ body::after {
   transform: scale(0.83) translateY(8px);
 }
 .source-strip .source-frame[type=audio] .src-media {
-  height: 100px;
+  height: 110px;
   background-size: 100%;
   background-repeat: no-repeat;
   background-position-y: 13.5px;
@@ -866,7 +822,7 @@ body::after {
 }
 .source-strip .source-frame[type] .src-ctrl {
   height: 90px;
-  margin-top: -53px;
+  margin-top: -65px;
   background: rgba(0, 0, 0, 0.5);
 }
 .source-strip .source-frame[type] .src-ctrl:hover {
@@ -885,6 +841,7 @@ body::after {
 }
 .source-strip .source-frame .src-ctrl .loopbar {
   text-align: left;
+  padding: 0 8.5px;
 }
 .source-strip .source-frame .src-ctrl .ctrlbar {
   position: relative;
@@ -894,27 +851,26 @@ body::after {
 .source-strip .source-frame .src-ctrl .bee-cmd {
   color: rgba(255, 255, 255, 0.8);
   background-color: rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: -1px -1px 1.5px 0.5px rgba(255, 255, 255, 0.4), 1px 1px 1.5px 0.5px rgba(0, 0, 0, 0.13333333);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.cc-play {
   color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(120deg) saturate(2);
+  background-color: rgba(0, 204, 0, 0.8);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.cc-stop {
   color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(220deg) saturate(2);
+  background-color: rgba(26, 102, 255, 0.8);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.cc-mute {
   color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 136, 136, 0.4);
-  filter: hue-rotate(0deg) saturate(2);
+  background-color: rgba(244, 37, 37, 0.8);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.cc-flood {
   color: rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 153, 0, 0.4);
-  filter: hue-rotate(0deg) saturate(2);
+  background-color: rgba(255, 179, 26, 0.8);
 }
 .source-strip .source-frame .src-ctrl .bee-cmd.n-loop[loopon="true"] {
   background: #800;
