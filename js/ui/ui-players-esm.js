@@ -270,6 +270,8 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
         domState.play.set({attr: {state: playerControls.playState}})
         domState.stop.set({attr: {state: playerControls.stopState}})
       }
+      //: This is a level above:
+      set$(sourceUi.frame$, {attr: {playing: playerControls.stopState}})
     }
     const PlayerCtrlBar = props => RX(_ => {
       const {bpm1state, bpm1css, bpm2state, bpm2css, bpmXtext, bpmXstate, re: br} = props.bpm

@@ -240,20 +240,20 @@ export const extendUi = ui => {
     
     const fxnames = fxHash.propertiesToArr()
     const cats = {
-      basic: {catName: 'Basic', arr: [], cc: 'half', hue: 120},
-      filter: {catName: 'Filter', arr: [], cc: 'half', hue: 60},
-      equalizer: {catName: 'Equalizer', arr: [], cc: 'half', hue: 200},
-      iir: {catName: 'IIR filter', arr: [], cc: 'half', hue: 330},
-      delay: {catName: 'Delay', arr: [], cc: 'half', hue: 160},
-      convolver: {catName: 'Convolver/Reverb', arr: [], cc: '', hue: 300},
-      noise: {catName: 'Noise', arr: [], cc: 'half', hue: 30},
-      eflfo: {catName: 'EF/LFO', arr: [], cc: 'half', hue: 120},
-      generator: {catName: 'Generator', arr: [], cc: 'half', hue: 45},
-      distortion: {catName: 'Distortion', arr: [], cc: 'half', hue: 0},
-      complex: {catName: 'Complex', arr: [], cc: 'half', hue: 15},
-      device: {catName: 'Device', arr: [], cc: 'half', hue: 240},
-      visual: {catName: 'Visual', arr: [], cc: 'half', hue: 300},
-      misc: {catName: 'Misc', arr: [], cc: 'half', hue: 90}
+      basic: {catName: 'Basic', arr: [], cc: 'halfdn', hue: 120},
+      filter: {catName: 'Filter', arr: [], cc: 'halfdn', hue: 70},
+      equalizer: {catName: 'Equalizer', arr: [], cc: 'halfdn', hue: 200},
+      iir: {catName: 'IIR filter', arr: [], cc: 'halfup', hue: 0},
+      delay: {catName: 'Delay', arr: [], cc: 'halfdn', hue: 160},
+      convolver: {catName: 'Convolver/Reverb', arr: [], cc: 'halfup', hue: 270},
+      noise: {catName: 'Noise', arr: [], cc: 'halfdn', hue: 30},
+      eflfo: {catName: 'EF/LFO', arr: [], cc: 'halfup', hue: 120},
+      generator: {catName: 'Generator', arr: [], cc: 'halfdn', hue: 45},
+      distortion: {catName: 'Distortion', arr: [], cc: 'halfdn', hue: 330},
+      complex: {catName: 'Complex', arr: [], cc: 'halfdn', hue: 15},
+      device: {catName: 'Device', arr: [], cc: 'halfup', hue: 240},
+      visual: {catName: 'Visual', arr: [], cc: 'halfdn', hue: 300},
+      misc: {catName: 'Misc', arr: [], cc: '', hue: 90}
     }
     for (const fxname of fxnames) {
       const exo = fxHash[fxname]

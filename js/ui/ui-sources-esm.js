@@ -61,11 +61,11 @@ export const extendUi = async ui => { //: input: ui.sourceStrip$ (empty)
   const init = _ => {
     set$(ui.sourceStrip$, {class: 'bfx-horbar source-strip'}, [
       ui.syncToolsFrame$ = div$({class: 'source-frame synctools-frame off'}, [
-        ui.syncPhase = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync LFO phases',
+        ui.syncPhase = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'LFO phases',
           click: _ => stageMan.onGlobalCommand({cmd: 'global.syncPhase'})}),
-        ui.syncLoopStart = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync start loops',
+        ui.syncLoopStart = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Start loops',
           click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStartLoop'})}),
-        ui.syncLoopEnd = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Sync stop loops', click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStopLoop'})})
+        ui.syncLoopEnd = div$({class: 'bee-cmd', attr: {state: 'on'}, text: 'Stop loops', click: _ => stageMan.onGlobalCommand({cmd: 'global.syncStopLoop'})})
       ]),
       ...sourceIxArr.map(ix => 
         sourceUis[ix].frame$ = div$({class: 'source-frame source-' + ix, attr: {ix}}, [ 
