@@ -99,7 +99,6 @@ body::after {
   bottom: 50px;
   width: 100%;
   color: #cc0;
-  /*.roco();*/
   font-size: 24px;
   font-weight: 700;
   font-style: italic;
@@ -458,7 +457,7 @@ body::after {
   background: #666;
   z-index: 9999;
   background-blend-mode: color-burn;
-  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
+  background: repeating-linear-gradient(45deg, #000000, #bf9f40 3px, #bfbf40 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
 }
 .beetrigger {
   position: fixed;
@@ -473,7 +472,7 @@ body::after {
   color: #ffe000;
   background-color: rgba(0, 0, 0, 0.5);
   background-blend-mode: color-burn;
-  background: repeating-linear-gradient(45deg, #000000, #cc9900 3px, #cccc00 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
+  background: repeating-linear-gradient(45deg, #000000, #bf9f40 3px, #bfbf40 9px, #000000 12px), radial-gradient(at 80% 80%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.85) 10%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
   font: 400 11px roboto condensed;
   font-size: 14px;
   font-weight: 400;
@@ -520,8 +519,8 @@ body::after {
   top: 0;
   padding: 2px 4px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: inset 0 0 6px 2px rgba(0, 0, 0, 0.75);
+  background: rgba(240, 240, 176, 0.8);
+  box-shadow: inset 0 0 1px 0px rgba(0, 0, 0, 0.5);
 }
 .bfx-horbar .mitem {
   position: relative;
@@ -541,9 +540,14 @@ body::after {
   user-select: none;
   font-size: 13px;
   font-weight: 400;
-  padding: 1px 3px;
+  padding: 1px 3px 0;
   border-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 5px 0.5px rgba(255, 255, 255, 0.5);
+  color: #666666;
+  background: #f0f0b0;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: -1px -1px 2px 1px rgba(255, 255, 255, 0.4), 1px 1px 2px 1px rgba(0, 0, 0, 0.4);
 }
 .bfx-horbar .mitem:hover {
   color: #fc4;
@@ -618,17 +622,13 @@ body::after {
   z-index: -1;
 }
 .bfx-mainmenu {
-  background: #4d4d4d;
-  padding: 4px;
-  border-radius: 6px;
+  background: #dbdbdb;
 }
 .bfx-auxmenu {
-  background: #666666;
+  background: #e0e0e0;
 }
 .bfx-projmenu {
-  background: #737373;
-  padding: 0px 4px;
-  box-shadow: inset 0 0 3px 0.5px rgba(0, 0, 0, 0.5);
+  background: #e6e6e6;
 }
 .bfx-mixermenu {
   background: #666666;
@@ -1371,7 +1371,7 @@ body {
   --sat1: calc(5% + var(--sat1mod));
   --lit1: calc(85% + var(--lit1mod));
   --sat2: calc(5% + var(--sat2mod));
-  --lit2: calc(50% + var(--lit2mod));
+  --lit2: calc(85% + var(--lit2mod));
 }
 .bfx-stage.sourcestage .gr-scope,
 .bfx-stage.sourcestage .gr-sampleGraph,
