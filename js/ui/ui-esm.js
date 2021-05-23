@@ -216,8 +216,10 @@ export const createUI = (root, exroot) => {
     if (key === 'F2') {
       ui.setFlag('fxfactory')
     } else if (key === 'F4') {
+      ui.setFlag('sourceList')
     } else if (key === 'F7') {
     } else if (key === 'F9') {
+      ui.setFlag('sourceList')
       if (ctrlKey) {
       } else if (shiftKey) {
       } else {
