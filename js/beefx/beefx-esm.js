@@ -21,7 +21,7 @@ const createBeeFX = waCtx => {
   
   const pepper = 'zholger'
   let pepuid = 1
-
+  
   const config = {
     useSetTargetForDelayTime: true //: this is not evident (linearRamp should be included too)
   }
