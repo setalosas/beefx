@@ -40,13 +40,14 @@ void isObj
   - If a source has a Player interface, it also has a special Player stage (but we call this a
     source stage, sources and players are way too interconnected).
   - Player/source stage consists of controls like speed, bpmDetector, play, stop, flood, etc.
-  - A Player can be remote (two browser windows side by side). The good news is that this makes lots of issues more complex. So currently this is disabled.
+  - A Player can be remote (two browser windows side by side). The good news is that this makes 
+    lots of issues more complex. So currently this is disabled.
   - Question: all non DAN sources will automatically get a Player interface? (Yes.)
   
   There are many special cases (like a Youtube video in an iframe to which we have audio access 
   or not) (not if it's not on the youtube.com site). In the latter case there can be a mock audio
   element replacing it. (This makes testing easier as we don't have to run in the Youtube chrome
-  extension every time.)
+  extension (CromBee) every time.)
   
   Sources are displayed in a separate strip on the top, but it's in a separate module (sources-ui).
   Again, responsibility division between sources and sources-ui is not clear yet.
@@ -133,10 +134,7 @@ export const createSources = (playground, root) => {
   const sources = {
     autoFloodOnFirst: true, //: first added source will flood every stage
     sourceArr,
-    dbgDump,
-    dbgMarkNode,
-    dbgCheckNode,
-    slog, tlog, wlog
+    dbgDump, dbgMarkNode, dbgCheckNode, slog, tlog, wlog
   }
   const mutedNode = waCtx.createGain()
   mutedNode.gain.value = 0

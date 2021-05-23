@@ -279,7 +279,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       
       const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className) //: test
       playerControls.useUpdate()
-      bpm.useUpdate() //: This component depends on two external states, hence the two updater.
+      bpm.useUpdate() //: This component depends on two external states, hence the two updaters.
       
       return R.div({className: 'ctrlbar'}, 
         BeeCmd({cc: 'bpm-cmd bpm1', onRef, re: br.bpm1, text: 'BPM', css: bpm1css, st: bpm1state,
