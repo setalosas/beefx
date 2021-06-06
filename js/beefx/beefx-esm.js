@@ -298,9 +298,10 @@ const createBeeFX = waCtx => {
   
   const {location} = window
   
-  beeFx.getRootPath = _ => //: full url 'cause of youtube
-    //window.location.host === 'www.youtube.com' ? '//beefx.mork.work/' : '//beefx.mork.work/' // 
-    location.host === 'www.youtube.com' ? '//beefx.mork.work/' : location.origin + '/'
+  beeFx.getRootPath = _ => //: full url 'cause of Youtube
+    location.host === 'www.youtube.com' 
+      ? '//beefx.mork.work/'  //: if on Youtube, we refer directly to an absolute Url
+      : location.origin + '/' //: in other cases it can be the host
   
   beeFx.getPresetPath = sub => beeFx.getRootPath() + 'pres/' + sub 
   beeFx.getJsPath = sub => beeFx.getRootPath() + 'js/' + sub
@@ -375,7 +376,7 @@ const createBeeFX = waCtx => {
     fxHash[fxName] = fxObj
     if (!fxObj.uiSelectDisabled) {
       fxNames.push([fxName, fxObj.name])
-      fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1) //: [1] for the Human name (0 is fx_...)
+      fxNames.sort((a, b) => a[1] > b[1] ? 1 : -1) //: [1] for the Human name ([0] is fx_...)
     }
   }
   
