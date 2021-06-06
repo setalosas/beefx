@@ -37,9 +37,6 @@ export const Redact = (async _ => {
       delete args[0].re
       return R.c(tag, ...args)
     })
-    R.extend('div,span,a,h1,h2,h3,strong,em,form,label,input,button,ol,ul,li')
-    R.extendComp = CC => R[CC.name] = (...args) => R.c(CC, ...args)
-    R.ext = R.extendComp
     R.Frag = (...args) => R.c(React.Fragment, ...args)
     R.X = fun => R.c(fun)
   } else {
@@ -83,12 +80,12 @@ export const Redact = (async _ => {
     }
     
     R.extend = sa => sa.split(',').map(tag => R[tag] = (...args) => R.c(tag, ...args))
-    R.extend('div,span,a,h1,h2,h3,strong,em,form,label,input,button,ol,ul,li')
-    R.extendComp = CC => R[CC.name] = (...args) => R.c(CC, ...args)
-    R.ext = R.extendComp
     R.Frag = (...args) => R.c('frag', ...args)
     R.X = fun => fun()
   }
+  R.extend('div,span,a,h1,h2,h3,strong,em,form,label,input,button,ol,ul,li')
+  R.extendComp = CC => R[CC.name] = (...args) => R.c(CC, ...args)
+  R.ext = R.extendComp
   //pinky.redact.resolve(R)
   return R
 })()
