@@ -75,7 +75,7 @@ export const createSources = (playground, root) => {
   //8#a48 ------------ Debug primitives ------------
   
   const crumb = 'aschne'  //: V-2
-  
+ 
   const logSources = false
   
   const slog = (...args) => logSources && console.log(...args)
@@ -106,7 +106,7 @@ export const createSources = (playground, root) => {
       dbgLog(`☂️Unmarked node found`, msg, node[crumb], {sourceIx, stageIx}, node)
     }
   }
-  const dbgCheckConsistency = _ => {
+  const dbgCheckConsistency = _ => {  
     const mediaElements = [] //: are there two sources for the same mediaElement? (impossible)
     for (let sourceIx = 1; sourceIx <= maxSources; sourceIx++) {
       if (sourceArr[sourceIx]?.mediaElement) {
