@@ -203,7 +203,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       }
     }
     
-    const mergeStateWith = (target, changes) => { //+neide
+    const mergeStateWith = (target, changes) => {
       for (const key in changes) {
         target[key] = changes[key]
       }
@@ -237,7 +237,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
       return R.div({className, style, ...attr, ref, re, onMouseEnter, onClick}, text)
     })
     
-    //: ReduceUpdate transforms a state object adding an externlly callable custom hook.
+    //: ReduceUpdate transforms a state object adding an externally callable custom hook.
     //: So onXXXchange methods can signal for the component when there is a state change.
     //: (The state is always outside the component in our case.)
     
@@ -276,7 +276,7 @@ export const extendUi = async ui => { //: Extends the sourceUi object with playe
     const PlayerCtrlBar = props => RX(_ => {
       const {bpm1state, bpm1css, bpm2state, bpm2css, bpmXtext, bpmXstate, re: br} = props.bpm
       const {playState, stopState, mutedState, re: pr} = props.playerControls
-      
+
       const onRef = node => ilog(`PlayerCtrlBar hover:`, node?.className) //: test
       playerControls.useUpdate()
       bpm.useUpdate() //: This component depends on two external states, hence the two updaters.
